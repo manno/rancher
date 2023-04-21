@@ -94,10 +94,9 @@ func (h *handler) onSetting(key string, setting *v3.Setting) (*v3.Setting, error
 			"enabled":        false,
 			"agentNamespace": fleetconst.ReleaseLocalNamespace,
 		},
-	}
-
-	fleetChartValues["gitops"] = map[string]interface{}{
-		"enabled": features.Gitops.Enabled(),
+		"gitops": map[string]interface{}{
+			"enabled": features.Gitops.Enabled(),
+		},
 	}
 
 	gitjobChartValues := make(map[string]interface{})

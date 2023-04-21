@@ -7,17 +7,19 @@ import (
 	fleet "github.com/rancher/fleet/pkg/apis/fleet.cattle.io/v1alpha1"
 	mgmt "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v1 "github.com/rancher/rancher/pkg/apis/provisioning.cattle.io/v1"
-	mgmtcluster "github.com/rancher/rancher/pkg/cluster"
-	fleetconst "github.com/rancher/rancher/pkg/fleet"
 	fleetcontrollers "github.com/rancher/rancher/pkg/generated/controllers/fleet.cattle.io/v1alpha1"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	rocontrollers "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
+
+	mgmtcluster "github.com/rancher/rancher/pkg/cluster"
+	fleetconst "github.com/rancher/rancher/pkg/fleet"
 	"github.com/rancher/rancher/pkg/provisioningv2/image"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/wrangler/pkg/apply"
 	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/yaml"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -109,8 +111,7 @@ func (h *handler) createCluster(cluster *v1.Cluster, status v1.ClusterStatus) ([
 		return nil, status, generic.ErrSkip
 	}
 
-	// this overwrites the default labels from fleet and any labels a user
-	// set on the fleet cluster resource directly
+	// this removes any annotations containing "cattle.io" or starting with "kubectl.kubernetes.io"
 	labels := yaml.CleanAnnotationsForExport(mgmtCluster.Labels)
 	labels["management.cattle.io/cluster-name"] = mgmtCluster.Name
 	if errs := validation.IsValidLabelValue(mgmtCluster.Spec.DisplayName); len(errs) == 0 {
@@ -119,11 +120,25 @@ func (h *handler) createCluster(cluster *v1.Cluster, status v1.ClusterStatus) ([
 
 	agentNamespace := ""
 	clientSecret := status.ClientSecretName
+
+	objs := []runtime.Object{}
 	if mgmtCluster.Spec.Internal {
 		agentNamespace = fleetconst.ReleaseLocalNamespace
 		clientSecret = "local-kubeconfig"
 		// restore fleet's hardcoded name label for the local cluster
 		labels["name"] = "local"
+		// default cluster group, used if fleet bundle has no targets, uses hardcoded name label
+		objs = append(objs, &fleet.ClusterGroup{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "default",
+				Namespace: cluster.Namespace,
+			},
+			Spec: fleet.ClusterGroupSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{"name": "local"},
+				},
+			},
+		})
 	}
 
 	var privateRepoURL string
@@ -135,7 +150,7 @@ func (h *handler) createCluster(cluster *v1.Cluster, status v1.ClusterStatus) ([
 		privateRepoURL = image.GetPrivateRepoURLFromCluster(cluster)
 	}
 
-	return []runtime.Object{&fleet.Cluster{
+	return append(objs, &fleet.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cluster.Name,
 			Namespace: cluster.Namespace,
@@ -147,5 +162,5 @@ func (h *handler) createCluster(cluster *v1.Cluster, status v1.ClusterStatus) ([
 			AgentNamespace:   agentNamespace,
 			PrivateRepoURL:   privateRepoURL,
 		},
-	}}, status, nil
+	}), status, nil
 }
