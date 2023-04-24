@@ -26,10 +26,11 @@ import (
 )
 
 type handler struct {
-	clusters      mgmtcontrollers.ClusterClient
-	clustersCache mgmtcontrollers.ClusterCache
-	fleetClusters fleetcontrollers.ClusterController
-	apply         apply.Apply
+	clusters          mgmtcontrollers.ClusterClient
+	clustersCache     mgmtcontrollers.ClusterCache
+	fleetClusters     fleetcontrollers.ClusterController
+	apply             apply.Apply
+	getPrivateRepoURL func(*v1.Cluster, *mgmt.Cluster) string
 }
 
 // Register registers the fleetcluster controller, which is responsible for creating fleet cluster objects.
@@ -43,6 +44,16 @@ func Register(ctx context.Context, clients *wrangler.Context) {
 		clustersCache: clients.Mgmt.Cluster().Cache(),
 		fleetClusters: clients.Fleet.Cluster(),
 		apply:         clients.Apply.WithCacheTypes(clients.Provisioning.Cluster()),
+	}
+
+	h.getPrivateRepoURL = func(cluster *v1.Cluster, mgmtCluster *mgmt.Cluster) string {
+		if cluster.Spec.RKEConfig == nil {
+			// If the RKEConfig is nil, we are likely dealing with
+			// a legacy (v3/mgmt) cluster, and need to check the v3
+			// cluster for the cluster level registry.
+			return mgmtcluster.GetPrivateRegistryURL(mgmtCluster)
+		}
+		return image.GetPrivateRepoURLFromCluster(cluster)
 	}
 
 	rocontrollers.RegisterClusterGeneratingHandler(ctx,
@@ -141,15 +152,6 @@ func (h *handler) createCluster(cluster *v1.Cluster, status v1.ClusterStatus) ([
 		})
 	}
 
-	var privateRepoURL string
-	if cluster.Spec.RKEConfig == nil {
-		// If the RKEConfig is nil, we are likely dealing with a legacy (v3/mgmt) cluster, and need to check the v3
-		// cluster for the cluster level registry.
-		privateRepoURL = mgmtcluster.GetPrivateRegistryURL(mgmtCluster)
-	} else {
-		privateRepoURL = image.GetPrivateRepoURLFromCluster(cluster)
-	}
-
 	return append(objs, &fleet.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cluster.Name,
@@ -160,7 +162,7 @@ func (h *handler) createCluster(cluster *v1.Cluster, status v1.ClusterStatus) ([
 			KubeConfigSecret: clientSecret,
 			AgentEnvVars:     mgmtCluster.Spec.AgentEnvVars,
 			AgentNamespace:   agentNamespace,
-			PrivateRepoURL:   privateRepoURL,
+			PrivateRepoURL:   h.getPrivateRepoURL(cluster, mgmtCluster),
 		},
 	}), status, nil
 }
