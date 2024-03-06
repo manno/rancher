@@ -62,7 +62,7 @@ func TestGetClusterHost(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			clientConfig := clientcmd.NewDefaultClientConfig(tc.config, nil)
-			host, err := fleet.GetClusterHost(clientConfig)
+			host, _, err := fleet.GetClusterHost(clientConfig)
 
 			if tc.expectErr {
 				assert.Error(t, err)
