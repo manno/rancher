@@ -53,13 +53,11 @@ const (
 
 var (
 	primaryImages = map[string]string{
-		chart.WebhookChartName:           "rancher/rancher-webhook",
 		chart.ProvisioningCAPIChartName:  "rancher/mirrored-cluster-api-controller",
 		chart.RemoteDialerProxyChartName: "rancher/remotedialer-proxy",
 		chart.TurtlesChartName:           "rancher/turtles",
 	}
 	watchedSettings = map[string]struct{}{
-		settings.RancherWebhookVersion.Name:               {},
 		settings.RancherProvisioningCAPIVersion.Name:      {},
 		settings.RancherTurtlesVersion.Name:               {},
 		settings.SystemDefaultRegistry.Name:               {},
@@ -181,11 +179,11 @@ func (h *handler) onRepo(key string, repo *catalog.ClusterRepo) (*catalog.Cluste
 				values[k] = v
 			}
 		}
-		// webhook needs to be able to adopt the MutatingWebhookConfiguration which originally wasn't a part of the
+		// provisioning-capi needs to be able to adopt the MutatingWebhookConfiguration which originally wasn't a part of the
 		// chart definition, but is now part of the chart definition
 		minVersion := chartDef.MinVersionSetting.Get()
 		exactVersion := chartDef.ExactVersionSetting.Get()
-		takeOwnership := chartDef.ChartName == chart.WebhookChartName || chartDef.ChartName == chart.ProvisioningCAPIChartName
+		takeOwnership := chartDef.ChartName == chart.ProvisioningCAPIChartName
 		if err := h.manager.Ensure(chartDef.ReleaseNamespace, chartDef.ChartName, chartDef.ReleaseName, minVersion, exactVersion, values, takeOwnership, installImageOverride); err != nil {
 			return repo, err
 		}
@@ -216,29 +214,6 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 				return ext.RDPEnabled()
 			},
 			RemoveNamespace: false,
-		},
-		{
-			ReleaseNamespace:    namespace.System,
-			ReleaseName:         chart.WebhookChartName,
-			ChartName:           chart.WebhookChartName,
-			ExactVersionSetting: settings.RancherWebhookVersion,
-			Values: func() map[string]interface{} {
-				values := map[string]interface{}{
-					// This is no longer used in the webhook chart but previous values can still be found
-					// with `helm get values -n cattle-system rancher-webhook` which can be confusing. We
-					// completely remove the previous capi values by setting it to nil here.
-					"capi": nil,
-					"mcm": map[string]interface{}{
-						"enabled": features.MCM.Enabled(),
-					},
-				}
-				// add priority class value
-				h.setPriorityClass(values, chart.WebhookChartName)
-				// get custom values for the rancher-webhook
-				configMapValues := h.getChartValues(chart.WebhookChartName)
-				return data.MergeMaps(values, configMapValues)
-			},
-			Enabled: func() bool { return true },
 		},
 		{
 			ReleaseNamespace: "rancher-operator-system",

@@ -15,6 +15,7 @@ cp -rf ${1} build/chart/rancher
 
 sed -i -e "s/%VERSION%/${CHART_VERSION}/g" build/chart/rancher/Chart.yaml
 sed -i -e "s/%APP_VERSION%/${APP_VERSION}/g" build/chart/rancher/Chart.yaml
+sed -i -e "s/%WEBHOOK_VERSION%/${CATTLE_RANCHER_WEBHOOK_VERSION}/g" build/chart/rancher/Chart.yaml
 
 rancher_shell_base=$CATTLE_DEFAULT_SHELL_VERSION
 rancher_shell_image_name=$(echo "${rancher_shell_base}" | cut -d ":" -f 1) || ""
@@ -31,6 +32,12 @@ sed -i -e "s@%POST_DELETE_IMAGE_NAME%@${rancher_shell_image_name}@g" build/chart
 sed -i -e "s/%POST_DELETE_IMAGE_TAG%/${rancher_shell_image_tag}/g" build/chart/rancher/values.yaml
 sed -i -e "s@%PRE_UPGRADE_IMAGE_NAME%@${rancher_shell_image_name}@g" build/chart/rancher/values.yaml
 sed -i -e "s/%PRE_UPGRADE_IMAGE_TAG%/${rancher_shell_image_tag}/g" build/chart/rancher/values.yaml
+
+# Update helm dependencies to pull rancher-webhook chart (after all substitutions are done)
+echo "Updating Helm chart dependencies..."
+cd build/chart/rancher
+helm dependency update
+cd ../../..
 
 if [[ -v REGISTRY ]]; then
   sed -i "s|systemDefaultRegistry: .*|systemDefaultRegistry: ${REGISTRY}|g" build/chart/rancher/values.yaml

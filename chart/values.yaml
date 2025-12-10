@@ -248,9 +248,15 @@ readinessProbe:
   periodSeconds: 30
   failureThreshold: 5
 
-# helm values to use when installing the rancher-webhook chart.
-# helm values set here will override all other global values used when installing the webhook such as priorityClassName and systemRegistry settings.
-webhook: ""
+# Configuration for the rancher-webhook subchart
+webhook:
+  # Enable installation of the rancher-webhook chart as a dependency
+  enabled: true
+  # Additional values can be set here to configure the webhook
+  # These will override the default webhook chart values
+  # Example:
+  # mcm:
+  #   enabled: true
 
 # helm values to use when installing the fleet chart.
 # helm values set here will override all other global values used when installing the fleet chart.

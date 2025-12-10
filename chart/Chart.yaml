@@ -13,3 +13,8 @@ sources:
 maintainers:
   - name: Rancher Labs
     email: charts@rancher.com
+dependencies:
+  - name: rancher-webhook
+    version: "%WEBHOOK_VERSION%"
+    repository: "https://charts.rancher.io"
+    condition: webhook.enabled
