@@ -16,8 +16,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/rancher/pkg/jailer"
-	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/rancher/pkg/settings"
 )
 
 type TLSConfig struct {

@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/rancher/rancher/pkg/capr"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/systemtemplate"
 	"github.com/rancher/rancher/pkg/tls"
-	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 )
 

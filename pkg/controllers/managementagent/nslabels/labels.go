@@ -9,8 +9,8 @@ import (
 
 	typescorev1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
-	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/rancher/pkg/types/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

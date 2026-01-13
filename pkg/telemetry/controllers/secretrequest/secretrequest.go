@@ -7,10 +7,10 @@ import (
 	mgmtv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v1 "github.com/rancher/rancher/pkg/apis/telemetry.cattle.io/v1"
 	secretRequestControllers "github.com/rancher/rancher/pkg/generated/controllers/telemetry.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/telemetry"
 	"github.com/rancher/rancher/pkg/telemetry/consts"
 	v1core "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 
 	//"k8s.io/apimachinery/pkg/api/errors"

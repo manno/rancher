@@ -1,8 +1,9 @@
 package schema
 
 import (
-	rlog "github.com/rancher/rancher/pkg/log"
 	"log/slog"
+
+	rlog "github.com/rancher/rancher/pkg/log"
 )
 
 var (

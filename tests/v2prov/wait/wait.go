@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rancher/rancher/tests/v2prov/defaults"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/rancher/tests/v2prov/defaults"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

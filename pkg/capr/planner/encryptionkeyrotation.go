@@ -535,9 +535,9 @@ func (p *Planner) encryptionKeyRotationLeaderPhaseReconcile(controlPlane *rkev1.
 		if IsErrWaiting(err) {
 			if strings.HasPrefix(err.Error(), "starting") {
 				log.Info("Applying encryption key rotation stage command",
-				"namespace", controlPlane.Namespace,
-				"cluster_name", controlPlane.Spec.ClusterName,
-				"command", apply.Args[1])
+					"namespace", controlPlane.Namespace,
+					"cluster_name", controlPlane.Spec.ClusterName,
+					"command", apply.Args[1])
 			}
 			return status, err
 		}

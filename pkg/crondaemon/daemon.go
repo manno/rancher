@@ -6,8 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/robfig/cron"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/robfig/cron"
 )
 
 // runner defines the cron runner.

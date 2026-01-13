@@ -5,9 +5,9 @@ import (
 
 	v1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
 	fleetv1alpha1 "github.com/rancher/rancher/pkg/generated/controllers/fleet.cattle.io/v1alpha1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/rancher/rancher/pkg/log"
 )
 
 type Retriever struct {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/types/set"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/peermanager"
 	"github.com/rancher/rancher/pkg/serviceaccounttoken"
 	"github.com/rancher/rancher/pkg/settings"
@@ -19,7 +20,6 @@ import (
 	"github.com/rancher/remotedialer"
 	"github.com/rancher/wrangler/v3/pkg/data"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/net"

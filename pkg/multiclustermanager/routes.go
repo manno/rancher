@@ -30,6 +30,7 @@ import (
 	"github.com/rancher/rancher/pkg/features"
 	"github.com/rancher/rancher/pkg/httpproxy"
 	k8sProxyPkg "github.com/rancher/rancher/pkg/k8sproxy"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/metrics"
 	"github.com/rancher/rancher/pkg/multiclustermanager/whitelist"
 	"github.com/rancher/rancher/pkg/rbac"
@@ -38,7 +39,6 @@ import (
 	"github.com/rancher/rancher/pkg/utils"
 	"github.com/rancher/rancher/pkg/version"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/rancher/rancher/pkg/log"
 )
 
 func router(ctx context.Context, localClusterEnabled bool, scaledContext *config.ScaledContext, clusterManager *clustermanager.Manager) (func(http.Handler) http.Handler, error) {

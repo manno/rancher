@@ -9,9 +9,9 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	rm "github.com/rancher/remotedialer/metrics"
-	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/labels"
 )
 

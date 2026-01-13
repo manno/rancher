@@ -19,13 +19,13 @@ import (
 	"github.com/rancher/dynamiclistener/storage/kubernetes"
 	"github.com/rancher/lasso/pkg/metrics"
 	"github.com/rancher/norman/types/convert"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/wrangler/v3/pkg/generated/controllers/apps"
 	appscontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/apps/v1"
 	"github.com/rancher/wrangler/v3/pkg/generated/controllers/core"
 	corev1controllers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,12 +105,12 @@ func ListenAndServe(ctx context.Context, restConfig *rest.Config, handler http.H
 	}
 
 	serverOptions := &server.ListenOpts{
-		Storage:       opts.Storage,
-		Secrets:       opts.Secrets,
-		CAName:        "tls-rancher-internal-ca",
-		CANamespace:   namespace.System,
-		CertNamespace: namespace.System,
-		CertName:      "tls-rancher-internal",
+		Storage:           opts.Storage,
+		Secrets:           opts.Secrets,
+		CAName:            "tls-rancher-internal-ca",
+		CANamespace:       namespace.System,
+		CertNamespace:     namespace.System,
+		CertName:          "tls-rancher-internal",
 		DisplayServerLogs: true,
 	}
 	clusterIP, err := getClusterIP(core.Core().V1().Service())

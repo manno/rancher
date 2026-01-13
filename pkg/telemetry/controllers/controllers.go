@@ -10,10 +10,10 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	mgmgv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/telemetry"
 	"github.com/rancher/rancher/pkg/telemetry/controllers/secretrequest"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/rancher/rancher/pkg/log"
 )
 
 var SystemProjectBackoff = wait.Backoff{

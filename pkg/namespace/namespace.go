@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
-	"github.com/rancher/wrangler/v3/pkg/relatedresource"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/wrangler/v3/pkg/relatedresource"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"

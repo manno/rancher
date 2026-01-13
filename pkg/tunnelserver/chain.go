@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/rancher/remotedialer"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/remotedialer"
 )
 
 type Authorizers struct {

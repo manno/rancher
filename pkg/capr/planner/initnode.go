@@ -7,8 +7,8 @@ import (
 	rkev1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1/plan"
 	"github.com/rancher/rancher/pkg/capr"
-	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/wrangler/v3/pkg/generic"
 )
 
 // clearInitNodeMark removes the init node label on the given machine and updates the machine directly against the api

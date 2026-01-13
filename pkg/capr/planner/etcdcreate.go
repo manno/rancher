@@ -9,8 +9,8 @@ import (
 	"github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1/plan"
 	"github.com/rancher/rancher/pkg/capr"
 	"github.com/rancher/rancher/pkg/controllers/capr/managesystemagent"
-	"github.com/rancher/wrangler/v3/pkg/merr"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/wrangler/v3/pkg/merr"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 

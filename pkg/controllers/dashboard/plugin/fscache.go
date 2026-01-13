@@ -19,8 +19,8 @@ import (
 	"github.com/Masterminds/semver/v3"
 	filepathsecure "github.com/cyphar/filepath-securejoin"
 	v1 "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
-	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/rancher/pkg/settings"
 )
 
 const (

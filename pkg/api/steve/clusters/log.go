@@ -10,11 +10,11 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/rancher/apiserver/pkg/types"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/steve/pkg/stores/proxy"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/rancher/rancher/pkg/log"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/endpoints/request"

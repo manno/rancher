@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/creasty/defaults"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/shepherd/clients/k3d"
 	rancherClient "github.com/rancher/shepherd/clients/rancher"
 	management "github.com/rancher/shepherd/clients/rancher/generated/management/v3"
@@ -18,7 +19,6 @@ import (
 	"github.com/rancher/shepherd/pkg/config"
 	namegen "github.com/rancher/shepherd/pkg/namegenerator"
 	"github.com/rancher/shepherd/pkg/session"
-	"github.com/rancher/rancher/pkg/log"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
 )
 

@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	wfakes "github.com/rancher/wrangler/v3/pkg/generic/fake"
 	"github.com/rancher/rancher/pkg/log"
+	wfakes "github.com/rancher/wrangler/v3/pkg/generic/fake"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	v1 "k8s.io/api/rbac/v1"

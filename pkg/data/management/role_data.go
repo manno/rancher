@@ -8,10 +8,10 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/providers/local/pbkdf2"
 	"github.com/rancher/rancher/pkg/features"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -558,17 +558,17 @@ func BootstrapAdmin(management *wrangler.Context) (string, error) {
 		},
 	}
 
-		_, err = management.K8s.CoreV1().ConfigMaps(cattleNamespace).Create(context.TODO(), &adminConfigMap, v1.CreateOptions{})
+	_, err = management.K8s.CoreV1().ConfigMaps(cattleNamespace).Create(context.TODO(), &adminConfigMap, v1.CreateOptions{})
 
-		if err != nil {
+	if err != nil {
 
-			if !apierrors.IsAlreadyExists(err) {
+		if !apierrors.IsAlreadyExists(err) {
 
-				log.Warn("Error creating admin config map", "error", err)
-
-			}
+			log.Warn("Error creating admin config map", "error", err)
 
 		}
+
+	}
 	return adminName, nil
 }
 

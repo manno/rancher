@@ -8,9 +8,9 @@ import (
 	"github.com/rancher/rancher/pkg/auth/userretention"
 	"github.com/rancher/rancher/pkg/crondaemon"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 

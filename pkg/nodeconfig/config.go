@@ -14,8 +14,8 @@ import (
 	"github.com/rancher/rancher/pkg/encryptedstore"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	"github.com/rancher/rancher/pkg/jailer"
-	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/rancher/pkg/settings"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 )
 

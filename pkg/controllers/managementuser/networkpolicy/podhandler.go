@@ -6,8 +6,8 @@ import (
 	"sort"
 
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/rancher/pkg/log"
+	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	knetworkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -18,8 +18,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/rancher/pkg/catalogv2/roundtripper"
-	"github.com/rancher/wrangler/v3/pkg/randomtoken"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/wrangler/v3/pkg/randomtoken"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 	corev1 "k8s.io/api/core/v1"

@@ -8,9 +8,9 @@ import (
 	types2 "github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/urlbuilder"
+	"github.com/rancher/rancher/pkg/log"
 	v3 "github.com/rancher/rancher/pkg/schemas/cluster.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/rancher/rancher/pkg/log"
 )
 
 type LinksAndActionsFormatter struct {

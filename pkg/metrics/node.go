@@ -10,8 +10,8 @@ import (
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/rancher/wrangler/v3/pkg/ticker"
 	"github.com/rancher/rancher/pkg/log"
+	"github.com/rancher/wrangler/v3/pkg/ticker"
 	"k8s.io/apimachinery/pkg/labels"
 )
 

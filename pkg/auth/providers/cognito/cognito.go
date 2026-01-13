@@ -15,9 +15,9 @@ import (
 	baseoidc "github.com/rancher/rancher/pkg/auth/providers/oidc"
 	"github.com/rancher/rancher/pkg/auth/tokens"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
-	"github.com/rancher/rancher/pkg/log"
 )
 
 // CognitoProvider represents AWS Cognito auth provider

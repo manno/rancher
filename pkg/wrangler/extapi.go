@@ -7,9 +7,9 @@ import (
 
 	ext "github.com/rancher/rancher/pkg/generated/controllers/ext.cattle.io"
 	extv1 "github.com/rancher/rancher/pkg/generated/controllers/ext.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	wapiregv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/apiregistration.k8s.io/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apiregv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 )
