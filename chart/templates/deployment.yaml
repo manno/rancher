@@ -105,6 +105,9 @@ spec:
         - "--http-listen-port=80"
         - "--https-listen-port=443"
         - "--add-local={{ .Values.addLocal }}"
+{{- if .Values.logFormat }}
+        - "--log-format={{ .Values.logFormat }}"
+{{- end }}
         env:
         - name: CATTLE_NAMESPACE
           value: {{ .Release.Namespace }}
