@@ -70,7 +70,7 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/leader"
 	"github.com/rancher/wrangler/v3/pkg/schemes"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -121,7 +121,7 @@ func init() {
 	if timeout := os.Getenv(cacheSyncTimeoutEnvVar); timeout != "" {
 		var err error
 		if cacheSyncTimeout, err = time.ParseDuration(timeout); err != nil {
-			logrus.Fatalf("env var '%s' is not a valid duration: %s", cacheSyncTimeoutEnvVar, timeout)
+			log.Fatal("env var is not a valid duration", "operation", "init_wrangler", "env_var", cacheSyncTimeoutEnvVar, "value", timeout, "error", err)
 		}
 	}
 }
@@ -212,7 +212,7 @@ func (w *Context) OnLeader(f func(ctx context.Context) error) {
 }
 
 func (w *Context) checkGVK(ctx context.Context, gvk schema.GroupVersionKind) error {
-	logrus.Warnf("cache for '%s' did not sync", gvk.String())
+	log.Warn("cache did not sync", "operation", "check_gvk", "gvk", gvk.String())
 	crd, err := w.CRD.CustomResourceDefinition().Get(gvk.GroupKind().String(), metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get crd for gvk: %s", err)
@@ -251,7 +251,7 @@ func (w *Context) StartWithTransaction(ctx context.Context, f func(context.Conte
 	for gvk, isSynced := range gvks {
 		if !isSynced {
 			if err := w.checkGVK(ctx, gvk); err != nil {
-				logrus.Errorf("found issues for gvk '%s': %s", gvk.String(), err)
+				log.Error("found issues for gvk", "operation", "start_with_transaction", "gvk", gvk.String(), "error", err)
 			}
 		}
 	}
@@ -302,7 +302,7 @@ func (w *Context) Start(ctx context.Context) error {
 		return err
 	}
 	w.leadership.Start(ctx)
-	logrus.Trace("Wrangler context has started")
+	log.Trace("wrangler context has started", "operation", "start")
 	return nil
 }
 
@@ -318,14 +318,14 @@ func (w *Context) WithAgent(userAgent string) *Context {
 	}
 	k8sClientWithAgent, err := kubernetes.NewForConfig(restConfigCopy)
 	if err != nil {
-		logrus.Debugf("failed to set agent [%s] on k8s client: %v", userAgent, err)
+		log.Debug("failed to set agent on k8s client", "operation", "with_agent", "user_agent", userAgent, "error", err)
 	}
 	if err == nil {
 		wContextCopy.K8s = k8sClientWithAgent
 	}
 	applyWithAgent, err := apply.NewForConfig(restConfigCopy)
 	if err != nil {
-		logrus.Debugf("failed to set agent [%s] on apply client: %v", userAgent, err)
+		log.Debug("failed to set agent on apply client", "operation", "with_agent", "user_agent", userAgent, "error", err)
 	}
 	if err == nil {
 		wContextCopy.Apply = applyWithAgent

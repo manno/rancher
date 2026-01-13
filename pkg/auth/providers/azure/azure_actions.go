@@ -15,7 +15,7 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers/common"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	managementschema "github.com/rancher/rancher/pkg/schemas/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 )
@@ -72,7 +72,7 @@ func (ap *Provider) testAndApply(request *types.APIContext) error {
 	defer func() {
 		if err != nil {
 			if err = ap.secrets.Delete(common.SecretsNamespace, clients.AccessTokenSecretName, &metav1.DeleteOptions{}); err != nil {
-				logrus.Errorf("Failed to delete the Azure AD access token secret from Kubernetes")
+				log.Error("failed to delete Azure AD access token secret", "provider", "azure", "secret", clients.AccessTokenSecretName, "error", err)
 			}
 		}
 	}()
@@ -87,7 +87,7 @@ func (ap *Provider) testAndApply(request *types.APIContext) error {
 
 	currentConfig, err := ap.GetAzureConfigK8s()
 	if err != nil {
-		logrus.Errorf("Failed to fetch Azure AD Config from Kubernetes: %v", err)
+		log.Error("failed to fetch Azure AD config", "provider", "azure", "error", err)
 		return httperror.NewAPIError(httperror.ServerError, "failed to fetch Azure AD Config from Kubernetes")
 	}
 	migrateNewFlowAnnotation(currentConfig, azureADConfig)

@@ -24,7 +24,7 @@ import (
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -94,8 +94,6 @@ func (h *handler) OnUpstreamChange(_ string, snapshot *rkev1.ETCDSnapshot) (*rke
 		return snapshot, nil
 	}
 
-	logPrefix := getLogPrefix(cluster)
-
 	controlPlane, err := h.controlPlaneCache.Get(cluster.Namespace, cluster.Name)
 	if err != nil {
 		return snapshot, err
@@ -116,7 +114,7 @@ func (h *handler) OnUpstreamChange(_ string, snapshot *rkev1.ETCDSnapshot) (*rke
 	_, err = h.etcdSnapshotFileController.Get(snapshot.Annotations[capr.SnapshotNameAnnotation], metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		// If the downstream snapshot does not exist in the downstream cluster, delete the local version
-		logrus.Debugf("%s deleting snapshot %s", logPrefix, snapshot.Name)
+		log.Debug("deleting snapshot", "operation", "handle_upstream_change", "snapshot", snapshot.Name)
 		return nil, h.etcdSnapshotController.Delete(snapshot.Namespace, snapshot.Name, &metav1.DeleteOptions{})
 	} else if err != nil {
 		return snapshot, err
@@ -134,15 +132,13 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 		return downstream, err
 	}
 
-	logPrefix := getLogPrefix(cluster)
-
 	if cluster.DeletionTimestamp != nil {
-		logrus.Debugf("%s skipping snapshot reconcile as cluster is being deleted", logPrefix)
+		log.Debug("skipping snapshot reconcile as cluster is being deleted", "operation", "handle_downstream_change")
 		return downstream, nil
 	}
 
 	if downstream.DeletionTimestamp != nil {
-		logrus.Infof("%s downstream snapshot %s was deleted, deleting local snapshot representation", logPrefix, downstream.Name)
+		log.Info("downstream snapshot was deleted, deleting local snapshot representation", "operation", "handle_downstream_change", "snapshot", downstream.Name)
 
 		upstreamSnapshots, err := h.getSnapshotsFromSnapshotFile(cluster, downstream)
 		if err != nil {
@@ -150,11 +146,11 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 		}
 		var errs []error
 		for _, upstreamSnapshot := range upstreamSnapshots {
-			logrus.Infof("%s deleting local snapshot %s", logPrefix, upstreamSnapshot.Name)
+			log.Info("deleting local snapshot", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name)
 
 			err := h.etcdSnapshotController.Delete(upstreamSnapshot.Namespace, upstreamSnapshot.Name, &metav1.DeleteOptions{})
 			if err != nil {
-				logrus.Errorf("%s error deleting snapshot %s: %v", logPrefix, upstreamSnapshot.Name, err)
+				log.Error("error deleting snapshot", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name, "error", err)
 				errs = append(errs, err)
 			}
 		}
@@ -169,13 +165,13 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 	// if controlplane is currently performing a restore, reconciling snapshots will be postponed until post restore
 	if controlPlane.Spec.ETCDSnapshotRestore != nil && controlPlane.Status.ETCDSnapshotRestore != nil &&
 		controlPlane.Spec.ETCDSnapshotRestore.Generation != controlPlane.Status.ETCDSnapshotRestore.Generation {
-		logrus.Debugf("%s skipping snapshot reconcile as cluster is being restored", logPrefix)
+		log.Debug("skipping snapshot reconcile as cluster is being restored", "operation", "handle_downstream_change")
 
 		h.etcdSnapshotFileController.EnqueueAfter(downstream.Name, 1*time.Minute)
 		return downstream, nil
 	}
 
-	logrus.Infof("%s processing snapshot %s", logPrefix, downstream.Name)
+	log.Info("processing snapshot", "operation", "handle_downstream_change", "snapshot", downstream.Name)
 
 	// get upstream snapshot object
 	// if upstream snapshot object does not exist, create it
@@ -190,7 +186,7 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 		if err != nil {
 			return downstream, err
 		}
-		logrus.Debugf("%s creating snapshot %s", logPrefix, upstream.Name)
+		log.Debug("creating snapshot", "operation", "handle_downstream_change", "snapshot", upstream.Name)
 
 		_, err = h.etcdSnapshotController.Create(upstream)
 		// snapshot may exist on a previous version of Rancher but fail to indexer criteria, update in this case
@@ -205,20 +201,20 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 				return downstream, err
 			}
 
-			logrus.Debugf("%s snapshot %s already exists but does not match indexer criteria, updating", logPrefix, upstream.Name)
+			log.Debug("snapshot already exists but does not match indexer criteria, updating", "operation", "handle_downstream_change", "snapshot", upstream.Name)
 			_, err = h.etcdSnapshotController.Update(upstream)
 		}
 		return downstream, err
 	} else if len(upstreamSnapshots) > 1 {
-		logrus.Warnf("%s multiple snapshots objects found for snapshot %s", logPrefix, downstream.Name)
+		log.Warn("multiple snapshots objects found for snapshot", "operation", "handle_downstream_change", "snapshot", downstream.Name)
 
 		var errs []error
 		for _, upstreamSnapshot := range upstreamSnapshots {
-			logrus.Infof("%s deleting snapshot object %s", logPrefix, upstreamSnapshot.Name)
+			log.Info("deleting snapshot object", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name)
 
 			err = h.etcdSnapshotController.Delete(upstreamSnapshot.Namespace, upstreamSnapshot.Name, &metav1.DeleteOptions{})
 			if err != nil {
-				logrus.Errorf("%s error deleting snapshot %s: %v", logPrefix, upstreamSnapshot.Name, err)
+				log.Error("error deleting snapshot", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name, "error", err)
 				errs = append(errs, err)
 			}
 		}
@@ -243,7 +239,7 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 	if reflect.DeepEqual(generated, upstream) {
 		return downstream, nil
 	}
-	logrus.Debugf("%s updating snapshot %s", logPrefix, upstream.Name)
+	log.Debug("updating snapshot", "operation", "reconcile_etcd_snapshot", "snapshot", upstream.Name)
 
 	original, err := json.Marshal(upstream)
 	if err != nil {
@@ -328,7 +324,7 @@ func (h *handler) populateUpstreamSnapshotFromDownstream(upstream *rkev1.ETCDSna
 		if upstream.Labels != nil && upstream.Labels[capr.MachineIDLabel] != "" {
 			machine, err = h.getMachineByID(upstream.Labels[capr.MachineIDLabel], cluster.Name, cluster.Namespace)
 			if err != nil {
-				logrus.Errorf("%s error getting machine by id for snapshot %s: %v", getLogPrefix(cluster), upstream.Name, err)
+				log.Error("error getting machine by id for snapshot", "operation", "reconcile_etcd_snapshot", "snapshot", upstream.Name, "error", err)
 			}
 		}
 		// fallback to getting by node name, also used on snapshot create
@@ -379,7 +375,7 @@ func (h *handler) getSnapshotsFromSnapshotFile(cluster *provv1.Cluster, snapshot
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infof("[DEBUG - getSnapshotsFromSnapshotFile] Got snapshots from snapshot file")
+	log.Info("got snapshots from snapshot file", "operation", "get_snapshots_from_file")
 	return snapshots, nil
 }
 

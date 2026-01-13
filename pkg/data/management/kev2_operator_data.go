@@ -8,7 +8,7 @@ import (
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -57,7 +57,7 @@ func syncKEv2OperatorsSetting(driversLister v3.KontainerDriverLister) error {
 	if existingVal != "{}" && existingVal != "" {
 		if err := json.Unmarshal([]byte(existingVal), &updatedValueData); err != nil {
 			// if the setting is corrupt, log it and reset to defaults
-			logrus.Warnf("failed to unmarshal KEv2Operators setting, will reset to default: %v", err)
+			log.Warn("failed to unmarshal KEv2Operators setting, will reset to default", "error", err)
 		}
 	}
 

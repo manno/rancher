@@ -18,7 +18,7 @@ import (
 	"github.com/rancher/shepherd/extensions/kubeconfig"
 	"github.com/rancher/shepherd/pkg/session"
 	"github.com/rancher/shepherd/pkg/wait"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"helm.sh/helm/v3/pkg/action"
@@ -209,7 +209,7 @@ func (w *SystemChartsVersionSuite) TestInstallFleet() {
 
 func (w *SystemChartsVersionSuite) uninstallApp(namespace, chartName string) error {
 	var cfg action.Configuration
-	if err := cfg.Init(w.restClientGetter, namespace, "", logrus.Infof); err != nil {
+	if err := cfg.Init(w.restClientGetter, namespace, "", func(format string, args ...interface{}) { log.Info(format, args...) }); err != nil {
 		return err
 	}
 	releases, err := w.getReleases(&cfg)
@@ -237,7 +237,7 @@ func (w *SystemChartsVersionSuite) getReleases(cfg *action.Configuration) ([]*re
 
 func (w *SystemChartsVersionSuite) fetchRelease(namespace, chartName string) (*release.Release, error) {
 	var cfg action.Configuration
-	if err := cfg.Init(w.restClientGetter, namespace, "", logrus.Infof); err != nil {
+	if err := cfg.Init(w.restClientGetter, namespace, "", func(format string, args ...interface{}) { log.Info(format, args...) }); err != nil {
 		return nil, err
 	}
 	releases, err := w.getReleases(&cfg)

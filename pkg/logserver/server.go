@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 var (
@@ -36,7 +36,7 @@ func (s *Server) Start() {
 // ListenAndServe is used to setup handlers and
 // start listening on the specified location
 func (s *Server) ListenAndServe() error {
-	logrus.Infof("Listening on %s", s.SocketLocation)
+	log.Info("log server listening", "socket", s.SocketLocation)
 	server := http.Server{}
 	http.HandleFunc("/v1/loglevel", s.loglevel)
 	socketListener, err := net.Listen("unix", s.SocketLocation)
@@ -48,9 +48,9 @@ func (s *Server) ListenAndServe() error {
 
 func (s *Server) loglevel(rw http.ResponseWriter, req *http.Request) {
 	// curl -X POST -d "level=debug" localhost:12345/v1/loglevel
-	logrus.Debugf("Received loglevel request")
+	log.Debug("received loglevel request")
 	if req.Method == http.MethodGet {
-		level := logrus.GetLevel().String()
+		level := log.GetLevel()
 		rw.Write([]byte(fmt.Sprintf("%s\n", level)))
 	}
 
@@ -59,12 +59,17 @@ func (s *Server) loglevel(rw http.ResponseWriter, req *http.Request) {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(fmt.Sprintf("Failed to parse form: %v\n", err)))
 		}
-		level, err := logrus.ParseLevel(req.Form.Get("level"))
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(fmt.Sprintf("Failed to parse loglevel: %v\n", err)))
+		level := req.Form.Get("level")
+		// Validate level
+		validLevels := map[string]bool{
+			"trace": true, "debug": true, "info": true,
+			"warn": true, "warning": true, "error": true,
+		}
+		if !validLevels[level] {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte(fmt.Sprintf("Invalid loglevel: %s\n", level)))
 		} else {
-			logrus.SetLevel(level)
+			log.SetLevel(level)
 			rw.Write([]byte("OK\n"))
 		}
 	}

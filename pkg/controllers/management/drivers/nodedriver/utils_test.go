@@ -1,27 +1,23 @@
 package nodedriver
 
 import (
+	"bytes"
+	"io"
 	"strings"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseKeyValueString(t *testing.T) {
-	_, hook := test.NewNullLogger()
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.StandardLogger().ReplaceHooks(make(logrus.LevelHooks))
-	logrus.AddHook(hook)
-
 	testCases := []struct {
 		name               string
 		input              string
 		expectedResult     map[string]string
 		expectedLog        string
 		expectedLogEntries int
-		expectedLogLevel   logrus.Level
+		expectedLogLevel   string // "debug" or "error"
 	}{
 		{
 			name:  "valid key-value pair",
@@ -45,7 +41,7 @@ func TestParseKeyValueString(t *testing.T) {
 			expectedResult:     map[string]string{},
 			expectedLog:        "Empty input string",
 			expectedLogEntries: 1,
-			expectedLogLevel:   logrus.DebugLevel,
+			expectedLogLevel:   "debug",
 		},
 		{
 			name:               "empty key",
@@ -53,7 +49,7 @@ func TestParseKeyValueString(t *testing.T) {
 			expectedResult:     map[string]string{},
 			expectedLog:        "failed to parse pair: \":cloud-config\" (expected key:value)",
 			expectedLogEntries: 1,
-			expectedLogLevel:   logrus.ErrorLevel,
+			expectedLogLevel:   "error",
 		},
 		{
 			name:               "invalid pair",
@@ -61,27 +57,31 @@ func TestParseKeyValueString(t *testing.T) {
 			expectedResult:     map[string]string{},
 			expectedLog:        "failed to parse pair: \"userdata:cloudConfig:cloud-config\" (expected key:value)",
 			expectedLogEntries: 1,
-			expectedLogLevel:   logrus.ErrorLevel,
+			expectedLogLevel:   "error",
 		},
 	}
 
 	for _, tc := range testCases {
-		hook.Reset()
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			originalLevel := log.GetLevel()
+			// Set level to debug to capture both debug and error logs
+			log.Init("text", "debug", &buf)
+			defer log.Init("text", originalLevel, io.Discard)
 
-		annotations := ParseKeyValueString(tc.input)
-		assert.Equal(t, tc.expectedResult, annotations, tc.name)
+			annotations := ParseKeyValueString(tc.input)
+			assert.Equal(t, tc.expectedResult, annotations)
 
-		if tc.expectedLog != "" {
-			found := false
-			for _, entry := range hook.AllEntries() {
-				if entry.Level == tc.expectedLogLevel && strings.Contains(entry.Message, tc.expectedLog) {
-					found = true
-					break
-				}
+			output := buf.String()
+			if tc.expectedLog != "" {
+				assert.Contains(t, output, tc.expectedLog, "expected log message not found")
+				// Check for log level in output
+				levelUpper := strings.ToUpper(tc.expectedLogLevel)
+				assert.True(t, strings.Contains(output, levelUpper),
+					"expected log level %s not found in output: %s", levelUpper, output)
+			} else {
+				assert.Empty(t, output, "expected no log entries but got: %s", output)
 			}
-			assert.Equal(t, true, found, "expected log '%s' of level %s not found", tc.expectedLog, tc.expectedLogLevel)
-		} else {
-			assert.Equal(t, 0, len(hook.AllEntries()), "expected no log entries")
-		}
+		})
 	}
 }

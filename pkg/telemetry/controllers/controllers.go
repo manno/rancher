@@ -13,7 +13,7 @@ import (
 	"github.com/rancher/rancher/pkg/telemetry"
 	"github.com/rancher/rancher/pkg/telemetry/controllers/secretrequest"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 var SystemProjectBackoff = wait.Backoff{
@@ -28,7 +28,7 @@ func RegisterControllers(ctx context.Context, wContext *wrangler.Context, teleme
 	var systemProject *mgmgv3.Project
 
 	if initErr := retry.OnError(SystemProjectBackoff, func(err error) bool {
-		logrus.Errorf("failed to register telemetry controller, will retry: %v", err)
+		log.Error("failed to register telemetry controller, will retry", "error", err)
 		return true
 	}, func() error {
 		projects, err := wContext.Mgmt.Project().List("local", v1.ListOptions{})

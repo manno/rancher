@@ -14,7 +14,7 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/capr/managesystemagent"
 	"github.com/rancher/rancher/pkg/utils"
 	"github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -616,12 +616,21 @@ func (p *Planner) runEtcdRestoreInitNodeElection(controlPlane *rkev1.RKEControlP
 		if snapshot.SnapshotFile.S3 == nil {
 			// If the snapshot is not an S3 snapshot, then designate the init node by machine ID defined.
 			if id, ok := snapshot.Labels[capr.MachineIDLabel]; ok {
-				logrus.Infof("[planner] rkecluster %s/%s: designating init node with machine ID: %s for local snapshot %s/%s restoration", controlPlane.Namespace, controlPlane.Name, id, snapshot.Namespace, snapshot.Name)
+				log.Info("designating init node for local snapshot restoration",
+					"namespace", controlPlane.Namespace,
+					"cluster_name", controlPlane.Name,
+					"machine_id", id,
+					"snapshot_namespace", snapshot.Namespace,
+					"snapshot_name", snapshot.Name)
 				return p.designateInitNodeByMachineID(controlPlane, clusterPlan, id)
 			}
 			return "", fmt.Errorf("unable to designate machine as label %s on snapshot %s/%s did not exist", capr.MachineIDLabel, snapshot.Namespace, snapshot.Name)
 		}
-		logrus.Infof("[planner] rkecluster %s/%s: electing init node for S3 snapshot %s/%s restoration", controlPlane.Namespace, controlPlane.Name, snapshot.Namespace, snapshot.Name)
+		log.Info("electing init node for S3 snapshot restoration",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name,
+			"snapshot_namespace", snapshot.Namespace,
+			"snapshot_name", snapshot.Name)
 		return p.electInitNode(controlPlane, clusterPlan, true)
 	}
 	// make sure that we only have one suitable init node, and elect it.
@@ -631,7 +640,9 @@ func (p *Planner) runEtcdRestoreInitNodeElection(controlPlane *rkev1.RKEControlP
 	} else if count > 1 {
 		return "", fmt.Errorf("more than one init node existed and no corresponding etcd snapshot CR found, no assumption can be made for the machine that contains the snapshot")
 	}
-	logrus.Infof("[planner] rkecluster %s/%s: electing init node for local snapshot with no associated CR", controlPlane.Namespace, controlPlane.Name)
+	log.Info("electing init node for local snapshot with no associated CR",
+		"namespace", controlPlane.Namespace,
+		"cluster_name", controlPlane.Name)
 	return p.electInitNode(controlPlane, clusterPlan, true)
 }
 
@@ -726,18 +737,33 @@ func (p *Planner) forceDeleteAllDeletingEtcdMachines(cp *rkev1.RKEControlPlane, 
 	etcdDeleting := collect(plan, roleAnd(isEtcd, isDeleting))
 	for _, deletingEtcdNode := range etcdDeleting {
 		if deletingEtcdNode.Machine == nil {
-			logrus.Warnf("[planner] rkecluster %s/%s: did not find CAPI machine for entry when deleting etcd nodes", cp.Namespace, cp.Name)
+			log.Warn("did not find CAPI machine for entry when deleting etcd nodes",
+				"namespace", cp.Namespace,
+				"cluster_name", cp.Name)
 			continue
 		}
 		if deletingEtcdNode.Machine.Spec.Bootstrap.ConfigRef == nil {
-			logrus.Warnf("[planner] rkecluster %s/%s: did not find a corresponding CAPI machine for %s/%s", cp.Namespace, cp.Name, deletingEtcdNode.Machine.Namespace, deletingEtcdNode.Machine.Name)
+			log.Warn("did not find a corresponding CAPI machine",
+				"namespace", cp.Namespace,
+				"cluster_name", cp.Name,
+				"machine_namespace", deletingEtcdNode.Machine.Namespace,
+				"machine_name", deletingEtcdNode.Machine.Name)
 			continue
 		}
 		if !strings.Contains(deletingEtcdNode.Machine.Spec.Bootstrap.ConfigRef.APIVersion, "rke.cattle.io") {
-			logrus.Warnf("[planner] rkecluster %s/%s: CAPI machine %s/%s had a bootstrap ref with an unexpected API version: %s", cp.Namespace, cp.Name, deletingEtcdNode.Machine.Namespace, deletingEtcdNode.Machine.Name, deletingEtcdNode.Machine.Spec.Bootstrap.ConfigRef.APIVersion)
+			log.Warn("CAPI machine had a bootstrap ref with an unexpected API version",
+				"namespace", cp.Namespace,
+				"cluster_name", cp.Name,
+				"machine_namespace", deletingEtcdNode.Machine.Namespace,
+				"machine_name", deletingEtcdNode.Machine.Name,
+				"api_version", deletingEtcdNode.Machine.Spec.Bootstrap.ConfigRef.APIVersion)
 			continue
 		}
-		logrus.Infof("[planner] rkecluster %s/%s: force deleting etcd machine %s/%s as cluster was not sane and machine was deleting", cp.Namespace, cp.Name, deletingEtcdNode.Machine.Namespace, deletingEtcdNode.Machine.Name)
+		log.Info("force deleting etcd machine as cluster was not sane and machine was deleting",
+			"namespace", cp.Namespace,
+			"cluster_name", cp.Name,
+			"machine_namespace", deletingEtcdNode.Machine.Namespace,
+			"machine_name", deletingEtcdNode.Machine.Name)
 		// If the etcd plane has been replaced, there will not be a functional apiserver to point to. When deleting
 		// machines, CAPI will attempt to both drain and detach volumes. If the apiserver is unreachable and the
 		// machine's spec.nodeDrainTimeout and spec.nodeVolumeDetachTimeout are nil or 0, CAPI will attempt these
@@ -798,7 +824,12 @@ func (p *Planner) restoreEtcdSnapshot(cp *rkev1.RKEControlPlane, status rkev1.RK
 	if snapshot != nil {
 		clusterSpec, err := capr.ParseSnapshotClusterSpecOrError(snapshot)
 		if err != nil || clusterSpec == nil {
-			logrus.Errorf("[planner] rkecluster %s/%s: error parsing snapshot cluster spec for snapshot %s/%s during etcd restoration: %v", cp.Namespace, cp.Name, snapshot.Namespace, snapshot.Name, err)
+			log.Error("error parsing snapshot cluster spec for snapshot during etcd restoration",
+				"namespace", cp.Namespace,
+				"cluster_name", cp.Name,
+				"snapshot_namespace", snapshot.Namespace,
+				"snapshot_name", snapshot.Name,
+				"error", err)
 		} else {
 			snapshotK8sVersion, err := semver.NewVersion(clusterSpec.KubernetesVersion)
 			if err != nil {
@@ -815,7 +846,9 @@ func (p *Planner) restoreEtcdSnapshot(cp *rkev1.RKEControlPlane, status rkev1.RK
 		if status.Initialized || status.Ready {
 			status.Initialized = false
 			status.Ready = false
-			logrus.Debugf("[planner] rkecluster %s/%s: setting controlplane ready/initialized to false during etcd restore", cp.Namespace, cp.Name)
+			log.Debug("setting controlplane ready/initialized to false during etcd restore",
+				"namespace", cp.Namespace,
+				"cluster_name", cp.Name)
 		}
 		status, _ = p.setEtcdSnapshotRestoreState(status, cp.Spec.ETCDSnapshotRestore, rkev1.ETCDSnapshotPhaseShutdown)
 		return status, errWaitingf("shutting down cluster")
@@ -843,7 +876,9 @@ func (p *Planner) restoreEtcdSnapshot(cp *rkev1.RKEControlPlane, status rkev1.RK
 		if err := p.pauseCAPICluster(cp, false); err != nil {
 			return status, err
 		}
-		logrus.Infof("[planner] rkecluster %s/%s: running full reconcile during etcd restore to initially restart cluster", cp.Namespace, cp.Name)
+		log.Info("running full reconcile during etcd restore to initially restart cluster",
+			"namespace", cp.Namespace,
+			"cluster_name", cp.Name)
 		// Run a full reconcile of the cluster at this point, ignoring drain and concurrency.
 		if status, err := p.fullReconcile(cp, status, tokensSecret, clusterPlan, true); err != nil {
 			return status, err
@@ -858,7 +893,9 @@ func (p *Planner) restoreEtcdSnapshot(cp *rkev1.RKEControlPlane, status rkev1.RK
 		if err := p.pauseCAPICluster(cp, false); err != nil {
 			return status, err
 		}
-		logrus.Infof("[planner] rkecluster %s/%s: running full reconcile during etcd restore to restart cluster", cp.Namespace, cp.Name)
+		log.Info("running full reconcile during etcd restore to restart cluster",
+			"namespace", cp.Namespace,
+			"cluster_name", cp.Name)
 		// Run a full reconcile of the cluster at this point, ignoring drain and concurrency.
 		if status, err := p.fullReconcile(cp, status, tokensSecret, clusterPlan, true); err != nil {
 			return status, err

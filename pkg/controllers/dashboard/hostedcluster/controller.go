@@ -13,7 +13,7 @@ import (
 	"github.com/rancher/rancher/pkg/wrangler"
 	v1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/kv"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
@@ -79,7 +79,7 @@ func (h handler) onClusterChange(key string, cluster *v3.Cluster) (*v3.Cluster, 
 
 	skipChartInstallation := strings.EqualFold(settings.SkipHostedClusterChartInstallation.Get(), "true")
 	if skipChartInstallation {
-		logrus.Warn("Skipping installation of hosted cluster charts, 'skip-hosted-cluster-chart-installation' is set to true")
+		log.Warn("Skipping installation of hosted cluster charts, 'skip-hosted-cluster-chart-installation' is set to true", "operation", "hostedcluster.onClusterChange")
 		return cluster, nil
 	}
 
@@ -147,7 +147,7 @@ func (h handler) onClusterChange(key string, cluster *v3.Cluster) (*v3.Cluster, 
 	// add priority class value
 	if priorityClassName, err := h.chartsConfig.GetGlobalValue(chart.PriorityClassKey); err != nil {
 		if !chart.IsNotFoundError(err) {
-			logrus.Warnf("Failed to get rancher priorityClassName for 'rancher-webhook': %s", err.Error())
+			log.Warn("Failed to get rancher priorityClassName for 'rancher-webhook'", "operation", "hostedcluster.onClusterChange", "error", err.Error())
 		}
 	} else {
 		chartValues[priorityClassKey] = priorityClassName

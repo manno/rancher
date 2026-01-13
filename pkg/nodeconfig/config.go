@@ -15,7 +15,7 @@ import (
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	"github.com/rancher/rancher/pkg/jailer"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	k8serror "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -42,7 +42,7 @@ func NewNodeConfig(store *encryptedstore.GenericEncryptedStore, node *v3.Node) (
 	if err != nil {
 		return nil, err
 	}
-	logrus.Debugf("Created node storage directory %s", fullMachinePath)
+	log.Debug("created node storage directory", "operation", "new_node_config", "path", fullMachinePath)
 
 	return &NodeConfig{
 		store:           store,
@@ -91,13 +91,13 @@ func (m *NodeConfig) FullDir() string {
 }
 
 func (m *NodeConfig) Cleanup() error {
-	logrus.Debugf("Cleaning up [%s]", m.fullMachinePath)
+	log.Debug("cleaning up node config", "operation", "cleanup", "path", m.fullMachinePath)
 	return os.RemoveAll(m.fullMachinePath)
 }
 
 func (m *NodeConfig) Remove() error {
 	_ = m.Cleanup()
-	logrus.Debugf("Removing [%v]", m.id)
+	log.Debug("removing node config", "operation", "remove", "id", m.id)
 	return m.store.Remove(m.id)
 }
 
@@ -191,7 +191,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 	c := convert.ToMapInterface(rawConfig)
 
 	machines := filepath.Join(m.fullMachinePath, "machines")
-	logrus.Debugf("[UpdateAmazonAuth] machine path %v", machines)
+	log.Debug("machine path for amazon auth update", "operation", "update_amazon_auth", "path", machines)
 	files, err := ioutil.ReadDir(machines)
 	if err != nil {
 		// There aren't any machines, nothing to update
@@ -213,7 +213,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 				return update, err
 			}
 
-			logrus.Debugf("[UpdateAmazonAuth] config file found, path %v", configPath)
+			log.Debug("config file found for amazon auth update", "operation", "update_amazon_auth", "path", configPath)
 
 			result := make(map[string]interface{})
 
@@ -222,7 +222,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 			}
 
 			if _, ok := result["Driver"]; !ok {
-				logrus.Debug("[UpdateAmazonAuth] config file does not have Data key")
+				log.Debug("config file does not have driver key", "operation", "update_amazon_auth")
 				// No Driver config so no changes to be made
 				continue
 			}
@@ -231,7 +231,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 
 			if _, ok := driverConfig["AccessKey"]; ok {
 				if driverConfig["AccessKey"] != c["accessKey"] {
-					logrus.Debug("[UpdateAmazonAuth] update access key")
+					log.Debug("updating access key", "operation", "update_amazon_auth")
 					driverConfig["AccessKey"] = c["accessKey"]
 					update = true
 				}
@@ -239,7 +239,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 
 			if _, ok := driverConfig["SecretKey"]; ok {
 				if driverConfig["SecretKey"] != c["secretKey"] {
-					logrus.Debug("[UpdateAmazonAuth] update secret key")
+					log.Debug("updating secret key", "operation", "update_amazon_auth")
 					driverConfig["SecretKey"] = c["secretKey"]
 					update = true
 				}

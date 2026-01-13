@@ -24,11 +24,11 @@ import (
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	publicclient "github.com/rancher/rancher/pkg/client/generated/management/v3public"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -125,7 +125,7 @@ func (o *OpenIDCProvider) LoginUser(w http.ResponseWriter, req *http.Request, oa
 	userPrincipal.Me = true
 	groupPrincipals = o.getGroupsFromClaimInfo(userClaimInfo)
 
-	logrus.Debugf("OpenIDCProvider: loginuser: checking user's access to rancher")
+	log.Debug("checking user's access to rancher", "provider", "oidc", "operation", "login_user")
 	allowed, err := o.UserMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipal.Name, groupPrincipals)
 	if err != nil {
 		return userPrincipal, groupPrincipals, "", userClaimInfo, err
@@ -222,13 +222,13 @@ func (o *OpenIDCProvider) RefetchGroupPrincipals(principalID string, secret stri
 
 	config, err := o.GetConfig()
 	if err != nil {
-		logrus.Errorf("OpenIDCProvider: refetchGroupPrincipals: error fetching OIDCConfig: %v", err)
+		log.Error("error fetching OIDC config", "provider", "oidc", "operation", "refetch_group_principals", "error", err)
 		return groupPrincipals, err
 	}
 	// need to get the user information so that the refreshed token can be saved using the username / userID
 	user, err := o.UserMGR.GetUserByPrincipalID(principalID)
 	if err != nil {
-		logrus.Errorf("OpenIDCProvider: refetchGroupPrincipals: error getting user by principalID: %v", err)
+		log.Error("error getting user by principal ID", "provider", "oidc", "operation", "refetch_group_principals", "principal_id", principalID, "error", err)
 		return groupPrincipals, err
 	}
 	var oauthToken oauth2.Token
@@ -246,7 +246,7 @@ func (o *OpenIDCProvider) RefetchGroupPrincipals(principalID string, secret stri
 func (o *OpenIDCProvider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []v3.Principal) (bool, error) {
 	config, err := o.GetConfig()
 	if err != nil {
-		logrus.Errorf("OpenIDCProvider: canAccessWithGroupProviders: error fetching OIDCConfig: %v", err)
+		log.Error("error fetching OIDC config", "provider", "oidc", "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 	allowed, err := o.UserMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipalID, groupPrincipals)
@@ -329,7 +329,7 @@ func (o *OpenIDCProvider) saveOIDCConfig(config *apiv3.OIDCConfig) error {
 	}
 	config.ClientSecret = name
 
-	logrus.Debugf("OpenIDCProvider: saveOIDCConfig: updating config")
+	log.Debug("updating config", "provider", "oidc", "operation", "save_oidc_config")
 	_, err = o.AuthConfigs.ObjectClient().Update(config.ObjectMeta.Name, config)
 	return err
 }
@@ -425,12 +425,12 @@ func (o *OpenIDCProvider) getUserInfoFromAuthCode(ctx context.Context, config *a
 		}
 
 		if len(groupsClaim) > 0 {
-			logrus.Debugf("OpenIDCProvider: using custom groups claim")
+			log.Debug("using custom groups claim", "provider", "oidc", "operation", "get_user_info_from_auth_code")
 			var groups []string
 			for _, g := range groupsClaim {
 				group, ok := g.(string)
 				if !ok {
-					logrus.Warn("OpenIDCProvider: failed to convert group to string")
+					log.Warn("failed to convert group to string", "provider", "oidc", "operation", "get_user_info_from_auth_code")
 				}
 				groups = append(groups, group)
 			}
@@ -475,7 +475,7 @@ func (o *OpenIDCProvider) getUserInfoFromAuthCode(ctx context.Context, config *a
 		}
 	}
 
-	logrus.Debugf("OpenIDCProvider: getUserInfo: getting user info for user %s", userName)
+	log.Debug("getting user info", "provider", "oidc", "operation", "get_user_info_from_auth_code", "user_name", userName)
 	userInfo, err = provider.UserInfo(updatedContext, oauthConfig.TokenSource(updatedContext, oauth2Token))
 	if err != nil {
 		return userInfo, oauth2Token, "", err
@@ -508,7 +508,7 @@ func (o *OpenIDCProvider) getClaimInfoFromToken(ctx context.Context, config *api
 	if !token.Valid() {
 		// since token is not valid, the TokenSource func will attempt to refresh the access token
 		// if the refresh token has not expired
-		logrus.Debugf("OpenIDCProvider: getUserInfo: attempting to refresh access token")
+		log.Debug("attempting to refresh access token", "provider", "oidc", "operation", "get_claim_info_from_token")
 		reusedToken, err := oauth2.ReuseTokenSource(token, oauthConfig.TokenSource(updatedContext, token)).Token()
 		if err != nil {
 			return nil, err
@@ -540,7 +540,7 @@ func (o *OpenIDCProvider) getClaimInfoFromToken(ctx context.Context, config *api
 		}
 	}
 
-	logrus.Debugf("OpenIDCProvider: getUserInfo: getting user info for user %s", userName)
+	log.Debug("getting user info", "provider", "oidc", "operation", "get_claim_info_from_token", "user_name", userName)
 	userInfo, err = provider.UserInfo(updatedContext, oauthConfig.TokenSource(updatedContext, token))
 	if err != nil {
 		return nil, err
@@ -585,7 +585,7 @@ func (o *OpenIDCProvider) getGroupsFromClaimInfo(claimInfo ClaimInfo) []apiv3.Pr
 	//
 	// This allows for hierarchical group structures to be flattened into individual group memberships.
 	if claimInfo.FullGroupPath != nil {
-		logrus.Debugf("OpenIDCProvider: using full_group_path claim")
+		log.Debug("using full_group_path claim", "provider", "oidc", "operation", "get_groups_from_claim_info")
 		for _, groupPath := range claimInfo.FullGroupPath {
 			groupsFromPath := strings.Split(groupPath, "/")
 			for _, group := range groupsFromPath {
@@ -597,7 +597,7 @@ func (o *OpenIDCProvider) getGroupsFromClaimInfo(claimInfo ClaimInfo) []apiv3.Pr
 			}
 		}
 	} else {
-		logrus.Debugf("OpenIDCProvider: using groups claim")
+		log.Debug("using groups claim", "provider", "oidc", "operation", "get_groups_from_claim_info")
 		for _, group := range claimInfo.Groups {
 			groupPrincipal := o.groupToPrincipal(group)
 			groupPrincipal.MemberOf = true
@@ -609,7 +609,7 @@ func (o *OpenIDCProvider) getGroupsFromClaimInfo(claimInfo ClaimInfo) []apiv3.Pr
 	//
 	// This is done to support identity providers like Azure AD.
 	if claimInfo.Roles != nil {
-		logrus.Debugf("OpenIDCProvider: using roles claim")
+		log.Debug("using roles claim", "provider", "oidc", "operation", "get_groups_from_claim_info")
 		for _, role := range claimInfo.Roles {
 			groupPrincipal := o.groupToPrincipal(role)
 			groupPrincipal.MemberOf = true
@@ -621,12 +621,12 @@ func (o *OpenIDCProvider) getGroupsFromClaimInfo(claimInfo ClaimInfo) []apiv3.Pr
 
 func (o *OpenIDCProvider) UpdateToken(refreshedToken *oauth2.Token, userID string) error {
 	var err error
-	logrus.Debugf("OpenIDCProvider: UpdateToken: access token has been refreshed")
+	log.Debug("access token has been refreshed", "provider", "oidc", "operation", "update_token")
 	marshalledToken, err := json.Marshal(refreshedToken)
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("OpenIDCProvider: UpdateToken: saving refreshed access token")
+	log.Debug("saving refreshed access token", "provider", "oidc", "operation", "update_token")
 	o.TokenMgr.UpdateSecret(userID, o.Name, string(marshalledToken))
 	return err
 }
@@ -677,13 +677,13 @@ func (o *OpenIDCProvider) getOIDCProvider(ctx context.Context, oidcConfig *apiv3
 
 func (o *OpenIDCProvider) Logout(w http.ResponseWriter, r *http.Request, token accessor.TokenAccessor) error {
 	providerName := token.GetAuthProvider()
-	logrus.Debugf("OpenIDCProvider [logout]: triggered by provider %s", providerName)
+	log.Debug("logout triggered", "provider", providerName, "operation", "logout")
 	oidcConfig, err := o.GetConfig()
 	if err != nil {
 		return fmt.Errorf("getting config for OIDC Logout: %w", err)
 	}
 	if oidcConfig.LogoutAllForced {
-		logrus.Debugf("OpenIDCProvider [logout]: Rancher provider resource `%v` configured for forced SLO, rejecting regular logout", providerName)
+		log.Debug("rejecting regular logout", "provider", providerName, "operation", "logout", "reason", "forced_slo_configured")
 		return fmt.Errorf("OpenIDCProvider [logout]: Rancher provider resource `%v` configured for forced SLO, rejecting regular logout", providerName)
 	}
 
@@ -691,7 +691,7 @@ func (o *OpenIDCProvider) Logout(w http.ResponseWriter, r *http.Request, token a
 }
 
 func (o *OpenIDCProvider) LogoutAll(w http.ResponseWriter, r *http.Request, token accessor.TokenAccessor) error {
-	logrus.Debugf("OpenIDCProvider [logout-all]: triggered by provider %s", token.GetAuthProvider())
+	log.Debug("logout-all triggered", "provider", token.GetAuthProvider(), "operation", "logout_all")
 
 	oidcConfig, err := o.GetConfig()
 	if err != nil {
@@ -700,7 +700,7 @@ func (o *OpenIDCProvider) LogoutAll(w http.ResponseWriter, r *http.Request, toke
 
 	providerName := token.GetAuthProvider()
 	if !oidcConfig.LogoutAllEnabled {
-		logrus.Debugf("OpenIDCProvider [logout-all]: Rancher provider resource `%v` not configured for SLO", providerName)
+		log.Debug("provider not configured for SLO", "provider", providerName, "operation", "logout_all")
 		return fmt.Errorf("OpenIDCProvider [logout-all]: Rancher provider resource `%v` not configured for SLO", providerName)
 	}
 
@@ -708,7 +708,7 @@ func (o *OpenIDCProvider) LogoutAll(w http.ResponseWriter, r *http.Request, toke
 	if err != nil {
 		return err
 	}
-	logrus.Debug("OpenIDCProvider [logout-all]: triggering logout redirect to ", idpRedirectURL)
+	log.Debug("triggering logout redirect", "provider", "oidc", "operation", "logout_all", "redirect_url", idpRedirectURL)
 
 	data := map[string]any{
 		"idpRedirectUrl": idpRedirectURL,
@@ -716,7 +716,7 @@ func (o *OpenIDCProvider) LogoutAll(w http.ResponseWriter, r *http.Request, toke
 		"baseType":       "authConfigLogoutOutput",
 	}
 
-	logrus.Debug("OpenIDCProvider [logout-all]: writing redirect")
+	log.Debug("writing redirect", "provider", "oidc", "operation", "logout_all")
 
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(data)
@@ -729,7 +729,7 @@ func (o *OpenIDCProvider) createIDPRedirectURL(r *http.Request, config *apiv3.OI
 
 	idpRedirectURL, err := url.Parse(config.EndSessionEndpoint)
 	if err != nil {
-		logrus.Errorf("OpenIDCProvider: [logout-all] failed parsing end session endpoint: %v", err)
+		log.Error("failed parsing end session endpoint", "provider", "oidc", "operation", "create_idp_redirect_url", "error", err)
 		return "", err
 	}
 
@@ -745,7 +745,7 @@ func (o *OpenIDCProvider) createIDPRedirectURL(r *http.Request, config *apiv3.OI
 	// redirect_uri for the client ID.
 	if authLogout.FinalRedirectURL != "" {
 		params.Set("post_logout_redirect_uri", authLogout.FinalRedirectURL)
-		logrus.Debugf("OpenIDCProvider: [logout-all] redirecting to %s", authLogout.FinalRedirectURL)
+		log.Debug("redirecting to final URL", "provider", "oidc", "operation", "create_idp_redirect_url", "final_redirect_url", authLogout.FinalRedirectURL)
 	}
 
 	idToken := getIDToken(r)
@@ -771,7 +771,7 @@ func isValidACR(claimACR string, configuredACR string) bool {
 	}
 
 	if claimACR != configuredACR {
-		logrus.Infof("OpenIDCProvider: acr value in token does not match configured acr value")
+		log.Info("acr value in token does not match configured acr value", "provider", "oidc", "operation", "is_valid_acr")
 		return false
 	}
 	return true
@@ -806,9 +806,9 @@ func getValueFromClaims[T any](idToken *oidc.IDToken, name string) (T, error) {
 	}
 	claim, ok := mapClaims[name].(T)
 	if !ok {
-		logrus.Debugf("OpenIDCProvider: failed to use claim %v", name)
+		log.Debug("failed to use claim", "provider", "oidc", "operation", "get_value_from_claims", "claim_name", name)
 	} else {
-		logrus.Debugf("OpenIDCProvider: using claim %v", name)
+		log.Debug("using claim", "provider", "oidc", "operation", "get_value_from_claims", "claim_name", name)
 	}
 
 	return claim, nil

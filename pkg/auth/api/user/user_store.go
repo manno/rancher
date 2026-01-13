@@ -15,9 +15,9 @@ import (
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/user"
 	wranglerv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -130,7 +130,7 @@ Tries:
 
 			created, err = s.ByID(apiContext, schema, id)
 			if err != nil {
-				logrus.Warnf("error while getting user: %v", err)
+				log.Warn("error while getting user", "operation", "create", "user_id", id, "error", err)
 				continue
 			}
 
@@ -154,7 +154,7 @@ Tries:
 					continue
 				}
 
-				logrus.Warnf("error while updating user: %v", err)
+				log.Warn("error while updating user", "operation", "create", "user_id", id, "error", err)
 				break
 			}
 			break

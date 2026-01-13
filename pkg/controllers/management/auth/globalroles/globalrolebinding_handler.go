@@ -19,7 +19,7 @@ import (
 	"github.com/rancher/rancher/pkg/user"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	wrangler "github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -185,7 +185,7 @@ func (grb *globalRoleBindingLifecycle) Remove(obj *v3.GlobalRoleBinding) (runtim
 	if isAdminGlobalRole {
 		err := DeleteAdminClusterRoleBindings(grb.clusters, grb.clusterManager, obj)
 		if err != nil {
-			logrus.Errorf("Failed to delete admin global role ClusterRole bindings %s: %v", obj.Name, err)
+			log.Error("failed to delete admin global role ClusterRole bindings", "operation", "delete_admin_grb", "object", obj.Name, "error", err)
 			return nil, err
 		}
 	}
@@ -257,7 +257,7 @@ func (grb *globalRoleBindingLifecycle) reconcileClusterPermissions(globalRoleBin
 			err := grb.purgeCorruptRoles(nil, cluster, globalRoleBinding)
 			if err != nil {
 				// failure to remove bad bindings shouldn't affect our ability to sync new permissions, so we log and keep processing
-				logrus.Errorf("unable to purge roles for cluster %s and grb %s, some bindings may remain: %s", cluster.Name, globalRoleBinding.Name, err.Error())
+				log.Error("unable to purge roles for cluster and grb, some bindings may remain", "operation", "sync_grb", "cluster", cluster.Name, "grb", globalRoleBinding.Name, "error", err.Error())
 				missedClusters = true
 			}
 			// inheritedClusterRoles only apply on non-local clusters, so skip the local cluster
@@ -266,19 +266,19 @@ func (grb *globalRoleBindingLifecycle) reconcileClusterPermissions(globalRoleBin
 		err := grb.purgeCorruptRoles(globalRole.InheritedClusterRoles, cluster, globalRoleBinding)
 		if err != nil {
 			// failure to remove bad bindings shouldn't affect our ability to sync new permissions, so we log and keep processing
-			logrus.Errorf("unable to purge roles for cluster %s and grb %s, some bindings may remain: %s", cluster.Name, globalRoleBinding.Name, err.Error())
+			log.Error("unable to purge roles for cluster and grb, some bindings may remain", "operation", "sync_grb", "cluster", cluster.Name, "grb", globalRoleBinding.Name, "error", err.Error())
 			missedClusters = true
 		}
 		missingRTs, err := grb.findMissingRTs(globalRole.InheritedClusterRoles, cluster, globalRoleBinding)
 		if err != nil {
-			logrus.Errorf("unable to find missing roles for cluster %s and grb %s, some permissions may be missing: %s", cluster.Name, globalRoleBinding.Name, err.Error())
+			log.Error("unable to find missing roles for cluster and grb, some permissions may be missing", "operation", "sync_grb", "cluster", cluster.Name, "grb", globalRoleBinding.Name, "error", err.Error())
 			missedClusters = true
 			continue
 		}
 		// at this point, the only remaining items are roleTemplates that we don't have a CRTB for in this cluster
 		for _, wantRT := range missingRTs {
 			// create a crtb in the backing namespace for the cluster
-			logrus.Infof("creating backing crtb for grb %s in cluster %s for roleTemplate %s", globalRoleBinding.Name, cluster.Name, wantRT)
+			log.Info("creating backing crtb for grb in cluster", "operation", "sync_grb", "grb", globalRoleBinding.Name, "cluster", cluster.Name, "role_template", wantRT)
 			_, err = grb.crtbClient.Create(&v3.ClusterRoleTemplateBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "crtb-grb-",
@@ -305,7 +305,7 @@ func (grb *globalRoleBindingLifecycle) reconcileClusterPermissions(globalRoleBin
 			})
 			// we don't immediately return so that we can create as many CRTBs as we can
 			if err != nil {
-				logrus.Errorf("failed to create crtb for globalRoleBinding %s in cluster %s: %s", globalRoleBinding.Name, cluster.Name, err.Error())
+				log.Error("failed to create crtb for globalRoleBinding in cluster", "operation", "sync_grb", "grb", globalRoleBinding.Name, "cluster", cluster.Name, "error", err.Error())
 				missedClusters = true
 			}
 		}
@@ -416,7 +416,7 @@ func (grb *globalRoleBindingLifecycle) reconcileGlobalRoleBinding(globalRoleBind
 				crb.RoleRef = roleRef
 			}
 			crb.Subjects = subjects
-			logrus.Infof("[%v] Updating clusterRoleBinding %v for globalRoleBinding %v user %v", grbController, crb.Name, globalRoleBinding.Name, globalRoleBinding.UserName)
+			log.Info("updating clusterRoleBinding for globalRoleBinding user", "operation", "sync_grb", "controller", grbController, "cluster_role_binding", crb.Name, "grb", globalRoleBinding.Name, "user", globalRoleBinding.UserName)
 			if _, err := grb.crbClient.Update(crb); err != nil {
 				grb.status.AddCondition(localConditions, condition, failedToUpdateClusterRoleBinding, err)
 				return fmt.Errorf("couldn't update ClusterRoleBinding %v: %w", crb.Name, err)
@@ -427,7 +427,7 @@ func (grb *globalRoleBindingLifecycle) reconcileGlobalRoleBinding(globalRoleBind
 		return nil
 	}
 
-	logrus.Infof("Creating new GlobalRoleBinding for GlobalRoleBinding %v", globalRoleBinding.Name)
+	log.Info("creating new GlobalRoleBinding", "operation", "sync_grb", "grb", globalRoleBinding.Name)
 	gr, _ := grb.grLister.Get("", globalRoleBinding.GlobalRoleName)
 	var crName string
 	if gr != nil {
@@ -435,7 +435,7 @@ func (grb *globalRoleBindingLifecycle) reconcileGlobalRoleBinding(globalRoleBind
 	} else {
 		crName = generateCRName(globalRoleBinding.GlobalRoleName)
 	}
-	logrus.Infof("[%v] Creating clusterRoleBinding for globalRoleBinding %v for user %v with role %v", grbController, globalRoleBinding.Name, globalRoleBinding.UserName, crName)
+	log.Info("creating clusterRoleBinding for globalRoleBinding user with role", "operation", "sync_grb", "controller", grbController, "grb", globalRoleBinding.Name, "user", globalRoleBinding.UserName, "role", crName)
 	_, err := grb.crbClient.Create(&v1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crbName,
@@ -486,7 +486,7 @@ func (grb *globalRoleBindingLifecycle) reconcileNamespacedRoleBindings(globalRol
 		namespace, err := grb.nsCache.Get(ns)
 		if apierrors.IsNotFound(err) || namespace == nil {
 			// When a namespace is not found, don't re-enqueue GlobalRoleBinding
-			logrus.Warnf("[%v] Namespace %s not found. Not re-enqueueing GlobalRoleBinding %s", grController, ns, globalRoleBinding.Name)
+			log.Warn("namespace not found, not re-enqueueing GlobalRoleBinding", "operation", "sync_grb", "controller", grController, "namespace", ns, "grb", globalRoleBinding.Name)
 			continue
 		} else if err != nil {
 			returnError = errors.Join(returnError, fmt.Errorf("couldn't get namespace %s: %w", ns, err))
@@ -521,7 +521,7 @@ func (grb *globalRoleBindingLifecycle) reconcileNamespacedRoleBindings(globalRol
 
 		// If the namespace is terminating, don't create RoleBinding
 		if namespace.Status.Phase == corev1.NamespaceTerminating {
-			logrus.Warnf("[%v] Namespace %s is terminating. Not creating roleBinding %s for %s", grController, ns, rbName, globalRoleBinding.Name)
+			log.Warn("namespace is terminating, not creating roleBinding", "operation", "sync_grb", "controller", grController, "namespace", ns, "role_binding", rbName, "grb", globalRoleBinding.Name)
 			continue
 		}
 

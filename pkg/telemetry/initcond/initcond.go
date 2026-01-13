@@ -7,7 +7,7 @@ import (
 
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -58,10 +58,10 @@ func getInitInfo(wContext *wrangler.Context) InitInfo {
 
 func WaitForInfo(wContext *wrangler.Context, initInfo *InitInfo, done chan struct{}) {
 	wait.Until(func() {
-		logrus.Info("initializing required info for telemetry manager...")
+		log.Info("initializing required info for telemetry manager", "operation", "init_telemetry")
 		gotInitInfo := getInitInfo(wContext)
 		if gotInitInfo.isReady() {
-			logrus.Info("initialized required info for telemetry manager")
+			log.Info("initialized required info for telemetry manager", "operation", "init_telemetry")
 			initInfo.ServerURL = gotInitInfo.ServerURL
 			initInfo.ClusterUUID = gotInitInfo.ClusterUUID
 			initInfo.InstallUUID = gotInitInfo.InstallUUID
@@ -69,6 +69,6 @@ func WaitForInfo(wContext *wrangler.Context, initInfo *InitInfo, done chan struc
 			initInfo.GitHash = gotInitInfo.GitHash
 			close(done)
 		}
-		logrus.Info("telemetry manager info not available yet, re-queing check...")
+		log.Info("telemetry manager info not available yet, re-queuing check", "operation", "init_telemetry")
 	}, InitRetryDuration, done)
 }

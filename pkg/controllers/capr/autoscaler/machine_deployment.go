@@ -4,7 +4,7 @@ import (
 	"github.com/rancher/rancher/pkg/capr"
 	"github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io/v1beta1"
 	v1 "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -26,24 +26,24 @@ func (s *machineDeploymentReplicaOverrider) syncMachinePoolReplicas(_ string, md
 
 	clusterName := md.Spec.Template.ObjectMeta.Labels[capi.ClusterNameLabel]
 	if clusterName == "" {
-		logrus.Debugf("MachineDeployment %s/%s has no cluster name label, skipping", md.Namespace, md.Name)
+		log.Debug("MachineDeployment has no cluster name label, skipping", "operation", "autoscaler.syncMachinePoolReplicas", "namespace", md.Namespace, "name", md.Name)
 		return md, nil
 	}
 
 	machinePoolName := md.Spec.Template.ObjectMeta.Labels[capr.RKEMachinePoolNameLabel]
 	if machinePoolName == "" {
-		logrus.Debugf("MachineDeployment %s/%s has no machine pool name label, skipping", md.Namespace, md.Name)
+		log.Debug("MachineDeployment has no machine pool name label, skipping", "operation", "autoscaler.syncMachinePoolReplicas", "namespace", md.Namespace, "name", md.Name)
 		return md, nil
 	}
 
-	logrus.Debugf("Getting CAPI Cluster %s/%s", md.Namespace, clusterName)
+	log.Debug("Getting CAPI Cluster", "operation", "autoscaler.syncMachinePoolReplicas", "namespace", md.Namespace, "cluster", clusterName)
 	capiCluster, err := s.capiClusterCache.Get(md.Namespace, clusterName)
 	if err != nil {
-		logrus.Errorf("Error getting capi cluster %s/%s: %v", md.Namespace, clusterName, err)
+		log.Error("Error getting capi cluster", "operation", "autoscaler.syncMachinePoolReplicas", "namespace", md.Namespace, "cluster", clusterName, "error", err)
 		return nil, err
 	}
 
-	logrus.Debugf("Getting v2prov cluster capi cluster %s/%s", capiCluster.Namespace, capiCluster.Name)
+	log.Debug("Getting v2prov cluster from CAPI cluster", "operation", "autoscaler.syncMachinePoolReplicas", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name)
 	cluster, err := capr.GetProvisioningClusterFromCAPICluster(capiCluster, s.clusterCache)
 	if err != nil {
 		return nil, err
@@ -64,18 +64,16 @@ func (s *machineDeploymentReplicaOverrider) syncMachinePoolReplicas(_ string, md
 			continue
 		}
 
-		logrus.Debugf("Found matching machine pool %s", machinePoolName)
+		log.Debug("Found matching machine pool", "operation", "autoscaler.syncMachinePoolReplicas", "machinePool", machinePoolName)
 		if *cluster.Spec.RKEConfig.MachinePools[i].Quantity != *md.Spec.Replicas {
-			logrus.Infof("Updating cluster %s/%s machine pool %s quantity from %d to %d",
-				cluster.Namespace, cluster.Name, machinePoolName,
-				*cluster.Spec.RKEConfig.MachinePools[i].Quantity, *md.Spec.Replicas)
+			log.Info("Updating cluster machine pool quantity", "operation", "autoscaler.syncMachinePoolReplicas", "namespace", cluster.Namespace, "cluster", cluster.Name, "machinePool", machinePoolName, "oldQuantity", *cluster.Spec.RKEConfig.MachinePools[i].Quantity, "newQuantity", *md.Spec.Replicas)
 			cluster.Spec.RKEConfig.MachinePools[i].Quantity = md.Spec.Replicas
 			needUpdate = true
 		}
 	}
 
 	if needUpdate {
-		logrus.Debugf("Updating cluster %s/%s", cluster.Namespace, cluster.Name)
+		log.Debug("Updating cluster", "operation", "autoscaler.syncMachinePoolReplicas", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		err := wait.ExponentialBackoff(retry.DefaultBackoff, func() (done bool, err error) {
 			_, err = s.clusterClient.Update(cluster)
 			if err != nil {
@@ -84,12 +82,11 @@ func (s *machineDeploymentReplicaOverrider) syncMachinePoolReplicas(_ string, md
 			return true, nil
 		})
 		if err != nil {
-			logrus.Warnf("Failed to update cluster %s/%s machine pool %s to match machineDeployment: %v",
-				cluster.Namespace, cluster.Name, machinePoolName, err)
+			log.Warn("Failed to update cluster machine pool to match machineDeployment", "operation", "autoscaler.syncMachinePoolReplicas", "namespace", cluster.Namespace, "cluster", cluster.Name, "machinePool", machinePoolName, "error", err)
 			return nil, err
 		}
 
-		logrus.Debugf("Successfully updated cluster %s/%s", cluster.Namespace, cluster.Name)
+		log.Debug("Successfully updated cluster", "operation", "autoscaler.syncMachinePoolReplicas", "namespace", cluster.Namespace, "cluster", cluster.Name)
 	}
 
 	return md, nil

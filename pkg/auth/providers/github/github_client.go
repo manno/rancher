@@ -11,7 +11,7 @@ import (
 
 	apiv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/providers/common"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/tomnomnom/linkheader"
 )
 
@@ -66,13 +66,13 @@ func (g *GClient) getUser(githubAccessToken string, config *apiv3.GithubConfig) 
 	url := g.getURL("USER_INFO", config)
 	b, _, err := g.getFromGithub(githubAccessToken, url)
 	if err != nil {
-		logrus.Errorf("Github getGithubUser: GET url %v received error from github, err: %v", url, err)
+		log.Error("GET url received error from github", "provider", "github", "operation", "get_user", "url", url, "error", err)
 		return common.GitHubAccount{}, err
 	}
 	var githubAcct common.GitHubAccount
 
 	if err := json.Unmarshal(b, &githubAcct); err != nil {
-		logrus.Errorf("Github getGithubUser: error unmarshalling response, err: %v", err)
+		log.Error("error unmarshalling response", "provider", "github", "operation", "get_user", "error", err)
 		return common.GitHubAccount{}, err
 	}
 
@@ -85,14 +85,14 @@ func (g *GClient) getOrgs(githubAccessToken string, config *apiv3.GithubConfig) 
 	url := g.getURL("ORG_INFO", config)
 	responses, err := g.paginateGithub(githubAccessToken, url)
 	if err != nil {
-		logrus.Errorf("Github getGithubOrgs: GET url %v received error from github, err: %v", url, err)
+		log.Error("GET url received error from github", "provider", "github", "operation", "get_orgs", "url", url, "error", err)
 		return orgs, err
 	}
 
 	for _, b := range responses {
 		var orgObjs []common.GitHubAccount
 		if err := json.Unmarshal(b, &orgObjs); err != nil {
-			logrus.Errorf("Github getGithubOrgs: received error unmarshalling org array, err: %v", err)
+			log.Error("error unmarshalling org array", "provider", "github", "operation", "get_orgs", "error", err)
 			return nil, err
 		}
 		orgs = append(orgs, orgObjs...)
@@ -107,14 +107,14 @@ func (g *GClient) getTeams(githubAccessToken string, config *apiv3.GithubConfig)
 	url := g.getURL("TEAMS", config)
 	responses, err := g.paginateGithub(githubAccessToken, url)
 	if err != nil {
-		logrus.Errorf("Github getGithubTeams: GET url %v received error from github, err: %v", url, err)
+		log.Error("GET url received error from github", "provider", "github", "operation", "get_teams", "url", url, "error", err)
 		return teams, err
 	}
 	for _, response := range responses {
 		teamObjs, err := g.getTeamInfo(response, config)
 
 		if err != nil {
-			logrus.Errorf("Github getGithubTeams: received error unmarshalling teams array, err: %v", err)
+			log.Error("error unmarshalling teams array", "provider", "github", "operation", "get_teams", "error", err)
 			return teams, err
 		}
 		teams = append(teams, teamObjs...)
@@ -128,7 +128,7 @@ func (g *GClient) getOrgTeams(githubAccessToken string, config *apiv3.GithubConf
 	url := fmt.Sprintf(g.getURL("ORG_TEAMS", config), url.PathEscape(org.Login))
 	responses, err := g.paginateGithub(githubAccessToken, url)
 	if err != nil {
-		logrus.Errorf("Github getGithubTeams: GET url %v received error from github, err: %v", url, err)
+		log.Error("GET url received error from github", "provider", "github", "operation", "get_org_teams", "url", url, "error", err)
 		return nil, err
 	}
 
@@ -136,7 +136,7 @@ func (g *GClient) getOrgTeams(githubAccessToken string, config *apiv3.GithubConf
 	for _, response := range responses {
 		respTeams, err = g.getOrgTeamInfo(response, config, org)
 		if err != nil {
-			logrus.Errorf("Github getOrgTeams: received error unmarshalling teams array, err: %v", err)
+			log.Error("error unmarshalling teams array", "provider", "github", "operation", "get_org_teams", "error", err)
 			return teams, err
 		}
 		teams = append(teams, respTeams...)
@@ -150,7 +150,7 @@ func (g *GClient) getOrgTeamInfo(b []byte, config *apiv3.GithubConfig, org commo
 	var teams []common.GitHubAccount
 	var teamObjs []common.GitHubTeam
 	if err := json.Unmarshal(b, &teamObjs); err != nil {
-		logrus.Errorf("Github getTeamInfo: received error unmarshalling team array, err: %v", err)
+		log.Error("error unmarshalling team array", "provider", "github", "operation", "get_org_team_info", "error", err)
 		return teams, err
 	}
 
@@ -172,7 +172,7 @@ func (g *GClient) getTeamInfo(b []byte, config *apiv3.GithubConfig) ([]common.Gi
 	var teams []common.GitHubAccount
 	var teamObjs []common.GitHubTeam
 	if err := json.Unmarshal(b, &teamObjs); err != nil {
-		logrus.Errorf("Github getTeamInfo: received error unmarshalling team array, err: %v", err)
+		log.Error("error unmarshalling team array", "provider", "github", "operation", "get_team_info", "error", err)
 		return teams, err
 	}
 
@@ -190,12 +190,12 @@ func (g *GClient) getTeamByID(id string, githubAccessToken string, config *apiv3
 	url := g.getURL("TEAM", config) + id
 	b, _, err := g.getFromGithub(githubAccessToken, url)
 	if err != nil {
-		logrus.Errorf("Github getTeamByID: GET url %v received error from github, err: %v", url, err)
+		log.Error("GET url received error from github", "provider", "github", "operation", "get_team_by_id", "url", url, "error", err)
 		return teamAcct, err
 	}
 	var teamObj common.GitHubTeam
 	if err := json.Unmarshal(b, &teamObj); err != nil {
-		logrus.Errorf("Github getTeamByID: received error unmarshalling team array, err: %v", err)
+		log.Error("error unmarshalling team array", "provider", "github", "operation", "get_team_by_id", "error", err)
 		return teamAcct, err
 	}
 	url = g.getURL("TEAM_PROFILE", config)
@@ -295,13 +295,13 @@ func (g *GClient) getUserOrgByID(id string, githubAccessToken string, config *ap
 
 	b, _, err := g.getFromGithub(githubAccessToken, url)
 	if err != nil {
-		logrus.Errorf("Github getUserOrgById: GET url %v received error from github, err: %v", url, err)
+		log.Error("GET url received error from github", "provider", "github", "operation", "get_user_org_by_id", "url", url, "error", err)
 		return common.GitHubAccount{}, err
 	}
 	var githubAcct common.GitHubAccount
 
 	if err := json.Unmarshal(b, &githubAcct); err != nil {
-		logrus.Errorf("Github getUserOrgById: error unmarshalling response, err: %v", err)
+		log.Error("error unmarshalling response", "provider", "github", "operation", "get_user_org_by_id", "error", err)
 		return common.GitHubAccount{}, err
 	}
 
@@ -312,7 +312,7 @@ func (g *GClient) getUserOrgByID(id string, githubAccessToken string, config *ap
 func URLEncoded(str string) string {
 	u, err := url.Parse(str)
 	if err != nil {
-		logrus.Errorf("Error encoding the url: %s, error: %v", str, err)
+		log.Error("error encoding url", "provider", "github", "operation", "url_encoded", "url", str, "error", err)
 		return str
 	}
 	return u.String()
@@ -321,14 +321,14 @@ func URLEncoded(str string) string {
 func (g *GClient) postToGithub(url string, form url.Values) ([]byte, error) {
 	req, err := http.NewRequest("POST", url, strings.NewReader(form.Encode()))
 	if err != nil {
-		logrus.Error(err)
+		log.Error("error creating request", "provider", "github", "operation", "post_to_github", "error", err)
 	}
 	req.PostForm = form
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Accept", "application/json")
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Received error from github: %v", err)
+		log.Error("received error from github", "provider", "github", "operation", "post_to_github", "error", err)
 		return nil, err
 	}
 
@@ -356,7 +356,7 @@ func (g *GClient) getFromGithub(githubAccessToken string, url string) ([]byte, s
 	req.Header.Add("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36)")
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Received error from github: %v", err)
+		log.Error("received error from github", "provider", "github", "operation", "get_from_github", "error", err)
 		return nil, "", err
 	}
 	defer resp.Body.Close()

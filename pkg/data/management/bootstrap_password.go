@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
 	v1 "k8s.io/api/core/v1"
@@ -37,7 +37,7 @@ func GetBootstrapPassword(ctx context.Context, secrets corev1.SecretInterface) (
 		if hasPasswordKey {
 			return string(bootstrapPasswordBytes), generated, nil
 		}
-		logrus.Warn("A bootstrap password secret was found, but did not match the expected structure.")
+		log.Warn("a bootstrap password secret was found, but did not match the expected structure", "operation", "ensure_admin_password")
 	}
 
 	// if the password secret is not set check the env for user-input, or fall back to generating one

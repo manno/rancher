@@ -20,7 +20,7 @@ import (
 	"github.com/rancher/rancher/pkg/settings"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/merr"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
@@ -195,11 +195,11 @@ func (m *Manager) installCharts(charts map[desiredKey]map[string]interface{}, ta
 	for key, values := range charts {
 		for {
 			if err := m.install(key.namespace, key.chartName, key.releaseName, key.minVersion, key.exactVersion, values, takeOwnership, key.installImageOverride); err == repo.ErrNoChartName || apierrors.IsNotFound(err) {
-				logrus.Errorf("Failed to find system chart %s will try again in 5 seconds: %v", key.chartName, err)
+				log.Error("failed to find system chart, will retry in 5 seconds", "operation", "remove", "chart", key.chartName, "error", err)
 				time.Sleep(5 * time.Second)
 				continue
 			} else if err != nil {
-				logrus.Errorf("Failed to install system chart %s (release name: %s): %v", key.chartName, key.releaseName, err)
+				log.Error("failed to install system chart", "operation", "remove", "chart", key.chartName, "release", key.releaseName, "error", err)
 				errs = append(errs, err)
 			}
 			break
@@ -330,7 +330,7 @@ func (m *Manager) install(namespace, chartName, releaseName, minVersion, exactVe
 		var tolerations []v1.Toleration
 		tolerations, err = m.operation.AddCpTaintsToTolerations(tolerations)
 		if err != nil {
-			logrus.Warnf("failed to add tolerations for control plane taints: %v", err)
+			log.Warn("failed to add tolerations for control plane taints", "operation", "install", "error", err)
 		} else if len(tolerations) > 0 {
 			desiredValue["tolerations"] = tolerations
 		}
@@ -507,7 +507,7 @@ func desiredVersionAndValues(releases []*release.Release, minVersion, desiredVer
 				return false, "", nil, err
 			}
 			if desired.LessThan(min) {
-				logrus.Errorf("available chart version (%s) for %s is less than the min version (%s) ", desired, r.Chart.Name(), min)
+				log.Error("available chart version is less than min version", "operation", "should_install_upgrade", "chart", r.Chart.Name(), "available", desired, "min", min)
 				return false, "", nil, repo.ErrNoChartName
 			}
 			if min.LessThan(current) || min.Equal(current) {
@@ -515,7 +515,7 @@ func desiredVersionAndValues(releases []*release.Release, minVersion, desiredVer
 				if !bytes.Equal(patchedJSON, actualValueJSON) {
 					return false, r.Chart.Metadata.Version, desiredValues, nil
 				}
-				logrus.Debugf("Skipping installing/upgrading desired version %s for release %s, since current version %s is greater or equal to minimal required version %s", desired.String(), r.Name, current.String(), minVersion)
+				log.Debug("skipping install/upgrade, current version meets minimum requirement", "operation", "should_install_upgrade", "desired", desired.String(), "release", r.Name, "current", current.String(), "min", minVersion)
 				return true, "", nil, nil
 			}
 		}

@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	rlog "github.com/rancher/rancher/pkg/log"
 	"k8s.io/apiserver/pkg/endpoints/request"
 )
 
@@ -28,7 +28,7 @@ func getUserNameForBasicLogin(body []byte) string {
 
 	err := json.Unmarshal(body, input)
 	if err != nil {
-		logrus.Debugf("error unmarshalling user, cannot add login info to audit log: %v", err)
+		rlog.Debug("error unmarshalling user, cannot add login info to audit log", "operation", "get_user_name_for_basic_login", "error", err)
 		return ""
 	}
 

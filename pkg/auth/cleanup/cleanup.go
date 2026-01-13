@@ -5,8 +5,8 @@ import (
 
 	"github.com/rancher/rancher/pkg/auth/api/secrets"
 	v3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 )
 
 var cleanupProviders = []string{"genericoidc", "cognito"}
@@ -21,7 +21,7 @@ func CleanupUnusedSecretTokens(secretsInterface wcorev1.SecretController, authCo
 	for _, name := range cleanupProviders {
 		authConfig, err := authConfigs.Cache().Get(name)
 		if err != nil {
-			logrus.Errorf("getting AuthConfig %s: %s", name, err)
+			log.Error("getting AuthConfig", "operation", "cleanup_unused_secret_tokens", "auth_config", name, "error", err)
 			cleanupErr = errors.Join(cleanupErr, err)
 			continue
 		}
@@ -30,7 +30,7 @@ func CleanupUnusedSecretTokens(secretsInterface wcorev1.SecretController, authCo
 			continue
 		}
 
-		logrus.Infof("Cleaning unused tokens from provider %s", name)
+		log.Info("cleaning unused tokens from provider", "operation", "cleanup_unused_secret_tokens", "provider", name)
 		if err := secrets.CleanupOAuthTokens(secretsInterface, name); err != nil {
 			cleanupErr = errors.Join(cleanupErr, err)
 			continue

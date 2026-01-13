@@ -21,9 +21,9 @@ import (
 	exttokenstore "github.com/rancher/rancher/pkg/ext/stores/tokens"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -217,7 +217,7 @@ func (a *tokenAuthenticator) Authenticate(req *http.Request) (*AuthenticatorResp
 		Extras:        extras,
 	}
 
-	logrus.Debugf("Extras returned %v", authResp.Extras)
+	log.Debug("extras returned", "operation", "authenticate", "extras", authResp.Extras)
 
 	now := a.now().Truncate(time.Second) // Use the second precision.
 	lastUsed := token.GetLastUsedAt()
@@ -252,11 +252,11 @@ func (a *tokenAuthenticator) Authenticate(req *http.Request) (*AuthenticatorResp
 		return fmt.Errorf("unknown token type")
 	}(); err != nil {
 		// Log the error and move on to avoid failing the request.
-		logrus.Errorf("auth: Error updating lastUsedAt for token %s: %v", token.GetName(), err)
+		log.Error("error updating lastUsedAt for token", "operation", "authenticate", "token_name", token.GetName(), "error", err)
 		return authResp, nil
 	}
 
-	logrus.Debugf("auth: Updated lastUsedAt for token %s", token.GetName())
+	log.Debug("updated lastUsedAt for token", "operation", "authenticate", "token_name", token.GetName())
 	return authResp, nil
 }
 
@@ -355,7 +355,7 @@ func (a *tokenAuthenticator) TokenFromRequest(req *http.Request) (accessor.Token
 	}
 
 	if _, err := tokens.VerifyToken(storedToken, tokenName, tokenKey); err != nil {
-		logrus.Debugf("auth: Error verifying token %s: %v", tokenName, err)
+		log.Debug("error verifying token", "operation", "token_from_request", "token_name", tokenName, "error", err)
 		return nil, errors.Wrapf(ErrMustAuthenticate, "failed to verify token: %v", err)
 	}
 
@@ -374,13 +374,13 @@ func extVerifyToken(storedToken *ext.Token, tokenName, tokenKey string) (int, er
 	// Ext token always has a hash. Only a hash.
 	hasher, err := hashers.GetHasherForHash(storedToken.Status.Hash)
 	if err != nil {
-		logrus.Errorf("unable to get a hasher for token with error %v", err)
+		log.Error("unable to get a hasher for token", "operation", "ext_verify_token", "error", err)
 		return http.StatusInternalServerError,
 			fmt.Errorf("unable to verify hash '%s'", storedToken.Status.Hash)
 	}
 
 	if err := hasher.VerifyHash(storedToken.Status.Hash, tokenKey); err != nil {
-		logrus.Errorf("VerifyHash failed with error: %v", err)
+		log.Error("VerifyHash failed", "operation", "ext_verify_token", "error", err)
 		return http.StatusUnprocessableEntity, invalidAuthTokenErr
 	}
 

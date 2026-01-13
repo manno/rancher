@@ -18,7 +18,7 @@ import (
 	tpeermanager "github.com/rancher/rancher/pkg/peermanager"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,7 +48,7 @@ func Register(ctx context.Context, scaledContext *config.ScaledContext, clusterM
 		go func() {
 			for peer := range c {
 				if err := u.setPeers(&peer); err != nil {
-					logrus.Errorf("Failed syncing peers [%v]: %v", peer, err)
+					log.Error("failed syncing peers", "peer", peer, "error", err)
 				}
 			}
 		}()
@@ -123,7 +123,7 @@ func (u *userControllersController) sync(key string, cluster *v3.Cluster) (runti
 
 		newVersion, err := version.ParseSemantic(cluster.Status.Version.String())
 		if err != nil {
-			logrus.Errorf("failed to parse the K8s version of the upgraded cluster %s, will not restart cluster controllers: %v", cluster.Name, err)
+			log.Error("failed to parse the K8s version of the upgraded cluster, will not restart cluster controllers", "cluster", cluster.Name, "error", err)
 			u.clusters.Controller().Enqueue("", relatedresource.AllKey)
 			return cluster, nil
 		}
@@ -228,8 +228,7 @@ func (u *userControllersController) amOwner(peers tpeermanager.Peers, cluster *v
 	}
 
 	scaled := int(ck) * len(peers.IDs) / math.MaxUint32
-	logrus.Debugf("%s(%v): (%v * %v) / %v = %v[%v] = %v, self = %v\n", cluster.Name, cluster.UID, ck,
-		uint32(len(peers.IDs)), math.MaxUint32, peers.IDs, scaled, peers.IDs[scaled], peers.SelfID)
+	log.Debug("cluster peer calculation", "cluster", cluster.Name, "uid", cluster.UID, "ck", ck, "peerCount", uint32(len(peers.IDs)), "maxUint32", math.MaxUint32, "peers", peers.IDs, "scaled", scaled, "selectedPeer", peers.IDs[scaled], "self", peers.SelfID)
 	return peers.IDs[scaled] == peers.SelfID
 }
 

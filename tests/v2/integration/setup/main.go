@@ -18,7 +18,7 @@ import (
 	"github.com/rancher/shepherd/pkg/config"
 	namegen "github.com/rancher/shepherd/pkg/namegenerator"
 	"github.com/rancher/shepherd/pkg/session"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -39,8 +39,8 @@ func main() {
 	hostURL := fmt.Sprintf("%s:443", ipAddress.String())
 
 	var userToken *management.Token
-	logrus.Infof("CATTLE AGENT IS %s", agentImage)
-	logrus.Infof("bootstrap password is %s", bootstrapPassword)
+	log.Info("cattle agent is", "agent_image", agentImage)
+	log.Info("bootstrap password is", "password", bootstrapPassword)
 	err := kwait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, 5*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		userToken, err = token.GenerateUserToken(&management.User{
 			Username: "admin",
@@ -54,7 +54,7 @@ func main() {
 	})
 
 	if err != nil {
-		logrus.Fatalf("Error with generating admin token: %v", err)
+		log.Fatal("error with generating admin token", "error", err)
 	}
 
 	clusterName := namegen.AppendRandomString(k3dClusterNameBasename)
@@ -66,7 +66,7 @@ func main() {
 	rancherConfig.ClusterName = clusterName
 
 	if err := defaults.Set(rancherConfig); err != nil {
-		logrus.Fatalf("error with setting up config file: %v", err)
+		log.Fatal("error with setting up config file", "error", err)
 	}
 
 	config.WriteConfig(rancherClient.ConfigurationFileKey, rancherConfig)
@@ -77,12 +77,12 @@ func main() {
 
 	client, err = rancherClient.NewClient("", testSession)
 	if err != nil {
-		logrus.Fatalf("error instantiating client: %v", err)
+		log.Fatal("error instantiating client", "error", err)
 	}
 
 	_, err = k3d.CreateAndImportK3DCluster(client, clusterName, agentImage, "", 1, 0, true)
 	if err != nil {
-		logrus.Fatalf("error creating and importing a k3d cluster: %v", err)
+		log.Fatal("error creating and importing a k3d cluster", "error", err)
 	}
 
 }
@@ -91,7 +91,7 @@ func main() {
 func getOutboundIP() net.IP {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal("error dialing outbound IP", "error", err)
 	}
 	defer conn.Close()
 

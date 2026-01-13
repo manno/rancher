@@ -38,7 +38,7 @@ import (
 	"github.com/rancher/rancher/pkg/utils"
 	"github.com/rancher/rancher/pkg/version"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 func router(ctx context.Context, localClusterEnabled bool, scaledContext *config.ScaledContext, clusterManager *clustermanager.Manager) (func(http.Handler) http.Handler, error) {
@@ -86,7 +86,7 @@ func router(ctx context.Context, localClusterEnabled bool, scaledContext *config
 	if err != nil {
 		return nil, fmt.Errorf("parsing the public API body limit: %w", err)
 	}
-	logrus.Infof("Configuring public API body limit to %v bytes", publicLimit)
+	log.Info("configuring public API body limit", "operation", "router", "limit_bytes", publicLimit)
 	limitingHandler := utils.APIBodyLimitingHandler(publicLimit)
 
 	unauthed.Path("/").MatcherFunc(parse.MatchNotBrowser).Handler(managementAPI)

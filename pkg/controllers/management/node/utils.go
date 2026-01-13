@@ -13,7 +13,7 @@ import (
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rancher/pkg/auth/tokens"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
@@ -161,7 +161,7 @@ func waitUntilSSHKey(nodeDir, keyName string, node *v3.Node) error {
 			return errors.New("Timeout waiting for ssh key")
 		}
 		if _, err := os.Stat(keyPath); err != nil {
-			logrus.Debugf("keyPath not found. The node is probably still provisioning. Sleep %v second", increments)
+			log.Debug("keyPath not found, node is probably still provisioning", "sleep_seconds", increments)
 			time.Sleep(time.Duration(increments) * time.Second)
 			increments = increments * 2
 			continue

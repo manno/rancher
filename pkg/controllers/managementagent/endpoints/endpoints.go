@@ -18,7 +18,7 @@ import (
 	nodehelper "github.com/rancher/rancher/pkg/node"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -93,7 +93,7 @@ func getPublicEndpointsFromAnnotations(annotations map[string]string) []v32.Publ
 	if val, ok := annotations[endpointsAnnotation]; ok {
 		err := json.Unmarshal([]byte(val), &eps)
 		if err != nil {
-			logrus.Errorf("Failed to read public endpoints from annotation %v", err)
+			log.Error("failed to read public endpoints from annotation", "operation", "get_public_endpoints", "error", err)
 			return eps
 		}
 	}

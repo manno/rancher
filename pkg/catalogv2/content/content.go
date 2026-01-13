@@ -38,7 +38,7 @@ import (
 	"github.com/rancher/rancher/pkg/settings"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
@@ -373,12 +373,12 @@ func (c *Manager) filterReleases(index *repo.IndexFile, k8sVersion *semver.Versi
 	// get instance of rancher version and try to parse it
 	rancherVersion, err := semver.NewVersion(settings.ServerVersion.Get())
 	if err != nil {
-		logrus.Errorf("failed to parse server version %s: %v", settings.ServerVersion.Get(), err)
+		log.Error("failed to parse server version", "operation", "filter_releases", "version", settings.ServerVersion.Get(), "error", err)
 		return index
 	}
 	rancherVersionWithoutPrerelease, err := rancherVersion.SetPrerelease("")
 	if err != nil {
-		logrus.Errorf("failed to remove prerelease from %s: %v", settings.ServerVersion.Get(), err)
+		log.Error("failed to remove prerelease from version", "operation", "filter_releases", "version", settings.ServerVersion.Get(), "error", err)
 		return index
 	}
 
@@ -404,7 +404,7 @@ func (c *Manager) filterReleases(index *repo.IndexFile, k8sVersion *semver.Versi
 						continue
 					}
 				} else {
-					logrus.Errorf("failed to parse constraint version %s: %v", constraintStr, err)
+					log.Error("failed to parse constraint version", "operation", "filter_releases", "constraint", constraintStr, "error", err)
 				}
 			}
 			if constraintStr, ok := version.Annotations["catalog.cattle.io/kube-version"]; ok {
@@ -413,7 +413,7 @@ func (c *Manager) filterReleases(index *repo.IndexFile, k8sVersion *semver.Versi
 						continue
 					}
 				} else {
-					logrus.Errorf("failed to parse constraint kube-version %s from annotation: %v", constraintStr, err)
+					log.Error("failed to parse constraint kube-version from annotation", "operation", "filter_releases", "constraint", constraintStr, "error", err)
 				}
 			}
 			if version.KubeVersion != "" {
@@ -422,7 +422,7 @@ func (c *Manager) filterReleases(index *repo.IndexFile, k8sVersion *semver.Versi
 						continue
 					}
 				} else {
-					logrus.Errorf("failed to parse constraint for kubeversion %s: %v", version.KubeVersion, err)
+					log.Error("failed to parse constraint for kubeversion", "operation", "filter_releases", "kube_version", version.KubeVersion, "error", err)
 				}
 
 			}

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	rlog "github.com/rancher/rancher/pkg/log"
 )
 
 func GetAuditLoggerMiddleware(auditLog *LoggingHandler) func(next http.Handler) http.Handler {
@@ -45,7 +45,7 @@ func GetAuditLoggerMiddleware(auditLog *LoggingHandler) func(next http.Handler) 
 				// This is to prevent the rancher logs from being flooded with error messages
 				// when the log path is invalid or any other error that will always cause a write to fail.
 				if lastSeen, ok := auditLog.errMap[err.Error()]; !ok || time.Since(lastSeen) > errorDebounceTime {
-					logrus.Warnf("Failed to write audit log: %s", err)
+					rlog.Warn("failed to write audit log", "operation", "get_audit_logger_middleware", "error", err)
 					auditLog.errMap[err.Error()] = time.Now()
 				}
 			}

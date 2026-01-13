@@ -13,7 +13,7 @@ import (
 	"github.com/rancher/norman/condition"
 	"github.com/rancher/norman/types"
 	rketypes "github.com/rancher/rke/types"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
@@ -262,14 +262,14 @@ func (m *MapStringInterface) DeepCopy() *MapStringInterface {
 	dec := gob.NewDecoder(&buf)
 	err := enc.Encode(m)
 	if err != nil {
-		logrus.Errorf("error while deep copying MapStringInterface %v", err)
+		log.Error("error while deep copying mapstringinterface", "operation", "deep_copy", "error", err)
 		return nil
 	}
 
 	var copy MapStringInterface
 	err = dec.Decode(&copy)
 	if err != nil {
-		logrus.Errorf("error while deep copying MapStringInterface %v", err)
+		log.Error("error while deep copying mapstringinterface", "operation", "deep_copy", "error", err)
 		return nil
 	}
 

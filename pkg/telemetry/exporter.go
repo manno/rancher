@@ -10,7 +10,7 @@ import (
 
 	"github.com/rancher/rancher/pkg/telemetry/initcond"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,12 +46,7 @@ func NewTelemetryExporterManager(telG TelemetryGatherer, pollInterval time.Durat
 		exporterMu:   &sync.RWMutex{},
 		exporters:    map[string]*exporterRetry{},
 		done:         make(chan struct{}),
-		log: logrus.WithFields(
-			logrus.Fields{
-				"component": "telemetry-broker",
-			},
-		),
-		started: started,
+		started:      started,
 	}
 }
 
@@ -71,7 +66,6 @@ type simpleManager struct {
 
 	telG TelemetryGatherer
 	done chan struct{}
-	log  *logrus.Entry
 }
 
 func (s *simpleManager) Register(name string, exp TelemetryExporter, retry time.Duration) {
@@ -130,13 +124,12 @@ func (s *simpleManager) Delete(name string) {
 func (s *simpleManager) startIfNotStarted(ctx context.Context) error {
 	s.exporterMu.Lock()
 	defer s.exporterMu.Unlock()
-	for name, exporter := range s.exporters {
+	for _, exporter := range s.exporters {
 		exporter := exporter
 		exporter.exp.Register(s.telG)
 		if exporter.running.CompareAndSwap(0, 1) {
 			ctxca, ca := context.WithCancel(ctx)
 			exporter.caFunc = ca
-			log := s.log.WithField("telemetry-exporter", name)
 			go func() {
 				defer ca()
 				t := time.NewTicker(exporter.retryDur)
@@ -146,7 +139,7 @@ func (s *simpleManager) startIfNotStarted(ctx context.Context) error {
 					case <-t.C:
 						log.Trace("gathering telemetry...")
 						if err := exporter.exp.CollectAndExport(); err != nil {
-							log.WithError(err).Error("failed to collect and export telemetry data")
+							log.Error("failed to collect and export telemetry data", "error", err)
 						}
 						log.Trace("gathered telemetry")
 					case <-s.done:
@@ -175,7 +168,7 @@ func (s *simpleManager) runAll(ctx context.Context) {
 			return
 		case <-poller.C:
 			if err := s.startIfNotStarted(ctx); err != nil {
-				s.log.Error("failed to start pending telemetry exporters")
+				log.Error("failed to start pending telemetry exporters", "operation", "start_exporters", "error", err)
 			}
 		}
 	}
@@ -183,9 +176,7 @@ func (s *simpleManager) runAll(ctx context.Context) {
 
 func (s *simpleManager) Start(ctx context.Context, info initcond.InitInfo) error {
 	s.telG.visitWithInitInfo(info)
-	s.log.WithField(
-		"count", len(s.exporters),
-	).Info("starting telemetry gathering")
+	log.Info("starting telemetry gathering", "operation", "start_telemetry", "exporter_count", len(s.exporters))
 
 	if !s.started.CompareAndSwap(0, 1) {
 		return fmt.Errorf("already started")

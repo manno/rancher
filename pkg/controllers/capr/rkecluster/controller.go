@@ -11,7 +11,7 @@ import (
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	capi "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -48,17 +48,17 @@ func (h *handler) OnChange(_ string, cluster *v1.RKECluster) (*v1.RKECluster, er
 
 	capiCluster, err := capr.GetOwnerCAPICluster(cluster, h.capiClusterCache)
 	if apierrors.IsNotFound(err) {
-		logrus.Debugf("[rkecluster] %s/%s: waiting: CAPI cluster does not exist", cluster.Namespace, cluster.Name)
+		log.Debug("waiting: CAPI cluster does not exist", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		h.rkeCluster.EnqueueAfter(cluster.Namespace, cluster.Name, 10*time.Second)
 		return cluster, generic.ErrSkip
 	}
 	if err != nil {
-		logrus.Errorf("[rkecluster] %s/%s: error getting CAPI cluster %v", cluster.Namespace, cluster.Name, err)
+		log.Error("error getting CAPI cluster", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 		return cluster, err
 	}
 
 	if capiannotations.IsPaused(capiCluster, cluster) {
-		logrus.Infof("[rkecluster] %s/%s: waiting: CAPI cluster or RKECluster is paused", cluster.Namespace, cluster.Name)
+		log.Info("waiting: CAPI cluster or RKECluster is paused", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return cluster, generic.ErrSkip
 	}
 
@@ -68,7 +68,7 @@ func (h *handler) OnChange(_ string, cluster *v1.RKECluster) (*v1.RKECluster, er
 			Host: "localhost",
 			Port: 6443,
 		}
-		logrus.Debugf("[rkecluster] %s/%s: setting controlplane endpoint", cluster.Namespace, cluster.Name)
+		log.Debug("setting controlplane endpoint", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return h.rkeCluster.Update(cluster)
 	}
 
@@ -77,8 +77,8 @@ func (h *handler) OnChange(_ string, cluster *v1.RKECluster) (*v1.RKECluster, er
 		// the rke2.Ready and rke2.Removed conditions may still be present on the object, remove them if present
 		cluster.Status.Conditions = nil
 		cluster.Status.Ready = true
-		logrus.Tracef("[rkecluster] %s/%s: removing stale conditions", cluster.Namespace, cluster.Name)
-		logrus.Debugf("[rkecluster] %s/%s: marking cluster ready", cluster.Namespace, cluster.Name)
+		log.Trace("removing stale conditions", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
+		log.Debug("marking cluster ready", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return h.rkeCluster.UpdateStatus(cluster)
 	}
 

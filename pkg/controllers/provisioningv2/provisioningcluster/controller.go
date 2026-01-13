@@ -21,7 +21,7 @@ import (
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -311,7 +311,7 @@ func (h *handler) OnRancherClusterChange(obj *rancherv1.Cluster, status rancherv
 	mgmtCluster, err := h.retrieveMgmtClusterFromCache(obj)
 	if err != nil {
 		// don't return because the management cluster condition updating should not be blocking
-		logrus.Errorf("rkecluster %s/%s: error while retrieving management cluster from cache: %v", obj.Namespace, obj.Name, err)
+		log.Error("error while retrieving management cluster from cache", "namespace", obj.Namespace, "name", obj.Name, "error", err)
 	}
 
 	// If the rkecontrolplane is not nil, we can check it to determine action items.
@@ -321,7 +321,7 @@ func (h *handler) OnRancherClusterChange(obj *rancherv1.Cluster, status rancherv
 			obj.Spec.RKEConfig.ETCDSnapshotRestore.Name != "" &&
 			obj.Spec.RKEConfig.ETCDSnapshotRestore.RestoreRKEConfig != "" &&
 			obj.Spec.RKEConfig.ETCDSnapshotRestore.RestoreRKEConfig != restoreRKEConfigNone {
-			logrus.Debugf("rkecluster %s/%s: Reconciling rkeconfig against specified etcd restore snapshot metadata", obj.Namespace, obj.Name)
+			log.Debug("reconciling rkeconfig against etcd restore snapshot metadata", "namespace", obj.Namespace, "name", obj.Name)
 			if !equality.Semantic.DeepEqual(rkeCP.Status.ETCDSnapshotRestore, obj.Spec.RKEConfig.ETCDSnapshotRestore) {
 				clusterSpec, err := h.findSnapshotClusterSpec(obj.Namespace, obj.Spec.RKEConfig.ETCDSnapshotRestore.Name)
 				if err != nil {
@@ -330,7 +330,7 @@ func (h *handler) OnRancherClusterChange(obj *rancherv1.Cluster, status rancherv
 				switch obj.Spec.RKEConfig.ETCDSnapshotRestore.RestoreRKEConfig {
 				case restoreRKEConfigKubernetesVersion:
 					if obj.Spec.KubernetesVersion != clusterSpec.KubernetesVersion {
-						logrus.Infof("rkecluster %s/%s: restoring Kubernetes version from %s to %s for etcd snapshot restore (snapshot: %s)", obj.Namespace, obj.Name, obj.Spec.KubernetesVersion, clusterSpec.KubernetesVersion, obj.Spec.RKEConfig.ETCDSnapshotRestore.Name)
+						log.Info("restoring Kubernetes version for etcd snapshot restore", "namespace", obj.Namespace, "name", obj.Name, "from_version", obj.Spec.KubernetesVersion, "to_version", clusterSpec.KubernetesVersion, "snapshot", obj.Spec.RKEConfig.ETCDSnapshotRestore.Name)
 						obj = obj.DeepCopy()
 						obj.Spec.KubernetesVersion = clusterSpec.KubernetesVersion
 						_, err = h.clusterController.Update(obj)
@@ -342,7 +342,7 @@ func (h *handler) OnRancherClusterChange(obj *rancherv1.Cluster, status rancherv
 				case restoreRKEConfigAll:
 					newCluster := obj.DeepCopy()
 					if reconcileClusterSpecEtcdRestore(newCluster, *clusterSpec) {
-						logrus.Infof("rkecluster %s/%s: restoring RKE config for etcd snapshot restore (snapshot: %s)", obj.Namespace, obj.Name, obj.Spec.RKEConfig.ETCDSnapshotRestore.Name)
+						log.Info("restoring RKE config for etcd snapshot restore", "namespace", obj.Namespace, "name", obj.Name, "snapshot", obj.Spec.RKEConfig.ETCDSnapshotRestore.Name)
 						_, err = h.clusterController.Update(newCluster)
 						if err == nil {
 							err = generic.ErrSkip // if update was successful, return ErrSkip waiting for caches to sync
@@ -450,7 +450,7 @@ func (h *handler) OnRemove(_ string, cluster *rancherv1.Cluster) (*rancherv1.Clu
 			// go ahead and proceed with removal
 			return cluster, nil
 		}
-		logrus.Errorf("rkecluster %s/%s: error retrieving management cluster during removal of cluster: %v", cluster.Namespace, cluster.Name, err)
+		log.Error("error retrieving management cluster during removal of cluster", "namespace", cluster.Namespace, "name", cluster.Name, "error", err)
 	}
 	if mgmtCluster != nil && reconcileCondition(mgmtCluster, capr.Removed, rkeCP, capr.Removed) {
 		_, err = h.mgmtClusterClient.Update(mgmtCluster)

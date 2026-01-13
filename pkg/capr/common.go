@@ -33,7 +33,7 @@ import (
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -674,7 +674,7 @@ func ParseSnapshotClusterSpecOrError(snapshot *rkev1.ETCDSnapshot) (*provv1.Clus
 func PreBootstrap(mgmtCluster *v3.Cluster) bool {
 	// if the upstream rancher _does not_ have pre-bootstrapping enabled just always return false.
 	if !features.ProvisioningPreBootstrap.Enabled() {
-		logrus.Debug("[pre-bootstrap] feature-flag disabled, skipping pre-bootstrap flow")
+		log.Debug("feature-flag disabled, skipping pre-bootstrap flow", "operation", "pre_bootstrap")
 		return false
 	}
 

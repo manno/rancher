@@ -77,7 +77,7 @@ func (d *Deployer) Reconcile(_ context.Context, desiredParams *params.SCCOperato
 		return updated, nil
 	}
 
-	d.log.Debugf("The current deployment hash and desired hash match; no update needed.")
+	d.log.Debug("current deployment hash and desired hash match; no update needed")
 	return incoming, nil
 }
 

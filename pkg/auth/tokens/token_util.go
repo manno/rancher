@@ -14,8 +14,8 @@ import (
 	"github.com/rancher/rancher/pkg/auth/accessor"
 	"github.com/rancher/rancher/pkg/auth/tokens/hashers"
 	"github.com/rancher/rancher/pkg/features"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -76,7 +76,7 @@ func GetTokenAuthFromRequest(req *http.Request) string {
 				base64Value := strings.TrimSpace(parts[1])
 				data, err := base64.URLEncoding.DecodeString(base64Value)
 				if err != nil {
-					logrus.Errorf("Error %v parsing %v header", err, AuthHeaderName)
+					log.Error("error parsing auth header", "operation", "get_token_auth_from_request", "header", AuthHeaderName, "error", err)
 				} else {
 					tokenAuthValue = string(data)
 				}
@@ -113,7 +113,7 @@ func GetKubeConfigToken(userName, responseType string, kubeconfigTokenGetter kub
 	// create kubeconfig expiring tokens if responseType=kubeconfig in login action vs login tokens for responseType=json
 	clusterID := extractClusterIDFromResponseType(responseType)
 
-	logrus.Debugf("getKubeConfigToken: responseType %s", responseType)
+	log.Debug("creating kubeconfig token", "operation", "get_kube_config_token", "response_type", responseType)
 	name := "kubeconfig-" + userName
 	if clusterID != "" {
 		name = fmt.Sprintf("kubeconfig-%s.%s", userName, clusterID)
@@ -144,11 +144,11 @@ func VerifyToken(storedToken *apiv3.Token, tokenName, tokenKey string) (int, err
 	if storedToken.Annotations != nil && storedToken.Annotations[TokenHashed] == "true" {
 		hasher, err := hashers.GetHasherForHash(storedToken.Token)
 		if err != nil {
-			logrus.Errorf("unable to get a hasher for token with error %v", err)
+			log.Error("unable to get a hasher for token", "operation", "verify_token", "error", err)
 			return http.StatusInternalServerError, fmt.Errorf("unable to verify hash")
 		}
 		if err := hasher.VerifyHash(storedToken.Token, tokenKey); err != nil {
-			logrus.Errorf("VerifyHash failed with error: %v", err)
+			log.Error("VerifyHash failed", "operation", "verify_token", "error", err)
 			return http.StatusUnprocessableEntity, invalidAuthTokenError
 		}
 	} else {
@@ -177,7 +177,7 @@ func ConvertTokenKeyToHash(token *apiv3.Token) error {
 		hasher := hashers.GetHasher()
 		hashedToken, err := hasher.CreateHash(token.Token)
 		if err != nil {
-			logrus.Errorf("Failed to generate hash from token: %v", err)
+			log.Error("failed to generate hash from token", "operation", "convert_token_key_to_hash", "error", err)
 			return errors.New("failed to generate hash from token")
 		}
 		token.Token = hashedToken

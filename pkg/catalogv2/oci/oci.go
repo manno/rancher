@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/go-version"
 	ocispecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
@@ -111,7 +111,7 @@ func GenerateIndex(ociClient *Client, URL string, credentialSecret *corev1.Secre
 	clusterRepoSpec v1.RepoSpec,
 	clusterRepoStatus v1.RepoStatus,
 	indexFile *repo.IndexFile) (*repo.IndexFile, error) {
-	logrus.Debugf("Generating index for oci clusterrepo URL %s", URL)
+	log.Debug("generating index for oci clusterrepo", "operation", "generate_index", "url", URL)
 
 	// Checking if the URL specified by the user is a oras repository or not ?
 	IsOrasRepository, err := ociClient.IsOrasRepository()
@@ -170,7 +170,7 @@ func GenerateIndex(ociClient *Client, URL string, credentialSecret *corev1.Secre
 	// Loop over all the repositories and fetch the tags
 	repositoriesFunc := func(repositories []string) error {
 		for _, repository := range repositories {
-			logrus.Debugf("found repository %s for OCI clusterrepo URL %s", repository, URL)
+			log.Debug("found repository for oci clusterrepo", "operation", "generate_index", "repository", repository, "url", URL)
 			// Storing the user provided repository that can be an oras repository or a sub repository.
 			userProvidedRepository := ociClient.repository
 
@@ -202,7 +202,7 @@ func GenerateIndex(ociClient *Client, URL string, credentialSecret *corev1.Secre
 						var errResp *errcode.ErrorResponse
 						if errors.As(err, &errResp) && errResp.StatusCode == http.StatusForbidden {
 							delete(indexFile.Entries, chartName)
-							logrus.Warnf("failed to add OCI repository %s to helm repo index: %v", ociClient.repository, err)
+							log.Warn("failed to add oci repository to helm repo index", "operation", "generate_index", "repository", ociClient.repository, "error", err)
 						} else {
 							return fmt.Errorf("failed to add tag %s in OCI repository %s to helm repo index: %w", maxTag, ociClient.repository, err)
 						}
@@ -297,7 +297,7 @@ func addToHelmRepoIndex(ociClient Client, indexFile *repo.IndexFile, orasReposit
 	// If it is already present, skip adding it to the indexFile.
 	for _, entry := range indexFile.Entries[chartName] {
 		if entry.Metadata.Name == chartName && entry.Version == ociClient.tag && entry.Digest != "" {
-			logrus.Debugf("skip adding chart %s version %s since it is already present in the index", chartName, ociClient.tag)
+			log.Debug("skip adding chart, already present in index", "operation", "add_to_helm_repo_index", "chart", chartName, "version", ociClient.tag)
 			return
 		}
 	}

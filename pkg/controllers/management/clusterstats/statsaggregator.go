@@ -13,7 +13,7 @@ import (
 	"github.com/rancher/rancher/pkg/clustermanager"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -275,7 +275,7 @@ func (s *StatsAggregator) restartAgentDeployment(cluster *v3.Cluster) error {
 		deployment.Spec.Template.Annotations = make(map[string]string)
 	}
 	if deployment.Spec.Template.Annotations[agentVersionUpgraded] != "true" {
-		logrus.Tracef("statsAggregator: updated cluster %s to v1.22, annotating agent deployment", cluster.Name)
+		log.Trace("updated cluster to v1.22, annotating agent deployment", "cluster", cluster.Name)
 		toUpdate := deployment.DeepCopy()
 		toUpdate.Spec.Template.Annotations[agentVersionUpgraded] = "true"
 		_, err = userContext.Apps.Deployments("cattle-system").Update(toUpdate)

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +38,7 @@ func EnsureSecretForServiceAccount(ctx context.Context, secretsCache corecontrol
 	if sa == nil {
 		return nil, fmt.Errorf("could not ensure secret for invalid service account")
 	}
-	logrus.Tracef("EnsureSecretForServiceAccount for %s", logKeyFromObject(sa))
+	log.Trace("ensuring secret for service account", "operation", "ensure_secret_for_service_account", "service_account", logKeyFromObject(sa))
 
 	secretClient := secretsGetter.Secrets(sa.Namespace)
 	var secretLister secretLister
@@ -93,7 +93,7 @@ func EnsureSecretForServiceAccount(ctx context.Context, secretsCache corecontrol
 		return secret, nil
 	}
 
-	logrus.Infof("EnsureSecretForServiceAccount: waiting for secret %s for service account %s to be populated with token", logKeyFromObject(secret), logKeyFromObject(sa))
+	log.Info("waiting for secret to be populated with token", "operation", "ensure_secret_for_service_account", "secret", logKeyFromObject(secret), "service_account", logKeyFromObject(sa))
 	backoff := wait.Backoff{
 		Duration: 2 * time.Millisecond,
 		Cap:      100 * time.Millisecond,
@@ -101,7 +101,7 @@ func EnsureSecretForServiceAccount(ctx context.Context, secretsCache corecontrol
 	}
 	start := time.Now()
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
-		logrus.Tracef("Waiting for the secret with backoff for %s/%s", sa.GetNamespace(), sa.GetName())
+		log.Trace("waiting for secret with backoff", "operation", "ensure_secret_for_service_account", "namespace", sa.GetNamespace(), "name", sa.GetName())
 		var err error
 		// use the secret client, rather than the secret getter, to circumvent the cache
 		secret, err = secretClient.Get(ctx, secret.Name, metav1.GetOptions{})
@@ -109,7 +109,7 @@ func EnsureSecretForServiceAccount(ctx context.Context, secretsCache corecontrol
 			return false, fmt.Errorf("error ensuring secret for service account %s: %w", logKeyFromObject(sa), err)
 		}
 		if len(secret.Data[corev1.ServiceAccountTokenKey]) > 0 {
-			logrus.Infof("EnsureSecretForServiceAccount: got the service account token for service account %s in %s", logKeyFromObject(sa), time.Now().Sub(start))
+			log.Info("got service account token", "operation", "ensure_secret_for_service_account", "service_account", logKeyFromObject(sa), "duration", time.Now().Sub(start))
 			return true, nil
 		}
 		return false, nil
@@ -174,7 +174,7 @@ func ServiceAccountSecret(ctx context.Context, sa *corev1.ServiceAccount, secret
 		if secret != nil {
 			return secret, nil
 		}
-		logrus.Infof("ServiceAccount secret did not exist for ServiceAccount %s falling back to listing mechanism", sa.Name)
+		log.Info("service account secret did not exist, falling back to listing mechanism", "operation", "service_account_secret", "service_account", sa.Name)
 	}
 
 	return findSecretForSA(ctx, sa, secretLister, secretClient)
@@ -203,12 +203,12 @@ func findSecretForSA(ctx context.Context, sa *corev1.ServiceAccount, secretListe
 			continue
 		}
 
-		logrus.Warnf("EnsureSecretForServiceAccount: secret %s is invalid for service account [%s], deleting", logKeyFromObject(s), sa.Name)
+		log.Warn("secret is invalid for service account, deleting", "operation", "find_secret_for_sa", "secret", logKeyFromObject(s), "service_account", sa.Name)
 		err = secretClient.Delete(ctx, s.Name, metav1.DeleteOptions{})
 		if err != nil {
 			// we don't want to return the delete failure since the success/failure of the cleanup shouldn't affect
 			// the ability of the caller to use any identified, valid secret
-			logrus.Errorf("unable to delete secret %s: %v", logKeyFromObject(s), err)
+			log.Error("unable to delete secret", "operation", "find_secret_for_sa", "secret", logKeyFromObject(s), "error", err)
 		}
 	}
 
@@ -229,7 +229,7 @@ func secretFromSA(ctx context.Context, sa *corev1.ServiceAccount, secretClient c
 		if !apierrors.IsInternalError(err) {
 			return nil, fmt.Errorf("could not get secret for service account: %w", err)
 		}
-		logrus.Infof("internal error when getting a secret %s - not using the secret", secret.Name)
+		log.Info("internal error when getting secret, not using it", "operation", "secret_from_sa", "secret", secret.Name)
 		return nil, nil
 	}
 
@@ -277,17 +277,17 @@ func annotateSAWithSecret(ctx context.Context, sa *corev1.ServiceAccount, secret
 		return updated, false, nil
 	}
 	if !apierrors.IsConflict(err) {
-		logrus.Debugf("Failed to update ServiceAccount for %s: %s", logKeyFromObject(sa), err)
+		log.Debug("failed to update service account", "operation", "annotate_sa_with_secret", "service_account", logKeyFromObject(sa), "error", err)
 		return nil, false, err
 	}
 
 	// Rollback the optimistically created secret
-	logrus.Infof("Rolling back ServiceAccount secret for %s", logKeyFromObject(secret))
+	log.Info("rolling back service account secret", "operation", "annotate_sa_with_secret", "secret", logKeyFromObject(secret))
 	if err := secretClient.Delete(ctx, secret.Name, metav1.DeleteOptions{}); err != nil {
 		return nil, false, fmt.Errorf("deleting optimistically locked secret for %s - %s: %w", logKeyFromObject(secret), logKeyFromObject(sa), err)
 	}
 	// Load the version that triggered the issue
-	logrus.Debugf("Reloading ServiceAccount %s", logKeyFromObject(sa))
+	log.Debug("reloading service account", "operation", "annotate_sa_with_secret", "service_account", logKeyFromObject(sa))
 	updated, err = saClient.Get(ctx, sa.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, false, fmt.Errorf("getting updated service account %s: %w", logKeyFromObject(sa), err)

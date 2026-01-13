@@ -18,7 +18,7 @@ import (
 	k8srbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	wranglerName "github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -202,7 +202,7 @@ func NameForRoleBinding(namespace string, role rbacv1.RoleRef, subject rbacv1.Su
 	name.WriteString("rb-")
 	name.WriteString(getBindingHash(namespace, role, subject))
 	nm := name.String()
-	logrus.Debugf("RoleBinding with namespace=%s role.kind=%s role.name=%s subject.kind=%s subject.name=%s has name: %s", namespace, role.Kind, role.Name, subject.Kind, subject.Name, nm)
+	log.Debug("role binding name calculated", "operation", "name_for_rolebinding", "namespace", namespace, "role_kind", role.Kind, "role_name", role.Name, "subject_kind", subject.Kind, "subject_name", subject.Name, "name", nm)
 	return nm
 }
 
@@ -212,7 +212,7 @@ func NameForClusterRoleBinding(role rbacv1.RoleRef, subject rbacv1.Subject) stri
 	name.WriteString("crb-")
 	name.WriteString(getBindingHash("", role, subject))
 	nm := name.String()
-	logrus.Debugf("ClusterRoleBinding with role.kind=%s role.name=%s subject.kind=%s subject.name=%s has name: %s", role.Kind, role.Name, subject.Kind, subject.Name, nm)
+	log.Debug("cluster role binding name calculated", "operation", "name_for_clusterrolebinding", "role_kind", role.Kind, "role_name", role.Name, "subject_kind", subject.Kind, "subject_name", subject.Name, "name", nm)
 	return nm
 }
 
@@ -396,13 +396,13 @@ func CreateOrUpdateNamespacedResource[T generic.RuntimeMetaObject, TList runtime
 			return err
 		}
 		// resource doesn't exist, create it
-		logrus.Infof("%T %s being created in namespace %s", obj, obj.GetName(), obj.GetNamespace())
+		log.Info("creating resource", "operation", "create_resource", "type", fmt.Sprintf("%T", obj), "name", obj.GetName(), "namespace", obj.GetNamespace())
 		_, err := client.Create(obj)
 		return err
 	}
 
 	if same, updatedResource := areResourcesTheSame(resource, obj); !same {
-		logrus.Infof("%T %s in namespace %s needs to be updated", obj, obj.GetName(), obj.GetNamespace())
+		log.Info("updating resource", "operation", "update_resource", "type", fmt.Sprintf("%T", obj), "name", obj.GetName(), "namespace", obj.GetNamespace())
 		_, err := client.Update(updatedResource)
 		return err
 

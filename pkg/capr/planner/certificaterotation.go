@@ -9,7 +9,7 @@ import (
 	rkev1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1/plan"
 	"github.com/rancher/rancher/pkg/capr"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 // rotateCertificates checks if there is a need to rotate any certificates and updates the plan accordingly.
@@ -20,11 +20,19 @@ func (p *Planner) rotateCertificates(controlPlane *rkev1.RKEControlPlane, status
 
 	found, joinServer, _, err := p.findInitNode(controlPlane, clusterPlan)
 	if err != nil {
-		logrus.Errorf("[planner] rkecluster %s/%s: error encountered while searching for init node during certificate rotation: %v", controlPlane.Namespace, controlPlane.Name, err)
+		log.Error("error searching for init node during certificate rotation",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name,
+			"operation", "certificate_rotation",
+			"error", err)
 		return status, err
 	}
 	if !found || joinServer == "" {
-		logrus.Warnf("[planner] rkecluster %s/%s: skipping certificate creation as cluster does not have an init node", controlPlane.Namespace, controlPlane.Name)
+		log.Warn("skipping certificate creation",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name,
+			"operation", "certificate_rotation",
+			"reason", "no_init_node")
 		return status, nil
 	}
 
@@ -76,7 +84,11 @@ func shouldRotate(cp *rkev1.RKEControlPlane) bool {
 
 	// The controlplane must be initialized before we rotate anything
 	if cp.Status.Initialized != true {
-		logrus.Warnf("[planner] rkecluster %s/%s: skipping certificate rotation as cluster was not initialized", cp.Namespace, cp.Name)
+		log.Warn("skipping certificate rotation",
+			"namespace", cp.Namespace,
+			"cluster_name", cp.Name,
+			"operation", "certificate_rotation",
+			"reason", "cluster_not_initialized")
 		return false
 	}
 

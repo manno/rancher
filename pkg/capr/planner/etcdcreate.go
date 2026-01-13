@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/rancher/pkg/capr"
 	"github.com/rancher/rancher/pkg/controllers/capr/managesystemagent"
 	"github.com/rancher/wrangler/v3/pkg/merr"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
@@ -128,7 +128,11 @@ func (p *Planner) createEtcdSnapshot(controlPlane *rkev1.RKEControlPlane, status
 
 	// Don't create an etcd snapshot if the cluster is not initialized or bootstrapped.
 	if !status.Initialized || !capr.Bootstrapped.IsTrue(&status) {
-		logrus.Warnf("[planner] rkecluster %s/%s: skipping etcd snapshot creation as cluster has not yet been initialized or bootstrapped", controlPlane.Namespace, controlPlane.Name)
+		log.Warn("skipping etcd snapshot creation",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name,
+			"operation", "etcd_snapshot_create",
+			"reason", "cluster_not_initialized_or_bootstrapped")
 		return status, nil
 	}
 
@@ -144,11 +148,19 @@ func (p *Planner) createEtcdSnapshot(controlPlane *rkev1.RKEControlPlane, status
 		var finErrs []error
 		found, joinServer, _, err := p.findInitNode(controlPlane, clusterPlan)
 		if err != nil {
-			logrus.Errorf("[planner] rkecluster %s/%s: error encountered while searching for init node during etcd snapshot creation: %v", controlPlane.Namespace, controlPlane.Name, err)
+			log.Error("error searching for init node during etcd snapshot creation",
+				"namespace", controlPlane.Namespace,
+				"cluster_name", controlPlane.Name,
+				"operation", "etcd_snapshot_create",
+				"error", err)
 			return status, err
 		}
 		if !found || joinServer == "" {
-			logrus.Warnf("[planner] rkecluster %s/%s: skipping etcd snapshot creation as cluster does not have an init node", controlPlane.Namespace, controlPlane.Name)
+			log.Warn("skipping etcd snapshot creation",
+				"namespace", controlPlane.Namespace,
+				"cluster_name", controlPlane.Name,
+				"operation", "etcd_snapshot_create",
+				"reason", "no_init_node")
 			return status, nil
 		}
 		if errs := p.runEtcdSnapshotCreate(controlPlane, tokensSecret, clusterPlan, joinServer); len(errs) > 0 {

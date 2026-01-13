@@ -19,12 +19,12 @@ import (
 	"github.com/rancher/rancher/pkg/auth/util"
 	clientv3 "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	ctrlv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/user"
 	"github.com/rancher/rancher/pkg/wrangler"
 	ctrlv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
-	"github.com/sirupsen/logrus"
 	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +92,7 @@ func userPrincipalIndexer(obj any) ([]string, error) {
 
 // createDerivedToken will create a jwt token for the authenticated user
 func (m *Manager) createDerivedToken(jsonInput clientv3.Token, tokenAuthValue string) (apiv3.Token, string, int, error) {
-	logrus.Debug("Create Derived Token Invoked")
+	log.Debug("create derived token invoked", "operation", "create_derived_token")
 
 	token, _, err := m.GetToken(tokenAuthValue)
 	if err != nil {
@@ -125,7 +125,7 @@ func (m *Manager) createDerivedToken(jsonInput clientv3.Token, tokenAuthValue st
 func (m *Manager) createToken(k8sToken *apiv3.Token) (*apiv3.Token, string, error) {
 	key, err := randomtoken.Generate()
 	if err != nil {
-		logrus.Errorf("Failed to generate token key: %v", err)
+		log.Error("failed to generate token key", "operation", "create_token", "error", err)
 		return nil, "", errors.New("failed to generate token key")
 	}
 
@@ -188,7 +188,7 @@ func (m *Manager) GetToken(tokenAuthValue string) (*apiv3.Token, int, error) {
 
 // GetTokens will list all (login and derived, and even expired) tokens of the authenticated user
 func (m *Manager) getTokens(tokenAuthValue string) ([]apiv3.Token, int, error) {
-	logrus.Debug("LIST Tokens Invoked")
+	log.Debug("list tokens invoked", "operation", "get_tokens")
 	tokens := make([]apiv3.Token, 0)
 
 	storedToken, _, err := m.GetToken(tokenAuthValue)
@@ -220,13 +220,13 @@ func (m *Manager) DeleteTokenByName(tokenName string) (int, error) {
 		}
 		return 500, fmt.Errorf("failed to delete token")
 	}
-	logrus.Debug("Deleted Token")
+	log.Debug("deleted token", "operation", "delete_token_by_name", "token_name", tokenName)
 	return 0, nil
 }
 
 // getToken will get the token by ID
 func (m *Manager) getTokenByID(tokenAuthValue string, tokenID string) (apiv3.Token, int, error) {
-	logrus.Debug("GET Token Invoked")
+	log.Debug("get token invoked", "operation", "get_token_by_id", "token_id", tokenID)
 	token := &apiv3.Token{}
 
 	storedToken, _, err := m.GetToken(tokenAuthValue)
@@ -272,7 +272,7 @@ func (m *Manager) deriveToken(request *types.APIContext) error {
 
 	token, unhashedTokenKey, status, err := m.createDerivedToken(jsonInput, tokenAuthValue)
 	if err != nil {
-		logrus.Errorf("deriveToken failed with error: %v", err)
+		log.Error("derive token failed with error", "operation", "derive_token", "error", err)
 		if status == 0 {
 			status = http.StatusInternalServerError
 		}
@@ -302,7 +302,7 @@ func (m *Manager) listTokens(request *types.APIContext) error {
 	//getToken
 	tokens, status, err := m.getTokens(tokenAuthValue)
 	if err != nil {
-		logrus.Errorf("GetToken failed with error: %v", err)
+		log.Error("get token failed with error", "operation", "list_tokens", "error", err)
 		if status == 0 {
 			status = http.StatusInternalServerError
 		}
@@ -355,7 +355,7 @@ func (m *Manager) getTokenFromRequest(request *types.APIContext) error {
 			status = http.StatusNotFound
 		default:
 		}
-		logrus.Errorf("GetToken failed with error: %v", err)
+		log.Error("get token failed with error", "operation", "get_token_from_request", "token_id", tokenID, "error", err)
 		return httperror.NewAPIErrorLong(status, util.GetHTTPErrorCode(status), fmt.Sprintf("%v", err))
 	}
 
@@ -383,7 +383,7 @@ func (m *Manager) removeToken(request *types.APIContext) error {
 	t, status, err := m.getTokenByID(tokenAuthValue, tokenID)
 	if err != nil {
 		if status != 410 {
-			logrus.Errorf("DeleteToken Failed to fetch the token to delete with error: %v", err)
+			log.Error("delete token failed to fetch the token to delete with error", "operation", "remove_token", "token_id", tokenID, "error", err)
 			if status == 0 {
 				status = http.StatusInternalServerError
 			}
@@ -505,7 +505,7 @@ func (m *Manager) UpdateToken(token *apiv3.Token) (*apiv3.Token, error) {
 func (m *Manager) CreateTokenAndSetCookie(userID string, userPrincipal apiv3.Principal, groupPrincipals []apiv3.Principal, providerToken string, ttl int, description string, request *types.APIContext) error {
 	token, unhashedTokenKey, err := m.NewLoginToken(userID, userPrincipal, groupPrincipals, providerToken, 0, description)
 	if err != nil {
-		logrus.Errorf("Failed creating token with error: %v", err)
+		log.Error("failed creating token with error", "operation", "create_token_and_set_cookie", "user_id", userID, "error", err)
 		return httperror.NewAPIErrorLong(500, "", fmt.Sprintf("Failed creating token with error: %v", err))
 	}
 
@@ -534,7 +534,7 @@ func (m *Manager) TokenStreamTransformer(
 	data chan map[string]any,
 	opt *types.QueryOptions,
 ) (chan map[string]any, error) {
-	logrus.Debug("TokenStreamTransformer called")
+	log.Debug("token stream transformer called", "operation", "token_stream_transformer")
 
 	tokenAuthValue := GetTokenAuthFromRequest(apiContext.Request)
 	if tokenAuthValue == "" {
@@ -633,7 +633,7 @@ func (m *Manager) EnsureClusterToken(clusterName string, input user.TokenInput) 
 		return "", nil, fmt.Errorf("failed to convert token key to hash: %w", err)
 	}
 
-	logrus.Infof("Creating token for user %s", input.UserName)
+	log.Info("creating token for user", "operation", "ensure_cluster_token", "user_name", input.UserName)
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
 		// Backoff was added here because it is possible the token is in the process of deleting.
 		// This should cause the create to retry until the delete is finished.
@@ -719,7 +719,7 @@ func (m *Manager) GetKubeconfigToken(clusterName, tokenName, description, kind, 
 
 				token, err = m.tokens.Update(tokenCopy)
 				if err != nil {
-					logrus.Debugf("getToken: updating token [%s] failed [%v]", randomizedTokenName, err)
+					log.Debug("get token: updating token failed", "operation", "get_kubeconfig_token", "token_name", randomizedTokenName, "error", err)
 					if apierrors.IsConflict(err) {
 						return false, nil
 					}
@@ -734,7 +734,7 @@ func (m *Manager) GetKubeconfigToken(clusterName, tokenName, description, kind, 
 		}
 	}
 
-	logrus.Debugf("getToken: token %s expiresAt %s", token.Name, token.ExpiresAt)
+	log.Debug("get token: token created successfully", "operation", "get_kubeconfig_token", "token_name", token.Name, "expires_at", token.ExpiresAt)
 	return token, createdTokenValue, nil
 }
 

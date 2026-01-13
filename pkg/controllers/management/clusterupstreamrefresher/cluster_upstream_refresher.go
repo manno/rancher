@@ -18,7 +18,7 @@ import (
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/wrangler"
 	wranglerv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -97,25 +97,25 @@ func getProviderAndReadyStatus(cluster *mgmtv3.Cluster) (string, bool) {
 	switch {
 	case cluster.Spec.AKSConfig != nil:
 		if cluster.Status.AKSStatus.UpstreamSpec == nil {
-			logrus.Debugf("initial upstream spec for cluster [%s] has not been set by cluster handler yet, skipping", cluster.Name)
+			log.Debug("initial upstream spec for cluster has not been set by cluster handler yet, skipping", "operation", "check_upstream_status", "cluster", cluster.Name)
 			return apimgmtv3.ClusterDriverAKS, false
 		}
 		return apimgmtv3.ClusterDriverAKS, true
 	case cluster.Spec.EKSConfig != nil:
 		if cluster.Status.EKSStatus.UpstreamSpec == nil {
-			logrus.Debugf("initial upstream spec for cluster [%s] has not been set by cluster handler yet, skipping", cluster.Name)
+			log.Debug("initial upstream spec for cluster has not been set by cluster handler yet, skipping", "operation", "check_upstream_status", "cluster", cluster.Name)
 			return apimgmtv3.ClusterDriverEKS, false
 		}
 		return apimgmtv3.ClusterDriverEKS, true
 	case cluster.Spec.GKEConfig != nil:
 		if cluster.Status.GKEStatus.UpstreamSpec == nil {
-			logrus.Debugf("initial upstream spec for cluster [%s] has not been set by cluster handler yet, skipping", cluster.Name)
+			log.Debug("initial upstream spec for cluster has not been set by cluster handler yet, skipping", "operation", "check_upstream_status", "cluster", cluster.Name)
 			return apimgmtv3.ClusterDriverGKE, false
 		}
 		return apimgmtv3.ClusterDriverGKE, true
 	case cluster.Spec.AliConfig != nil:
 		if cluster.Status.AliStatus.UpstreamSpec == nil {
-			logrus.Debugf("initial upstream spec for cluster [%s] has not been set by cluster handler yet, skipping", cluster.Name)
+			log.Debug("initial upstream spec for cluster has not been set by cluster handler yet, skipping", "operation", "check_upstream_status", "cluster", cluster.Name)
 			return apimgmtv3.ClusterDriverAlibaba, false
 		}
 		return apimgmtv3.ClusterDriverAlibaba, true
@@ -154,7 +154,7 @@ func nextRefreshTime(refreshInterval time.Duration, lastRefreshTime string) (tim
 }
 
 func (c *clusterRefreshController) refreshClusterUpstreamSpec(cluster *mgmtv3.Cluster, cloudDriver string) (*mgmtv3.Cluster, error) {
-	logrus.Debugf("checking cluster [%s] upstream state for changes", cluster.Name)
+	log.Debug("checking cluster upstream state for changes", "operation", "refresh_cluster", "cluster", cluster.Name)
 
 	// In this call, it is possible to get errors back with non-nil upstreamSpec.
 	// If upstreamSpec is nil then the syncing failed for some reason. This is reported to the user, and this function returns at the end of this if-statement.
@@ -209,7 +209,7 @@ func (c *clusterRefreshController) refreshClusterUpstreamSpec(cluster *mgmtv3.Cl
 	// compare saved cluster.Status...UpstreamSpec with upstreamSpec,
 	// if there is difference then update cluster.Status...UpstreamSpec
 	if !reflect.DeepEqual(upstreamClusterConfig, upstreamSpec) {
-		logrus.Debugf("updating cluster [%s], upstream change detected", cluster.Name)
+		log.Debug("updating cluster, upstream change detected", "operation", "refresh_cluster", "cluster", cluster.Name)
 		cluster = cluster.DeepCopy()
 		// for other cloud drivers, please edit HERE
 		switch cloudDriver {
@@ -226,7 +226,7 @@ func (c *clusterRefreshController) refreshClusterUpstreamSpec(cluster *mgmtv3.Cl
 
 	// check if cluster is still updating changes
 	if !reflect.DeepEqual(initialClusterConfig, appliedClusterConfig) {
-		logrus.Debugf("cluster [%s] currently updating, skipping spec sync", cluster.Name)
+		log.Debug("cluster currently updating, skipping spec sync", "operation", "refresh_cluster", "cluster", cluster.Name)
 		return c.updateCluster(cluster)
 	}
 
@@ -254,7 +254,7 @@ func (c *clusterRefreshController) refreshClusterUpstreamSpec(cluster *mgmtv3.Cl
 	}
 
 	if updateClusterConfig {
-		logrus.Debugf("change detected for cluster [%s], updating spec", cluster.Name)
+		log.Debug("change detected for cluster, updating spec", "operation", "refresh_cluster", "cluster", cluster.Name)
 		// for other cloud drivers, please edit HERE
 		switch cloudDriver {
 		case apimgmtv3.ClusterDriverAKS:
@@ -279,7 +279,7 @@ func (c *clusterRefreshController) refreshClusterUpstreamSpec(cluster *mgmtv3.Cl
 			}
 		}
 	} else {
-		logrus.Debugf("cluster [%s] matches upstream, skipping spec sync", cluster.Name)
+		log.Debug("cluster matches upstream, skipping spec sync", "operation", "refresh_cluster", "cluster", cluster.Name)
 	}
 
 	return c.updateCluster(cluster)

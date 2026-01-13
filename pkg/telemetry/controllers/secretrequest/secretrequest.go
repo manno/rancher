@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/rancher/pkg/telemetry"
 	"github.com/rancher/rancher/pkg/telemetry/consts"
 	v1core "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 
 	//"k8s.io/apimachinery/pkg/api/errors"
@@ -74,8 +74,7 @@ func (h *handler) OnSecretRequestChange(key string, incomingObj *v1.SecretReques
 	if incomingObj == nil {
 		return nil, nil
 	}
-	logrus.Debugf("Received secret request for '%s'", incomingObj.Name)
-	logrus.Debug(incomingObj)
+	log.Debug("received secret request", "secret_request", incomingObj.Name)
 
 	if !incomingObj.HasCondition(v1.ResourceConditionProgressing) {
 		preparedObj := incomingObj.DeepCopy()
@@ -127,7 +126,7 @@ func (h *handler) OnSecretRequestChange(key string, incomingObj *v1.SecretReques
 	if updateErr != nil {
 		return incomingObj, fmt.Errorf("error updating secret request '%s': %w", incomingObj.Spec.TargetSecretRef, updateErr)
 	}
-	logrus.Debugf("Updated secret request '%v'", updated)
+	log.Debug("updated secret request", "secret_request", updated.Name)
 	return incomingObj, nil
 }
 

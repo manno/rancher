@@ -9,7 +9,7 @@ import (
 	corev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	crbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v12 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -40,7 +40,7 @@ func deleteNamespace(controller string, nsName string, nsClient v1.NamespaceInte
 		return err
 	}
 	if ns.Status.Phase != v12.NamespaceTerminating {
-		logrus.Infof("[%s] Deleting namespace %s", controller, nsName)
+		log.Info("deleting namespace", "operation", "delete_namespace", "controller", controller, "namespace", nsName)
 		err = nsClient.Delete(context.TODO(), nsName, metav1.DeleteOptions{})
 		if apierrors.IsNotFound(err) {
 			return nil
@@ -58,7 +58,7 @@ func reconcileResourceToNamespace(obj runtime.Object, controller string, nsName 
 
 		ns, _ := nsLister.Get(nsName)
 		if ns == nil {
-			logrus.Infof("[%v] Creating namespace %v", controller, nsName)
+			log.Info("creating namespace", "operation", "reconcile_resource_to_namespace", "controller", controller, "namespace", nsName)
 			_, err := nsClient.Create(context.TODO(), &v12.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/rancher/remotedialer"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 type Authorizers struct {
@@ -18,8 +18,8 @@ func ErrorWriter(rw http.ResponseWriter, req *http.Request, code int, err error)
 	if forwardedFor != "" {
 		fullAddress = fmt.Sprintf("%s (X-Forwarded-For: %s)", req.RemoteAddr, forwardedFor)
 	}
-	logrus.Errorf("Failed to handle tunnel request from remote address %s: response %d: %v", fullAddress, code, err)
-	logrus.Tracef("ErrorWriter: response code: %d, request: %v", code, req)
+	log.Error("failed to handle tunnel request", "operation", "error_writer", "remote_addr", fullAddress, "response_code", code, "error", err)
+	log.Trace("error writer response", "operation", "error_writer", "response_code", code, "request", req)
 	remotedialer.DefaultErrorWriter(rw, req, code, err)
 }
 

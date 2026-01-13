@@ -11,7 +11,7 @@ import (
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	"github.com/rancher/rancher/pkg/ingresswrapper"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -100,7 +100,7 @@ func (c *Controller) sync(key string, ingress ingresswrapper.Ingress) (runtime.O
 		if err != nil {
 			return nil, err
 		}
-		logrus.Infof("Creating %s service %s for ingress %s, port %d", ingressService.serviceName, toCreate.Spec.Type, key, ingressService.servicePort)
+		log.Info("creating service for ingress", "operation", "ensure_service_for_ingress", "service_name", ingressService.serviceName, "service_type", toCreate.Spec.Type, "ingress", key, "port", ingressService.servicePort)
 		if _, err := c.services.Create(toCreate); err != nil {
 			return nil, err
 		}

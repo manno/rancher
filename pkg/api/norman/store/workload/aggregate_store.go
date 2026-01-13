@@ -11,8 +11,8 @@ import (
 	"github.com/rancher/norman/types/convert"
 	client "github.com/rancher/rancher/pkg/client/generated/project/v3"
 	projectclient "github.com/rancher/rancher/pkg/client/generated/project/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -134,7 +134,7 @@ func store(registries map[string]projectclient.RegistryCredential, domainToCreds
 	for registry := range registries {
 		rd, err := GetRegistryDomain(registry)
 		if err != nil {
-			logrus.Errorf("unable to get domain for registry=%v err=%v", registry, err)
+			log.Error("unable to get domain for registry", "operation", "store", "registry", registry, "error", err)
 			continue
 		}
 		secretRef := corev1.LocalObjectReference{Name: name}
@@ -182,12 +182,12 @@ func streamStore(eg *errgroup.Group, apiContext *types.APIContext, schema *types
 		events, err := schema.Store.Watch(apiContext, schema, opt)
 		if err != nil || events == nil {
 			if err != nil {
-				logrus.Errorf("failed on subscribe %s: %v", schema.ID, err)
+				log.Error("failed on subscribe", "operation", "stream_store", "schema_id", schema.ID, "error", err)
 			}
 			return err
 		}
 
-		logrus.Debugf("watching %s", schema.ID)
+		log.Debug("watching schema", "operation", "stream_store", "schema_id", schema.ID)
 
 		for e := range events {
 			result <- capabilitiesToUpperCase(e)

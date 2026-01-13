@@ -19,7 +19,7 @@ import (
 	"github.com/rancher/rancher/pkg/kontainer-engine/service"
 	"github.com/rancher/rancher/pkg/kontainerdriver"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -71,16 +71,16 @@ func skipOperatorCluster(action string, cluster *apimgmtv3.Cluster) bool {
 	msgFmt := "%s cluster [%s] will be managed by %s-operator-controller, skipping %s"
 	switch {
 	case cluster.Spec.AKSConfig != nil:
-		logrus.Debugf(msgFmt, "AKS", cluster.Name, "aks", action)
+		log.Debug(msgFmt, "AKS", cluster.Name, "aks", action)
 		return true
 	case cluster.Spec.EKSConfig != nil:
-		logrus.Debugf(msgFmt, "EKS", cluster.Name, "eks", action)
+		log.Debug(msgFmt, "EKS", cluster.Name, "eks", action)
 		return true
 	case cluster.Spec.GKEConfig != nil:
-		logrus.Debugf(msgFmt, "GKE", cluster.Name, "gke", action)
+		log.Debug(msgFmt, "GKE", cluster.Name, "gke", action)
 		return true
 	case cluster.Spec.AliConfig != nil:
-		logrus.Debugf(msgFmt, "Alibaba", cluster.Name, "ali", action)
+		log.Debug(msgFmt, "Alibaba", cluster.Name, "ali", action)
 		return true
 	default:
 		return false
@@ -92,7 +92,7 @@ func (p *Provisioner) Remove(cluster *apimgmtv3.Cluster) (runtime.Object, error)
 		return cluster, nil
 	}
 
-	logrus.Infof("Deleting cluster [%s]", cluster.Name)
+	log.Info("deleting cluster", "cluster", cluster.Name)
 	if skipLocalK3sImported(cluster) ||
 		cluster.Status.Driver == "" {
 		return nil, nil
@@ -109,7 +109,7 @@ func (p *Provisioner) Remove(cluster *apimgmtv3.Cluster) (runtime.Object, error)
 		}
 		time.Sleep(1 * time.Second)
 	}
-	logrus.Infof("Deleted cluster [%s]", cluster.Name)
+	log.Info("deleted cluster", "cluster", cluster.Name)
 
 	// cluster object will definitely have changed, reload
 	return p.Clusters.Get(cluster.Name, metav1.GetOptions{})
@@ -211,14 +211,13 @@ func (p *Provisioner) waitForSchema(cluster *apimgmtv3.Cluster) {
 			return true, nil
 		})
 		if err != nil {
-			logrus.Warnf("[cluster-provisioner-controller] Failed to find driver %v and schema %v for cluster %v on upgrade: %v",
-				driver, schemaName, cluster.Name, err)
+			log.Warn("failed to find driver and schema for cluster on upgrade", "driver", driver, "schema", schemaName, "cluster", cluster.Name, "error", err)
 		}
 	}
 
 	_, err := p.setKontainerEngineUpdate(cluster, "updated")
 	if err != nil {
-		logrus.Warnf("[cluster-provisioner-controller] Failed to set annotation on cluster %v on upgrade: %v", cluster.Name, err)
+		log.Warn("failed to set annotation on cluster on upgrade", "cluster", cluster.Name, "error", err)
 	}
 	p.ClusterController.Enqueue(cluster.Namespace, cluster.Name)
 }
@@ -454,17 +453,17 @@ func (p *Provisioner) reconcileCluster(cluster *apimgmtv3.Cluster, create bool) 
 		return cluster, &controller.ForgetError{Err: fmt.Errorf("backing off failure, delay: %v", delay)}
 	}
 
-	logrus.Infof("Provisioning cluster [%s]", cluster.Name)
+	log.Info("provisioning cluster", "cluster", cluster.Name)
 	if create {
-		logrus.Infof("Creating cluster [%s]", cluster.Name)
+		log.Info("creating cluster", "cluster", cluster.Name)
 		// setting updateTriggered to true since rke up will be called on cluster create
 		apiEndpoint, serviceAccountToken, caCert, err = p.driverCreate(cluster, *spec)
 		if err != nil && err.Error() == "cluster already exists" {
-			logrus.Infof("Create done, Updating cluster [%s]", cluster.Name)
+			log.Info("create done, updating cluster", "cluster", cluster.Name)
 			apiEndpoint, serviceAccountToken, caCert, _, err = p.driverUpdate(cluster, *spec)
 		}
 	} else {
-		logrus.Infof("Updating cluster [%s]", cluster.Name)
+		log.Info("updating cluster", "cluster", cluster.Name)
 
 		// Attempt to manually trigger updating, otherwise it will not be triggered until after exiting reconcile
 		apimgmtv3.ClusterConditionUpdated.Unknown(cluster)
@@ -524,7 +523,7 @@ func (p *Provisioner) reconcileCluster(cluster *apimgmtv3.Cluster, create bool) 
 			saved = true
 			break
 		} else {
-			logrus.Errorf("failed to update cluster [%s]: %v", cluster.Name, err)
+			log.Error("failed to update cluster", "cluster", cluster.Name, "error", err)
 			time.Sleep(2)
 		}
 	}
@@ -533,7 +532,7 @@ func (p *Provisioner) reconcileCluster(cluster *apimgmtv3.Cluster, create bool) 
 		return cluster, fmt.Errorf("failed to update cluster")
 	}
 
-	logrus.Infof("Provisioned cluster [%s]", cluster.Name)
+	log.Info("provisioned cluster", "cluster", cluster.Name)
 	return cluster, nil
 }
 
@@ -586,8 +585,7 @@ func (p *Provisioner) censorGenericEngineConfig(input apimgmtv3.ClusterSpec) (ap
 	driverName, ok := config[DriverNameField].(string)
 	if !ok {
 		// can't figure out driver type so blank out the whole thing
-		logrus.Warnf("cluster %v has a generic engine config but no driver type field; can't hide password "+
-			"fields so removing the entire config", input.DisplayName)
+		log.Warn("cluster has a generic engine config but no driver type field, can't hide password fields so removing the entire config", "cluster", input.DisplayName)
 		input.GenericEngineConfig = nil
 		return input, nil
 	}

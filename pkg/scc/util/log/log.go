@@ -1,14 +1,13 @@
 package log
 
 import (
-	"github.com/sirupsen/logrus"
+	"log/slog"
 
+	rlog "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/scc/consts"
 )
 
-type StructuredLogger = *logrus.Entry
-
-var rootLog *logrus.Logger
+type StructuredLogger = *slog.Logger
 
 type Builder struct {
 	Controller   string
@@ -16,15 +15,10 @@ type Builder struct {
 }
 
 func NewLog() StructuredLogger {
-	if rootLog == nil {
-		rootLog = logrus.StandardLogger()
-	}
-
-	baseLogger := rootLog.
-		WithField("component", "scc-operator-deployer")
+	baseLogger := rlog.L().With(slog.String("component", "scc-operator-deployer"))
 
 	if consts.IsDevMode() {
-		return baseLogger.WithField("devMode", true)
+		return baseLogger.With(slog.Bool("devMode", true))
 	}
 
 	return baseLogger
@@ -39,15 +33,15 @@ func NewControllerLogger(controllerName string) StructuredLogger {
 }
 
 func (lb *Builder) ToLogger() StructuredLogger {
-	baseLogEntry := NewLog()
+	baseLogger := NewLog()
 
 	if lb.Controller != "" {
-		baseLogEntry = baseLogEntry.WithField("controller", lb.Controller)
+		baseLogger = baseLogger.With(slog.String("controller", lb.Controller))
 	}
 
 	if lb.SubComponent != "" {
-		baseLogEntry = baseLogEntry.WithField("subcomponent", lb.SubComponent)
+		baseLogger = baseLogger.With(slog.String("subcomponent", lb.SubComponent))
 	}
 
-	return baseLogEntry
+	return baseLogger
 }

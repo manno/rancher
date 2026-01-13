@@ -13,7 +13,7 @@ import (
 	typesrbacv1 "github.com/rancher/rancher/pkg/generated/norman/rbac.authorization.k8s.io/v1"
 	pkgrbac "github.com/rancher/rancher/pkg/rbac"
 	"github.com/rancher/rancher/pkg/user"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -198,7 +198,7 @@ func (c *crtbLifecycle) reconcileBindings(binding *v3.ClusterRoleTemplateBinding
 		c.s.AddCondition(localConditions, condition, failedToCheckReferencedRole, err)
 
 		if apierrors.IsNotFound(err) {
-			logrus.Warnf("ClusterRoleTemplateBinding %s sets a non-existing role template %s. Skipping.", binding.Name, binding.RoleTemplateName)
+			log.Warn("ClusterRoleTemplateBinding sets a non-existing role template, skipping", "operation", "sync_crtb", "crtb", binding.Name, "role_template", binding.RoleTemplateName)
 			return nil
 		}
 
@@ -235,7 +235,7 @@ func (c *crtbLifecycle) reconcileBindings(binding *v3.ClusterRoleTemplateBinding
 	for _, p := range projects {
 		backingNamespace := p.GetProjectBackingNamespace()
 		if p.DeletionTimestamp != nil {
-			logrus.Warnf("Project %v is being deleted, not creating membership bindings", backingNamespace)
+			log.Warn("project is being deleted, not creating membership bindings", "operation", "sync_crtb", "namespace", backingNamespace)
 			continue
 		}
 		if err := c.mgr.grantManagementClusterScopedPrivilegesInProjectNamespace(binding.RoleTemplateName, backingNamespace, projectManagementPlaneResources, subject, binding); err != nil {
@@ -262,7 +262,7 @@ func (c *crtbLifecycle) removeMGMTClusterScopedPrivilegesInProjectNamespace(bind
 			return err
 		}
 		for _, rb := range rbs {
-			logrus.Infof("[%v] Deleting rolebinding %v in namespace %v for crtb %v", ctrbMGMTController, rb.Name, backingNamespace, binding.Name)
+			log.Info("deleting rolebinding in namespace for crtb", "operation", "sync_crtb", "controller", ctrbMGMTController, "rolebinding", rb.Name, "namespace", backingNamespace, "crtb", binding.Name)
 			if err := c.rbClient.DeleteNamespaced(backingNamespace, rb.Name, &metav1.DeleteOptions{}); err != nil {
 				return err
 			}

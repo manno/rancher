@@ -21,7 +21,7 @@ import (
 	"github.com/rancher/rancher/pkg/kontainer-engine/types"
 	managementschema "github.com/rancher/rancher/pkg/schemas/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -72,8 +72,7 @@ func (c *controller) capsSync(key string, cluster *v3.Cluster) (runtime.Object, 
 		capabilities.NodePortRange = DefaultNodePortRange
 		driverName, ok := (*cluster.Spec.GenericEngineConfig)["driverName"].(string)
 		if !ok {
-			logrus.Warnf("cluster %v had generic engine config but no driver name, k8s capabilities will "+
-				"not be populated correctly", key)
+			log.Warn("cluster had generic engine config but no driver name, k8s capabilities will not be populated correctly", "operation", "get_capabilities", "cluster", key)
 			return nil, nil
 		}
 

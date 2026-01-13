@@ -11,7 +11,7 @@ import (
 	"github.com/rancher/rancher/pkg/rbac"
 	"github.com/rancher/rancher/pkg/types/config"
 	rbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v12 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,7 +107,7 @@ func (c *grbHandler) sync(_ string, obj *apiv3.GlobalRoleBinding) (runtime.Objec
 		return obj, nil
 	}
 
-	logrus.Debugf("%s is an admin role", obj.GlobalRoleName)
+	log.Debug("global role is an admin role", "operation", "sync_grb", "role", obj.GlobalRoleName)
 	if err := c.ensureClusterAdminBinding(obj, &remoteConditions); err != nil {
 		return nil, err
 	}

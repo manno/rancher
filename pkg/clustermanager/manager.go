@@ -29,7 +29,7 @@ import (
 	"github.com/rancher/steve/pkg/accesscontrol"
 	rbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/v3/pkg/ratelimit"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"golang.org/x/sync/semaphore"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -80,7 +80,7 @@ func (m *Manager) Stop(cluster *apimgmtv3.Cluster) {
 	if !ok {
 		return
 	}
-	logrus.Infof("Stopping cluster agent for %s", obj.(*record).cluster.ClusterName)
+	log.Info("stopping cluster agent", "operation", "stop_cluster", "cluster", obj.(*record).cluster.ClusterName)
 	obj.(*record).cancel()
 	m.controllers.Delete(cluster.UID)
 }
@@ -158,7 +158,7 @@ func (m *Manager) startController(r *record, controllers, clusterOwner bool) err
 	if !r.started {
 		go func() {
 			if err := m.doStart(r, clusterOwner); err != nil {
-				logrus.Errorf("failed to start cluster controllers %s: %v", r.cluster.ClusterName, err)
+				log.Error("failed to start cluster controllers", "operation", "start_cluster", "cluster", r.cluster.ClusterName, "error", err)
 				m.markUnavailable(r.clusterRec.Name)
 				m.Stop(r.clusterRec)
 			}
@@ -188,7 +188,7 @@ func (m *Manager) changed(r *record, cluster *apimgmtv3.Cluster, controllers, cl
 func (m *Manager) doStart(rec *record, clusterOwner bool) (exit error) {
 	defer func() {
 		if exit == nil {
-			logrus.Infof("Starting cluster agent for %s [owner=%v]", rec.cluster.ClusterName, clusterOwner)
+			log.Info("starting cluster agent", "operation", "do_start_cluster", "cluster", rec.cluster.ClusterName, "owner", clusterOwner)
 		}
 	}()
 
@@ -244,7 +244,7 @@ func (m *Manager) doStart(rec *record, clusterOwner bool) (exit error) {
 	go func() {
 		defer close(done)
 
-		logrus.Debugf("[clustermanager] creating AccessControl for cluster %v", rec.cluster.ClusterName)
+		log.Debug("creating access control for cluster", "operation", "do_start_cluster", "cluster", rec.cluster.ClusterName)
 		rec.accessControl = rbac.NewAccessControl(transaction, rec.cluster.ClusterName, rec.cluster.RBACw)
 
 		err := rec.cluster.Start(rec.ctx)
@@ -483,7 +483,7 @@ func (m *Manager) UserContextFromClusterReconnecting(cluster *apimgmtv3.Cluster,
 		return nil, err
 	}
 	if kubeConfig == nil {
-		logrus.Debugf("could not get kubeconfig for cluster %s", cluster.Name)
+		log.Debug("could not get kubeconfig for cluster", "operation", "user_context_from_cluster", "cluster", cluster.Name)
 		return nil, nil
 	}
 	return config.NewUserContext(m.ScaledContext, *kubeConfig, cluster.Name)

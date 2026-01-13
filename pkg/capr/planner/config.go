@@ -26,7 +26,7 @@ import (
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/kv"
 	"github.com/rancher/wrangler/v3/pkg/yaml"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -149,14 +149,14 @@ func addRoleConfig(config map[string]interface{}, controlPlane *rkev1.RKEControl
 	// If this is a control-plane node, then we need to set arguments/(and for RKE2, volume mounts) to allow probes
 	// to run.
 	if isControlPlane(entry) {
-		logrus.Debug("addRoleConfig rendering arguments and mounts for kube-controller-manager")
+		log.Debug("rendering arguments and mounts for kube-controller-manager")
 		certDirArg, certDirMount := renderArgAndMount(config[KubeControllerManagerArg], config[KubeControllerManagerExtraMount], controlPlane, DefaultKubeControllerManagerDefaultSecurePort, DefaultKubeControllerManagerCertDir)
 		config[KubeControllerManagerArg] = certDirArg
 		if runtime == capr.RuntimeRKE2 {
 			config[KubeControllerManagerExtraMount] = certDirMount
 		}
 
-		logrus.Debug("addRoleConfig rendering arguments and mounts for kube-scheduler")
+		log.Debug("rendering arguments and mounts for kube-scheduler")
 		certDirArg, certDirMount = renderArgAndMount(config[KubeSchedulerArg], config[KubeSchedulerExtraMount], controlPlane, DefaultKubeSchedulerDefaultSecurePort, DefaultKubeSchedulerCertDir)
 		config[KubeSchedulerArg] = certDirArg
 		if runtime == capr.RuntimeRKE2 {
@@ -202,7 +202,7 @@ func (p *Planner) addManifests(nodePlan plan.NodePlan, controlPlane *rkev1.RKECo
 	}
 
 	if len(bootstrapManifests) > 0 {
-		logrus.Debugf("[planner] adding pre-bootstrap manifests")
+		log.Debug("adding pre-bootstrap manifests", "count", len(bootstrapManifests))
 		nodePlan.Files = append(nodePlan.Files, bootstrapManifests...)
 		return nodePlan, err
 	}

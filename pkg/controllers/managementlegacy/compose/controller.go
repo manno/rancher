@@ -23,7 +23,7 @@ import (
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/types/config/systemtokens"
 	"github.com/rancher/rancher/pkg/user"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -92,7 +92,7 @@ func (l Lifecycle) Create(obj *v3.ComposeConfig) (*v3.ComposeConfig, error) {
 	tokenName, _ := tokens.SplitTokenParts(token)
 	defer func() {
 		if err := l.systemTokens.DeleteToken(tokenName); err != nil {
-			logrus.Errorf("cleanup for compose token [%s] failed, will not retry: %v", tokenName, err)
+			log.Error("cleanup for compose token failed, will not retry", "operation", "Create", "token_name", tokenName, "error", err)
 		}
 	}()
 

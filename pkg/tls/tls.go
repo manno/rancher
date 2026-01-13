@@ -25,7 +25,7 @@ import (
 	appscontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/apps/v1"
 	"github.com/rancher/wrangler/v3/pkg/generated/controllers/core"
 	corev1controllers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -377,7 +377,7 @@ func filterCN(cns ...string) []string {
 	}
 	u, err := url.Parse(serverURL)
 	if err != nil {
-		logrus.Errorf("invalid server-url, can not parse %s: %v", serverURL, err)
+		log.Error("invalid server-url, cannot parse", "operation", "common_names", "server_url", serverURL, "error", err)
 		return cns
 	}
 	host := u.Hostname()

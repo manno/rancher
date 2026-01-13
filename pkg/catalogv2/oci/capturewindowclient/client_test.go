@@ -2,11 +2,12 @@ package capturewindowclient
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,7 +60,9 @@ func Test_RoundTrip(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			logrus.SetOutput(&buf)
+			originalLevel := log.GetLevel()
+			log.Init("text", "error", &buf)
+			defer log.Init("text", originalLevel, io.Discard)
 
 			// Create a test server that returns a 429 response with the RateLimit-Remaining header set to 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +131,9 @@ func Test_RoundTripHeadRequest(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
-			logrus.SetOutput(&buf)
+			originalLevel := log.GetLevel()
+			log.Init("text", "error", &buf)
+			defer log.Init("text", originalLevel, io.Discard)
 
 			// Create a test server that returns a 429 response with the RateLimit-Remaining header set to 0
 			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

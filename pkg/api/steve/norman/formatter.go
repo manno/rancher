@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/norman/urlbuilder"
 	v3 "github.com/rancher/rancher/pkg/schemas/cluster.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 type LinksAndActionsFormatter struct {
@@ -37,13 +37,13 @@ func (a *LinksAndActionsFormatter) Formatter(request *types.APIRequest, resource
 
 	schema := schemas.Schema(&a.apiVersion, a.schemaID)
 	if schema == nil {
-		logrus.Errorf("failed to find schema %s in %v", a.schemaID, a.apiVersion)
+		log.Error("failed to find schema", "operation", "formatter", "schema_id", a.schemaID, "api_version", a.apiVersion)
 		return
 	}
 
 	data, err := convert.EncodeToMap(resource.APIObject.Object)
 	if err != nil {
-		logrus.Errorf("failed to json encode api object: %v", err)
+		log.Error("failed to json encode api object", "operation", "formatter", "error", err)
 		return
 	}
 	schema.Mapper.FromInternal(data)
@@ -63,7 +63,7 @@ func (a *LinksAndActionsFormatter) Formatter(request *types.APIRequest, resource
 		apiRequest: request,
 	}
 	if err != nil {
-		logrus.Errorf("failed to create url builder: %v", err)
+		log.Error("failed to create url builder", "operation", "formatter", "error", err)
 		return
 	}
 

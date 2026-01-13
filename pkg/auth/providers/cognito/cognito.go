@@ -17,7 +17,7 @@ import (
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 // CognitoProvider represents AWS Cognito auth provider
@@ -54,13 +54,13 @@ func (c *CognitoProvider) GetName() string {
 
 func (s *CognitoProvider) Logout(w http.ResponseWriter, r *http.Request, token accessor.TokenAccessor) error {
 	providerName := token.GetAuthProvider()
-	logrus.Debugf("CognitoProvider [logout]: triggered by provider %s", providerName)
+	log.Debug("logout triggered", "provider", providerName, "operation", "logout")
 	oidcConfig, err := s.GetConfig()
 	if err != nil {
 		return fmt.Errorf("getting config for OIDC Logout: %w", err)
 	}
 	if oidcConfig.LogoutAllForced {
-		logrus.Debugf("CognitoProvider [logout]: Rancher provider resource `%v` configured for forced SLO, rejecting regular logout", providerName)
+		log.Debug("rejecting regular logout", "provider", providerName, "operation", "logout", "reason", "forced_slo_configured")
 		return fmt.Errorf("CognitoProvider [logout]: Rancher provider resource `%v` configured for forced SLO, rejecting regular logout", providerName)
 	}
 
@@ -68,7 +68,7 @@ func (s *CognitoProvider) Logout(w http.ResponseWriter, r *http.Request, token a
 }
 
 func (s *CognitoProvider) LogoutAll(w http.ResponseWriter, r *http.Request, token accessor.TokenAccessor) error {
-	logrus.Debugf("CognitoProvider [logout-all]: triggered by provider %s", token.GetAuthProvider())
+	log.Debug("logout-all triggered", "provider", token.GetAuthProvider(), "operation", "logout-all")
 	oidcConfig, err := s.GetConfig()
 	if err != nil {
 		return err
@@ -76,7 +76,7 @@ func (s *CognitoProvider) LogoutAll(w http.ResponseWriter, r *http.Request, toke
 
 	providerName := token.GetAuthProvider()
 	if !oidcConfig.LogoutAllEnabled {
-		logrus.Debugf("CognitoProvider [logout-all]: Rancher provider resource `%v` not configured for SLO", providerName)
+		log.Debug("provider not configured for SLO", "provider", providerName, "operation", "logout-all", "reason", "slo_not_enabled")
 		return fmt.Errorf("CognitoProvider [logout-all]: Rancher provider resource `%v` not configured for SLO", providerName)
 	}
 
@@ -103,7 +103,7 @@ func createIDPRedirectURL(r *http.Request, config *v3.OIDCConfig) (string, error
 
 	idpRedirectURL, err := url.Parse(config.EndSessionEndpoint)
 	if err != nil {
-		logrus.Errorf("CognitoProvider: failed parsing end session endpoint: %v", err)
+		log.Error("failed parsing end session endpoint", "provider", "cognito", "error", err)
 		return "", httperror.NewAPIError(httperror.InvalidBodyContent,
 			fmt.Sprintf("CognitoProvider: parsing end session endpoint: %s", err))
 	}

@@ -10,7 +10,7 @@ import (
 	util "github.com/rancher/rancher/pkg/controllers/managementagent/workload"
 	"github.com/rancher/rancher/pkg/ingresswrapper"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -56,7 +56,7 @@ func generateIngressService(name string, port int32, workloadIDs string) (ingres
 	if workloadIDs != "" {
 		b, err := json.Marshal(strings.Split(workloadIDs, "/"))
 		if err != nil {
-			logrus.WithError(err).Warnf("marshal workload ids %s string error", workloadIDs)
+			log.Warn("error marshaling workload ids", "operation", "parse_workload", "workload_ids", workloadIDs, "error", err)
 			return rtn, err
 		}
 		rtn.workloadIDs = string(b)

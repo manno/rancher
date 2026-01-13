@@ -18,7 +18,7 @@ import (
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -52,7 +52,7 @@ func Register(ctx context.Context, management *config.ManagementContext) {
 
 	version, err := getRancherMachineVersion()
 	if err != nil {
-		logrus.Warnf("error getting rancher-machine version: %v", err)
+		log.Warn("error getting rancher-machine version", "operation", "Register", "error", err)
 	}
 	nodeDriverLifecycle.dockerMachineVersion = version
 
@@ -70,12 +70,12 @@ type Lifecycle struct {
 }
 
 func (m *Lifecycle) Create(obj *v32.NodeDriver) (runtime.Object, error) {
-	logrus.Debugf("Handling creation of node driver %s", obj.Name)
+	log.Debug("handling creation of node driver", "operation", "Create", "driver_name", obj.Name)
 	return m.download(obj)
 }
 
 func (m *Lifecycle) download(obj *v32.NodeDriver) (*v32.NodeDriver, error) {
-	logrus.Debugf("Downloading node driver %s", obj.Name)
+	log.Debug("downloading node driver", "operation", "download", "driver_name", obj.Name)
 	driverLock.Lock()
 	defer driverLock.Unlock()
 	if !obj.Spec.Active && !obj.Spec.AddCloudCredential {
@@ -378,11 +378,11 @@ func (m *Lifecycle) Remove(obj *v32.NodeDriver) (runtime.Object, error) {
 		return obj, err
 	}
 	for _, schema := range schemas.Items {
-		logrus.Infof("Deleting schema %s", schema.Name)
+		log.Info("deleting schema", "operation", "Remove", "schema_name", schema.Name)
 		if err := m.schemaClient.Delete(schema.Name, &metav1.DeleteOptions{}); err != nil {
 			return obj, err
 		}
-		logrus.Infof("Deleting schema %s done", schema.Name)
+		log.Info("deleting schema done", "operation", "Remove", "schema_name", schema.Name)
 	}
 	if err := m.createOrUpdateNodeForEmbeddedType(obj.Spec.DisplayName+"config", obj.Spec.DisplayName+"Config", false); err != nil {
 		return obj, err
@@ -443,7 +443,7 @@ func (m *Lifecycle) createOrUpdateNodeForEmbeddedTypeWithParents(embeddedType, f
 		}
 		if _, ok := nodeSchema.Spec.ResourceFields[fieldName]; !ok {
 			// if embedded we add the type to schema
-			logrus.Infof("uploading %s to %s schema", fieldName, schemaID)
+			log.Info("uploading field to schema", "operation", "createOrUpdateNodeForEmbeddedTypeWithParents", "field_name", fieldName, "schema_id", schemaID)
 			nodeSchema.Spec.ResourceFields[fieldName] = v32.Field{
 				Create:   true,
 				Nullable: true,
@@ -455,7 +455,7 @@ func (m *Lifecycle) createOrUpdateNodeForEmbeddedTypeWithParents(embeddedType, f
 	} else {
 		// if not we delete it from schema
 		if _, ok := nodeSchema.Spec.ResourceFields[fieldName]; ok {
-			logrus.Infof("deleting %s from %s schema", fieldName, schemaID)
+			log.Info("deleting field from schema", "operation", "createOrUpdateNodeForEmbeddedTypeWithParents", "field_name", fieldName, "schema_id", schemaID)
 			delete(nodeSchema.Spec.ResourceFields, fieldName)
 			shouldUpdate = true
 		}
@@ -497,7 +497,7 @@ func updateDefault(credField v32.Field, val, kind string) v32.Field {
 		if err == nil {
 			credField.Default = v32.Values{IntValue: i}
 		} else {
-			logrus.Errorf("error converting %s to int %v", val, err)
+			log.Error("error converting value to int", "operation", "updateDefault", "value", val, "error", err)
 		}
 	case "boolean":
 		credField.Default = v32.Values{BoolValue: convert.ToBool(val)}
@@ -506,7 +506,7 @@ func updateDefault(credField v32.Field, val, kind string) v32.Field {
 	case "password", "string":
 		credField.Default = v32.Values{StringValue: val}
 	default:
-		logrus.Errorf("unsupported kind for default val:%s kind:%s", val, kind)
+		log.Error("unsupported kind for default value", "operation", "updateDefault", "value", val, "kind", kind)
 	}
 	return credField
 }

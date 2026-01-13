@@ -21,7 +21,7 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/data/convert"
 	controllerv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/summary"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"golang.org/x/mod/semver"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -176,12 +176,12 @@ func forceUpgradeLogout(configMapController controllerv1.ConfigMapController, to
 		}
 	}
 
-	logrus.Infof("Detected %s upgrade, forcing logout for all web users", migrationVersion)
+	log.Info("detected upgrade, forcing logout for all web users", "version", migrationVersion)
 
 	// list all tokens that were created for the dashboard
 	allTokens, err := tokenController.Cache().List(labels.SelectorFromSet(labels.Set{tokens.TokenKindLabel: "session"}))
 	if err != nil {
-		logrus.Error("Failed to list tokens for upgrade forced logout")
+		log.Error("failed to list tokens for upgrade forced logout")
 		return err
 	}
 
@@ -189,7 +189,7 @@ func forceUpgradeLogout(configMapController controllerv1.ConfigMapController, to
 	for _, token := range allTokens {
 		err = tokenController.Delete(token.ObjectMeta.Name, &metav1.DeleteOptions{})
 		if err != nil && !k8serror.IsNotFound(err) {
-			logrus.Errorf("Failed to delete token [%s] for upgrade forced logout", token.Name)
+			log.Error("failed to delete token for upgrade forced logout", "token", token.Name)
 		}
 	}
 
@@ -683,31 +683,31 @@ func rkeResourcesCleanup(w *wrangler.Context) error {
 
 	err = w.Core.ConfigMap().Delete(cattleNamespace, migrateRKEClusterState, &metav1.DeleteOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
-		logrus.Error("Failed to delete rkeaddons.management.cattle.io crd")
+		log.Error("failed to delete configmap", "configmap", migrateRKEClusterState)
 		return err
 	}
 
 	err = w.CRD.CustomResourceDefinition().Delete("rkeaddons.management.cattle.io", &metav1.DeleteOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
-		logrus.Error("Failed to delete rkeaddons.management.cattle.io crd")
+		log.Error("failed to delete crd", "crd", "rkeaddons.management.cattle.io")
 		return err
 	}
 
 	err = w.CRD.CustomResourceDefinition().Delete("rkek8sserviceoptions.management.cattle.io", &metav1.DeleteOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
-		logrus.Error("Failed to delete rkek8sserviceoptions.management.cattle.io crd")
+		log.Error("failed to delete crd", "crd", "rkek8sserviceoptions.management.cattle.io")
 		return err
 	}
 
 	err = w.CRD.CustomResourceDefinition().Delete("rkek8ssystemimages.management.cattle.io", &metav1.DeleteOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
-		logrus.Error("Failed to delete rkeaddons.management.cattle.io crd")
+		log.Error("failed to delete crd", "crd", "rkek8ssystemimages.management.cattle.io")
 		return err
 	}
 
 	err = w.CRD.CustomResourceDefinition().Delete("etcdbackups.management.cattle.io", &metav1.DeleteOptions{})
 	if err != nil && !k8serror.IsNotFound(err) {
-		logrus.Error("Failed to delete etcdbackups.management.cattle.io crd")
+		log.Error("failed to delete crd", "crd", "etcdbackups.management.cattle.io")
 		return err
 	}
 

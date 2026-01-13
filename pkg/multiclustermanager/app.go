@@ -28,7 +28,7 @@ import (
 	"github.com/rancher/rancher/pkg/tunnelserver/mcmauthorizer"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -151,7 +151,7 @@ func (m *mcm) Wait(ctx context.Context) {
 			if _, err := m.wranglerContext.Core.Namespace().Get(namespace.GlobalNamespace, metav1.GetOptions{}); err == nil {
 				return
 			}
-			logrus.Infof("Waiting for initial data to be populated")
+			log.Info("waiting for initial data to be populated", "operation", "mcm_wait")
 			time.Sleep(2 * time.Second)
 		}
 	case <-ctx.Done():
@@ -215,7 +215,7 @@ func (m *mcm) Start(ctx context.Context) error {
 		go managementdata.CleanupDuplicateBindings(m.ScaledContext, m.wranglerContext)
 		go managementdata.CleanupOrphanBindings(m.ScaledContext, m.wranglerContext)
 
-		logrus.Infof("Rancher startup complete")
+		log.Info("rancher startup complete", "operation", "mcm_start")
 		return nil
 	})
 

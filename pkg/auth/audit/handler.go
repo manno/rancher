@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
+	rlog "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -78,7 +78,7 @@ func (w *wrapWriter) CloseNotify() <-chan bool {
 	if cn, ok := w.ResponseWriter.(http.CloseNotifier); ok {
 		return cn.CloseNotify()
 	}
-	logrus.Errorf("Upstream ResponseWriter of type %v does not implement http.CloseNotifier", reflect.TypeOf(w.ResponseWriter))
+	rlog.Error("upstream ResponseWriter does not implement http.CloseNotifier", "operation", "close_notify", "type", reflect.TypeOf(w.ResponseWriter))
 	return make(<-chan bool)
 }
 
@@ -90,7 +90,7 @@ func (w *wrapWriter) Flush() {
 		flusher.Flush()
 		return
 	}
-	logrus.Errorf("Upstream ResponseWriter of type %v does not implement http.Flusher", reflect.TypeOf(w.ResponseWriter))
+	rlog.Error("upstream ResponseWriter does not implement http.Flusher", "operation", "flush", "type", reflect.TypeOf(w.ResponseWriter))
 }
 
 var _ http.ResponseWriter = (*wrapWriter)(nil)

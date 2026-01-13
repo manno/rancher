@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providerrefresh"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -114,8 +114,6 @@ func (ac *authConfigController) sync(key string, obj *v3.AuthConfig) (runtime.Ob
 	}
 
 	if !obj.Enabled {
-		refusalFmt := "Refusing to reset the config and clean up resources of the auth provider %s because its auth config annotation %s is set to %s."
-
 		switch value {
 		case CleanupUnlocked:
 			// First, reset the auth config by removing all but essential metadata fields.
@@ -130,17 +128,17 @@ func (ac *authConfigController) sync(key string, obj *v3.AuthConfig) (runtime.Ob
 			}
 
 			// Third, lock the config after cleanup and commit any updates to it.
-			logrus.Infof("The resources of the auth provider %s have been cleaned up successfully, and the auth config fields have been reset. Locking down the cleanup operation.", obj.Name)
+			log.Info("resources of auth provider cleaned up successfully, locking down cleanup", "operation", "cleanup_auth", "auth_provider", obj.Name)
 			ac.setCleanupAnnotation(unstructuredObj, CleanupRancherLocked)
 			return ac.updateAuthConfig(unstructuredObj, obj)
 		case CleanupRancherLocked:
-			logrus.Infof(refusalFmt, obj.Name, CleanupAnnotation, CleanupRancherLocked)
+			log.Info("refusing to clean up auth provider, rancher locked", "operation", "cleanup_auth", "auth_provider", obj.Name, "annotation", CleanupAnnotation)
 			return obj, nil
 		case CleanupUserLocked:
-			logrus.Infof(refusalFmt, obj.Name, CleanupAnnotation, CleanupUserLocked)
+			log.Info("refusing to clean up auth provider, user locked", "operation", "cleanup_auth", "auth_provider", obj.Name, "annotation", CleanupAnnotation)
 			return obj, nil
 		default:
-			logrus.Infof("Refusing to clean up auth provider %s because its auth config annotation %s is invalid", obj.Name, CleanupAnnotation)
+			log.Info("refusing to clean up auth provider, invalid annotation", "operation", "cleanup_auth", "auth_provider", obj.Name, "annotation", CleanupAnnotation)
 			return obj, nil
 		}
 	}

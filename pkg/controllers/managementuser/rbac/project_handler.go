@@ -12,7 +12,7 @@ import (
 	projectpkg "github.com/rancher/rancher/pkg/project"
 	"github.com/rancher/rancher/pkg/settings"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,7 +105,7 @@ func (p *pLifecycle) Remove(project *v3.Project) (runtime.Object, error) {
 		for _, secret := range secrets.Items {
 			err := p.secretClient.Delete(namespace.Name, secret.Name, &metav1.DeleteOptions{})
 			if err != nil && !apierrors.IsNotFound(err) {
-				logrus.Errorf("failed to delete project scoped secret %s/%s: %v", namespace.Name, secret.Name, err)
+				log.Error("failed to delete project scoped secret", "operation", "remove_project", "namespace", namespace.Name, "secret", secret.Name, "error", err)
 				returnErrors = errors.Join(returnErrors, err)
 			}
 		}

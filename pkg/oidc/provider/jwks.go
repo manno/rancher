@@ -14,7 +14,7 @@ import (
 
 	oidcerror "github.com/rancher/rancher/pkg/oidc/provider/error"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,7 +53,7 @@ func newJWKSHandler(secretCache corecontrollers.SecretCache, secretClient coreco
 	}
 
 	if errors.IsNotFound(err) {
-		logrus.Infof("[OIDC provider] creating a new signing key")
+		log.Info("creating a new signing key")
 		// generate a default RSA private key
 		privateKey, err := rsa.GenerateKey(rand.Reader, keyBits)
 		if err != nil {
@@ -121,7 +121,7 @@ func newJWKSHandler(secretCache corecontrollers.SecretCache, secretClient coreco
 func (h *jwksHandler) jwksEndpoint(w http.ResponseWriter, r *http.Request) {
 	s, err := h.secretCache.Get(keySecretNamespace, keySecretName)
 	if err != nil {
-		logrus.Errorf("[OIDC provider] failed to get secret with public keys %v", err)
+		log.Error("failed to get secret with public keys", "error", err)
 		oidcerror.WriteError(oidcerror.ServerError, "failed to get secret with public keys", http.StatusInternalServerError, w)
 		return
 	}
@@ -133,12 +133,12 @@ func (h *jwksHandler) jwksEndpoint(w http.ResponseWriter, r *http.Request) {
 
 		pubKey, err := getPublicKeyFromSecretData(value)
 		if err != nil {
-			logrus.Errorf("[OIDC provider] failed to extract public key from secret data %v", err)
+			log.Error("failed to extract public key from secret data", "error", err)
 			oidcerror.WriteError(oidcerror.ServerError, "failed to extract public key from secret data", http.StatusInternalServerError, w)
 			return
 		}
 		if pubKey.N.BitLen() < 2048 {
-			logrus.Warnf("[OIDC provider] ignoring key because the size is less than 2048 bits")
+			log.Warn("ignoring key because the size is less than 2048 bits")
 			continue
 		}
 

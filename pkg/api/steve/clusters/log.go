@@ -12,9 +12,9 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/steve/pkg/stores/proxy"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/endpoints/request"
@@ -36,18 +36,18 @@ func onError(rw http.ResponseWriter, _ *http.Request, code int, err error) {
 	rw.Write([]byte(err.Error()))
 }
 
-type log struct {
+type logHandler struct {
 	cg proxy.ClientGetter
 }
 
-func (l *log) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (l *logHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	err := l.printLog(resp, req)
 	if err != nil {
-		logrus.Infof("Error while handling cluster log: %v", err)
+		log.Info("error while handling cluster log", "error", err)
 	}
 }
 
-func (l *log) printLog(resp http.ResponseWriter, req *http.Request) error {
+func (l *logHandler) printLog(resp http.ResponseWriter, req *http.Request) error {
 	conn, err := upgrader.Upgrade(resp, req, nil)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func printMessage(msg string, conn *websocket.Conn) error {
 	return writer.Close()
 }
 
-func (l *log) contextAndClient(req *http.Request) (context.Context, user.Info, kubernetes.Interface, error) {
+func (l *logHandler) contextAndClient(req *http.Request) (context.Context, user.Info, kubernetes.Interface, error) {
 	ctx := req.Context()
 	client, err := l.cg.AdminK8sInterface()
 	if err != nil {

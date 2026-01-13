@@ -1,7 +1,10 @@
 package schema
 
-import "github.com/sirupsen/logrus"
+import (
+	rlog "github.com/rancher/rancher/pkg/log"
+	"log/slog"
+)
 
 var (
-	log = logrus.WithField("component", "types/mapper")
+	log = rlog.L().With(slog.String("component", "types/mapper"))
 )

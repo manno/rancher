@@ -25,7 +25,7 @@ import (
 	"github.com/rancher/rancher/pkg/types/config/systemtokens"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -281,7 +281,7 @@ func (m *nodesSyncer) reconcileAll() error {
 			return err
 		}
 		if node == nil {
-			logrus.Debugf("Failed to get node for machine [%s], preparing to delete", machine.Name)
+			log.Debug("failed to get node for machine, preparing to delete", "operation", "delete_node", "machine", machine.Name)
 			toDelete[machine.Name] = machine
 			continue
 		}
@@ -338,7 +338,7 @@ func (m *nodesSyncer) removeNode(machine *apimgmtv3.Node) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete machine [%s]", machine.Name)
 	}
-	logrus.Infof("Deleted cluster node %s [%s]", machine.Name, machine.Status.NodeName)
+	log.Info("deleted cluster node", "operation", "delete_node", "machine", machine.Name, "node_name", machine.Status.NodeName)
 	return nil
 }
 
@@ -351,19 +351,19 @@ func (m *nodesSyncer) updateNode(existing *apimgmtv3.Node, node *corev1.Node) er
 	if objectsAreEqual(existing, toUpdate) {
 		return nil
 	}
-	logrus.Debugf("Updating machine for node [%s]", node.Name)
+	log.Debug("updating machine for node", "operation", "update_node", "node", node.Name)
 	_, err = m.machines.Update(toUpdate)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to update machine for node [%s]", node.Name)
 	}
-	logrus.Debugf("Updated machine for node [%s]", node.Name)
+	log.Debug("updated machine for node", "operation", "update_node", "node", node.Name)
 	return nil
 }
 
 func (m *nodesSyncer) createNode(node *corev1.Node, nodeCache *NodeCache) error {
 	// respect user defined name or label
 	if nodehelper.IgnoreNode(node.Name, node.Labels) {
-		logrus.Debugf("Skipping apimgmtv3.Node creation for [%v] node", node.Name)
+		log.Debug("skipping apimgmtv3.Node creation for node", "operation", "create_node", "node", node.Name)
 		return nil
 	}
 
@@ -389,7 +389,7 @@ func (m *nodesSyncer) createNode(node *corev1.Node, nodeCache *NodeCache) error 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create machine for node [%s]", node.Name)
 	}
-	logrus.Infof("Created machine for node [%s]", node.Name)
+	log.Info("created machine for node", "operation", "create_node", "node", node.Name)
 	return nil
 }
 
@@ -475,7 +475,7 @@ func objectsAreEqual(existing *apimgmtv3.Node, toUpdate *apimgmtv3.Node) bool {
 
 	retVal := statusEqual && conditionsEqual && specEqual && nodeNameEqual && labelsEqual && annotationsEqual && requestsEqual && limitsEqual && rolesEqual
 	if !retVal {
-		logrus.Debugf("ObjectsAreEqualResults for %s: statusEqual: %t conditionsEqual: %t specEqual: %t"+
+		log.Debug("ObjectsAreEqualResults"+
 			" nodeNameEqual: %t labelsEqual: %t annotationsEqual: %t requestsEqual: %t limitsEqual: %t rolesEqual: %t",
 			toUpdate.Name, statusEqual, conditionsEqual, specEqual, nodeNameEqual, labelsEqual, annotationsEqual, requestsEqual, limitsEqual, rolesEqual)
 	}
@@ -500,37 +500,37 @@ func statusEqualTest(proposed, existing corev1.NodeStatus) bool {
 
 	// Capacity
 	if !reflect.DeepEqual(proposed.Capacity, existing.Capacity) {
-		logrus.Debugf("Changes in Capacity, proposed %#v, existing: %#v", proposed.Capacity, existing.Capacity)
+		log.Debug("changes in Capacity", "operation", "compare_nodes", "proposed_capacity", proposed.Capacity, "existing_capacity", existing.Capacity)
 		return false
 	}
 
 	// Allocatable
 	if !reflect.DeepEqual(proposed.Allocatable, existing.Allocatable) {
-		logrus.Debugf("Changes in Allocatable, proposed %#v, existing: %#v", proposed.Allocatable, existing.Allocatable)
+		log.Debug("changes in Allocatable", "operation", "compare_nodes", "proposed_allocatable", proposed.Allocatable, "existing_allocatable", existing.Allocatable)
 		return false
 	}
 
 	// Conditions
 	if !reflect.DeepEqual(proposed.Conditions, existing.Conditions) {
-		logrus.Debugf("Changes in Conditions, proposed %#v, existing: %#v", proposed.Conditions, existing.Conditions)
+		log.Debug("changes in Conditions", "operation", "compare_nodes", "proposed_conditions", proposed.Conditions, "existing_conditions", existing.Conditions)
 		return false
 	}
 
 	// Addresses
 	if !reflect.DeepEqual(proposed.Addresses, existing.Addresses) {
-		logrus.Debugf("Changes in Addresses, proposed %#v, existing: %#v", proposed.Addresses, existing.Addresses)
+		log.Debug("changes in Addresses", "operation", "compare_nodes", "proposed_addresses", proposed.Addresses, "existing_addresses", existing.Addresses)
 		return false
 	}
 
 	// Volumes in use (This test might prove to be an issue if order is not returned consistently.)
 	if !reflect.DeepEqual(proposed.VolumesInUse, existing.VolumesInUse) {
-		logrus.Debugf("Changes in VolumesInUse, proposed %#v, existing: %#v", proposed.VolumesInUse, existing.VolumesInUse)
+		log.Debug("changes in VolumesInUse", "operation", "compare_nodes", "proposed_volumes_in_use", proposed.VolumesInUse, "existing_volumes_in_use", existing.VolumesInUse)
 		return false
 	}
 
 	// VolumesAttached (This test might prove to cause excessive updates if order is not returned consistently.)
 	if !reflect.DeepEqual(proposed.VolumesAttached, existing.VolumesAttached) {
-		logrus.Debugf("Changes in VolumesAttached, proposed %#v, existing: %#v", proposed.VolumesAttached, existing.VolumesAttached)
+		log.Debug("changes in VolumesAttached", "operation", "compare_nodes", "proposed_volumes_attached", proposed.VolumesAttached, "existing_volumes_attached", existing.VolumesAttached)
 		return false
 	}
 
@@ -538,14 +538,6 @@ func statusEqualTest(proposed, existing corev1.NodeStatus) bool {
 	if proposed.NodeInfo.KubeletVersion != existing.NodeInfo.KubeletVersion ||
 		proposed.NodeInfo.KubeProxyVersion != existing.NodeInfo.KubeProxyVersion ||
 		proposed.NodeInfo.ContainerRuntimeVersion != existing.NodeInfo.ContainerRuntimeVersion {
-		logrus.Debugf("Changes in KubernetesInfo, "+
-			"KubeletVersion proposed %#v, existing: %#v"+
-			"KubeProxyVersion proposed %#v, existing: %#v"+
-			"ContainerRuntimeVersion proposed %#v, existing: %#v",
-			proposed.NodeInfo.KubeletVersion, existing.NodeInfo.KubeletVersion,
-			proposed.NodeInfo.KubeProxyVersion, existing.NodeInfo.KubeProxyVersion,
-			proposed.NodeInfo.ContainerRuntimeVersion, existing.NodeInfo.ContainerRuntimeVersion)
-		return false
 	}
 
 	return true

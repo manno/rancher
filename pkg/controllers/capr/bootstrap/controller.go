@@ -24,7 +24,7 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/name"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -298,7 +298,7 @@ func (h *handler) OnChange(_ string, bootstrap *rkev1.RKEBootstrap) (*rkev1.RKEB
 	// If the bootstrap spec cluster name is blank, we need to update the bootstrap spec to the correct value
 	// This is to handle old rkebootstrap objects for unmanaged clusters that did not have the spec properly set
 	if v, ok := bootstrap.Labels[capi.ClusterNameLabel]; ok && v != "" && bootstrap.Spec.ClusterName != v {
-		logrus.Debugf("[rkebootstrap] %s/%s: setting cluster name", bootstrap.Namespace, bootstrap.Name)
+		log.Debug("rkebootstrap: setting cluster name", "operation", "on_change", "namespace", bootstrap.Namespace, "name", bootstrap.Name)
 		bootstrap = bootstrap.DeepCopy()
 		bootstrap.Spec.ClusterName = v
 		return h.rkeBootstrap.Update(bootstrap)
@@ -314,34 +314,34 @@ func (h *handler) GeneratingHandler(bootstrap *rkev1.RKEBootstrap, status rkev1.
 
 	machine, err := capr.GetOwnerCAPIMachine(bootstrap, h.machineCache)
 	if apierrors.IsNotFound(err) {
-		logrus.Debugf("[rkebootstrap] %s/%s: waiting: machine to be set as owner reference", bootstrap.Namespace, bootstrap.Name)
+		log.Debug("rkebootstrap: waiting for machine to be set as owner reference", "operation", "generating_handler", "namespace", bootstrap.Namespace, "name", bootstrap.Name)
 		h.rkeBootstrap.EnqueueAfter(bootstrap.Namespace, bootstrap.Name, 10*time.Second)
 		return result, status, generic.ErrSkip
 	}
 	if err != nil {
-		logrus.Errorf("[rkebootstrap] %s/%s: error getting machine by owner reference %v", bootstrap.Namespace, bootstrap.Name, err)
+		log.Error("rkebootstrap: error getting machine by owner reference", "operation", "generating_handler", "namespace", bootstrap.Namespace, "name", bootstrap.Name, "error", err)
 		return nil, status, err
 	}
 
 	capiCluster, err := h.capiClusterCache.Get(machine.Namespace, machine.Spec.ClusterName)
 	if apierrors.IsNotFound(err) {
-		logrus.Debugf("[rkebootstrap] %s/%s: waiting: CAPI cluster does not exist", bootstrap.Namespace, bootstrap.Name)
+		log.Debug("rkebootstrap: waiting for capi cluster to exist", "operation", "generating_handler", "namespace", bootstrap.Namespace, "name", bootstrap.Name)
 		h.rkeBootstrap.EnqueueAfter(bootstrap.Namespace, bootstrap.Name, 10*time.Second)
 		return result, status, generic.ErrSkip
 	}
 	if err != nil {
-		logrus.Errorf("[rkebootstrap] %s/%s: error getting CAPI cluster %v", bootstrap.Namespace, bootstrap.Name, err)
+		log.Error("rkebootstrap: error getting capi cluster", "operation", "generating_handler", "namespace", bootstrap.Namespace, "name", bootstrap.Name, "error", err)
 		return result, status, err
 	}
 
 	if capiannotations.IsPaused(capiCluster, bootstrap) {
-		logrus.Debugf("[rkebootstrap] %s/%s: waiting: CAPI cluster or RKEBootstrap is paused", bootstrap.Namespace, bootstrap.Name)
+		log.Debug("rkebootstrap: waiting for capi cluster or rke bootstrap to be unpaused", "operation", "generating_handler", "namespace", bootstrap.Namespace, "name", bootstrap.Name)
 		h.rkeBootstrap.EnqueueAfter(bootstrap.Namespace, bootstrap.Name, 10*time.Second)
 		return result, status, generic.ErrSkip
 	}
 
 	if !capiCluster.Status.InfrastructureReady {
-		logrus.Debugf("[rkebootstrap] %s/%s: waiting: CAPI cluster infrastructure is not ready", bootstrap.Namespace, bootstrap.Name)
+		log.Debug("rkebootstrap: waiting for capi cluster infrastructure to be ready", "operation", "generating_handler", "namespace", bootstrap.Namespace, "name", bootstrap.Name)
 		h.rkeBootstrap.EnqueueAfter(bootstrap.Namespace, bootstrap.Name, 10*time.Second)
 		return result, status, generic.ErrSkip
 	}
@@ -359,7 +359,7 @@ func (h *handler) GeneratingHandler(bootstrap *rkev1.RKEBootstrap, status rkev1.
 		if status.DataSecretName == nil {
 			status.DataSecretName = &bootstrapSecret.Name
 			status.Ready = true
-			logrus.Debugf("[rkebootstrap] %s/%s: setting dataSecretName: %s", bootstrap.Namespace, bootstrap.Name, *status.DataSecretName)
+			log.Debug("rkebootstrap: setting dataSecretName", "operation", "generating_handler", "namespace", bootstrap.Namespace, "name", bootstrap.Name, "data_secret_name", *status.DataSecretName)
 		}
 		result = append(result, bootstrapSecret)
 	}
@@ -408,7 +408,7 @@ func getLabelsAndAnnotationsForPlanSecret(bootstrap *rkev1.RKEBootstrap, machine
 // OnRemove adds finalizer handling to the RKEBootstrap object, and is used to prevent deletion of the RKE Bootstrap
 // when it is deleting and bootstrap is for an etcd node.
 func (h *handler) OnRemove(_ string, bootstrap *rkev1.RKEBootstrap) (*rkev1.RKEBootstrap, error) {
-	logrus.Debugf("[rkebootstrap] %s/%s: OnRemove invoked", bootstrap.Namespace, bootstrap.Name)
+	log.Debug("rkebootstrap: on remove invoked", "operation", "on_remove", "namespace", bootstrap.Namespace, "name", bootstrap.Name)
 	return h.reconcileMachinePreTerminateAnnotation(bootstrap)
 }
 
@@ -461,28 +461,28 @@ func (h *handler) reconcileMachinePreTerminateAnnotation(bootstrap *rkev1.RKEBoo
 	}
 
 	if bootstrap.Spec.ClusterName == "" {
-		logrus.Warnf("[rkebootstrap] %s/%s: CAPI cluster label %s was not found in bootstrap labels, ensuring machine pre-terminate annotation is removed", bootstrap.Namespace, bootstrap.Name, capi.ClusterNameLabel)
+		log.Warn("rkebootstrap: capi cluster label not found in bootstrap labels, ensuring machine pre-terminate annotation removed", "operation", "reconcile_machine_pre_terminate_annotation", "namespace", bootstrap.Namespace, "name", bootstrap.Name, "label", capi.ClusterNameLabel)
 		return h.ensureMachinePreTerminateAnnotationRemoved(bootstrap, machine)
 	}
 
 	capiCluster, err := h.capiClusterCache.Get(bootstrap.Namespace, bootstrap.Spec.ClusterName)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logrus.Warnf("[rkebootstrap] %s/%s: CAPI cluster %s/%s was not found, ensuring machine pre-terminate annotation is removed", bootstrap.Namespace, bootstrap.Name, bootstrap.Namespace, bootstrap.Spec.ClusterName)
+			log.Warn("rkebootstrap: capi cluster not found, ensuring machine pre-terminate annotation removed", "operation", "reconcile_machine_pre_terminate_annotation", "bootstrap_namespace", bootstrap.Namespace, "bootstrap_name", bootstrap.Name, "cluster_namespace", bootstrap.Namespace, "cluster_name", bootstrap.Spec.ClusterName)
 			return h.ensureMachinePreTerminateAnnotationRemoved(bootstrap, machine)
 		}
 		return bootstrap, err
 	}
 
 	if capiCluster.Spec.ControlPlaneRef == nil {
-		logrus.Warnf("[rkebootstrap] %s/%s: CAPI cluster %s/%s controlplane object reference was nil, ensuring machine pre-terminate annotation is removed", bootstrap.Namespace, bootstrap.Name, capiCluster.Namespace, capiCluster.Name)
+		log.Warn("rkebootstrap: capi cluster controlplane object reference nil, ensuring machine pre-terminate annotation removed", "operation", "reconcile_machine_pre_terminate_annotation", "bootstrap_namespace", bootstrap.Namespace, "bootstrap_name", bootstrap.Name, "cluster_namespace", capiCluster.Namespace, "cluster_name", capiCluster.Name)
 		return h.ensureMachinePreTerminateAnnotationRemoved(bootstrap, machine)
 	}
 
 	cp, err := h.rkeControlPlanes.Get(capiCluster.Spec.ControlPlaneRef.Namespace, capiCluster.Spec.ControlPlaneRef.Name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logrus.Warnf("[rkebootstrap] %s/%s: RKEControlPlane %s/%s was not found, ensuring machine pre-terminate annotation is removed", bootstrap.Namespace, bootstrap.Name, capiCluster.Spec.ControlPlaneRef.Namespace, capiCluster.Spec.ControlPlaneRef.Name)
+			log.Warn("rkebootstrap: rke control plane not found, ensuring machine pre-terminate annotation removed", "operation", "reconcile_machine_pre_terminate_annotation", "bootstrap_namespace", bootstrap.Namespace, "bootstrap_name", bootstrap.Name, "controlplane_namespace", capiCluster.Spec.ControlPlaneRef.Namespace, "controlplane_name", capiCluster.Spec.ControlPlaneRef.Name)
 			return h.ensureMachinePreTerminateAnnotationRemoved(bootstrap, machine)
 		}
 		return bootstrap, err
@@ -493,7 +493,7 @@ func (h *handler) reconcileMachinePreTerminateAnnotation(bootstrap *rkev1.RKEBoo
 	}
 
 	if machine.Status.NodeRef == nil {
-		logrus.Infof("[rkebootstrap] No associated node found for machine %s/%s in cluster %s, ensuring machine pre-terminate annotation is removed", machine.Namespace, machine.Name, bootstrap.Spec.ClusterName)
+		log.Info("rkebootstrap: no associated node found for machine, ensuring machine pre-terminate annotation removed", "operation", "reconcile_machine_pre_terminate_annotation", "machine_namespace", machine.Namespace, "machine_name", machine.Name, "cluster", bootstrap.Spec.ClusterName)
 		return h.ensureMachinePreTerminateAnnotationRemoved(bootstrap, machine)
 	}
 
@@ -515,7 +515,7 @@ func (h *handler) reconcileMachinePreTerminateAnnotation(bootstrap *rkev1.RKEBoo
 			}
 			for _, ps := range planSecrets {
 				if ps.GetAnnotations()[capr.JoinedToAnnotation] == joinURL {
-					logrus.Errorf("[rkebootstrap] %s/%s: cluster %s/%s machine %s/%s was still joined to deleting etcd machine %s/%s", bootstrap.Namespace, bootstrap.Name, capiCluster.Namespace, capiCluster.Name, bootstrap.Namespace, ps.GetLabels()[capr.MachineNameLabel], machine.Namespace, machine.Name)
+					log.Error("rkebootstrap: machine still joined to deleting etcd machine", "operation", "reconcile_machine_pre_terminate_annotation", "bootstrap_namespace", bootstrap.Namespace, "bootstrap_name", bootstrap.Name, "cluster_namespace", capiCluster.Namespace, "cluster_name", capiCluster.Name, "machine_namespace", bootstrap.Namespace, "machine_name", ps.GetLabels()[capr.MachineNameLabel], "etcd_machine_namespace", machine.Namespace, "etcd_machine_name", machine.Name)
 					h.rkeBootstrap.EnqueueAfter(bootstrap.Namespace, bootstrap.Name, 5*time.Second)
 					return bootstrap, generic.ErrSkip
 				}
@@ -527,8 +527,7 @@ func (h *handler) reconcileMachinePreTerminateAnnotation(bootstrap *rkev1.RKEBoo
 		return bootstrap, err
 	} else if wait > 0 {
 		machineDeletionTime := machine.DeletionTimestamp.Time
-		logrus.Infof("[rkebootstrap] %s/%s: single-remaining etcd; deferring safe removal for %s (until %s) to avoid etcd election race",
-			bootstrap.Namespace, bootstrap.Name, wait.Round(time.Second), machineDeletionTime.Add(electionBackoff).Format(time.RFC3339))
+		log.Info("rkebootstrap: single-remaining etcd, deferring safe removal to avoid etcd election race", "operation", "reconcile_machine_pre_terminate_annotation", "namespace", bootstrap.Namespace, "name", bootstrap.Name, "wait_duration", wait.Round(time.Second), "defer_until", machineDeletionTime.Add(electionBackoff).Format(time.RFC3339))
 		h.rkeBootstrap.EnqueueAfter(bootstrap.Namespace, bootstrap.Name, wait)
 		return bootstrap, generic.ErrSkip
 	}

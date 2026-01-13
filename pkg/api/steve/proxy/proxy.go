@@ -16,7 +16,7 @@ import (
 	"github.com/rancher/remotedialer"
 	"github.com/rancher/steve/pkg/auth"
 	"github.com/rancher/steve/pkg/proxy"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	authzv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -197,10 +197,10 @@ func (h *Handler) dialer(ctx context.Context, network, address string) (net.Conn
 		conn, err = dialer(ctx, network, "127.0.0.1:6080")
 		if err != nil && strings.Contains(err.Error(), "failed to find Session for client") {
 			if i < 14 {
-				logrus.Tracef("steve.proxy.dialer: lost connection, retrying")
+				log.Trace("lost connection, retrying", "operation", "proxy_dialer", "attempt", i+1)
 				time.Sleep(time.Second)
 			} else {
-				logrus.Tracef("steve.proxy.dialer: lost connection, failed to reconnect after 15 attempts")
+				log.Trace("lost connection, failed to reconnect after 15 attempts", "operation", "proxy_dialer")
 			}
 		} else {
 			break

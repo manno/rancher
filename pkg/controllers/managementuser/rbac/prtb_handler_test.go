@@ -11,7 +11,7 @@ import (
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	rancherv3fakes "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3/fakes"
 	"github.com/rancher/wrangler/v3/pkg/generic/fake"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -111,7 +111,7 @@ var (
 
 func Test_manager_reconcileRoleForProjectAccessToGlobalResource(t *testing.T) {
 	// discard logs to avoid cluttering
-	logrus.SetOutput(io.Discard)
+	log.Init("text", "info", io.Discard)
 
 	type controllers struct {
 		crLister     *fake.MockNonNamespacedCacheInterface[*v1.ClusterRole]

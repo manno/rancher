@@ -8,7 +8,7 @@ import (
 	capicontrollers "github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io/v1beta1"
 	wapiextv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/apiextensions.k8s.io/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
@@ -37,7 +37,7 @@ func NewCAPIInitializer(clients *Context) *DeferredCAPIInitializer {
 func (d *DeferredCAPIInitializer) WaitForClient(ctx context.Context) (*CAPIContext, error) {
 	var done atomic.Bool
 	ready := make(chan struct{})
-	logrus.Info("[deferred-capi - WaitForClient] waiting for CAPI CRDs to be established...")
+	log.Info("waiting for CAPI CRDs to be established", "operation", "deferred_capi_wait_for_client")
 	d.context.CRD.CustomResourceDefinition().OnChange(ctx, "capi-deferred-registration", func(key string, crd *apiextv1.CustomResourceDefinition) (*apiextv1.CustomResourceDefinition, error) {
 		if done.Load() {
 			return crd, nil
@@ -60,14 +60,14 @@ func (d *DeferredCAPIInitializer) WaitForClient(ctx context.Context) (*CAPIConte
 		return nil, ctx.Err()
 	}
 
-	logrus.Info("[deferred-capi - WaitForClient] CRDs found, initializing CAPI factory")
+	log.Info("CAPI CRDs found, initializing CAPI factory", "operation", "deferred_capi_wait_for_client")
 	opts := &generic.FactoryOptions{
 		SharedControllerFactory: d.context.ControllerFactory,
 	}
 
 	capi, err := capi.NewFactoryFromConfigWithOptions(d.context.RESTConfig, opts)
 	if err != nil {
-		logrus.Fatalf("Encountered unexpected error while creating capi factory: %v", err)
+		log.Fatal("encountered unexpected error while creating capi factory", "operation", "deferred_capi_wait_for_client", "error", err)
 	}
 
 	return &CAPIContext{
@@ -86,17 +86,17 @@ func capiCRDsReady(crdCache wapiextv1.CustomResourceDefinitionCache) bool {
 		"machinehealthchecks.cluster.x-k8s.io",
 	}
 
-	logrus.Tracef("[deferred-capi] Checking CAPI CRDs availability and establishment status")
+	log.Trace("checking CAPI CRDs availability and establishment status", "operation", "capi_crds_ready")
 	allCRDsReady := true
 	for _, crdName := range requiredCRDs {
 		crd, err := crdCache.Get(crdName)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				logrus.Tracef("[deferred-capi] CRD %s not found, continuing to wait", crdName)
+				log.Trace("CAPI CRD not found, continuing to wait", "operation", "capi_crds_ready", "crd", crdName)
 				allCRDsReady = false
 				break
 			}
-			logrus.Errorf("[deferred-capi] Error checking for CAPI CRD %s: %v", crdName, err)
+			log.Error("error checking for CAPI CRD", "operation", "capi_crds_ready", "crd", crdName, "error", err)
 			allCRDsReady = false
 			break
 		}
@@ -110,12 +110,12 @@ func capiCRDsReady(crdCache wapiextv1.CustomResourceDefinitionCache) bool {
 		}
 
 		if !established {
-			logrus.Tracef("[deferred-capi] CRD %s exists but is not yet established, continuing to wait", crdName)
+			log.Trace("CAPI CRD exists but not yet established, continuing to wait", "operation", "capi_crds_ready", "crd", crdName)
 			allCRDsReady = false
 			break
 		}
 
-		logrus.Tracef("[deferred-capi] CRD %s is available and established", crdName)
+		log.Trace("CAPI CRD is available and established", "operation", "capi_crds_ready", "crd", crdName)
 	}
 
 	return allCRDsReady

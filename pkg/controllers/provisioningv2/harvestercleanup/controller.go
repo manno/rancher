@@ -7,7 +7,7 @@ import (
 
 	"github.com/rancher/wrangler/v3/pkg/data"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,11 +81,11 @@ func (h *handler) onChange(obj runtime.Object) (runtime.Object, error) {
 
 	capiCluster, err := capr.GetCAPIClusterFromLabel(obj, h.capiClusters)
 	if apierrors.IsNotFound(err) {
-		logrus.Warnf("[%s] %s: there is no cluster (apiversion=cluster.x-k8s.io). Skipping ...", harvMachineProvCleanupHandlerName, key)
+		log.Warn("there is no cluster. Skipping", "operation", "cleanup_harvester", "apiversion", "cluster.x-k8s.io", "handler", harvMachineProvCleanupHandlerName, "key", key)
 		return obj, nil
 	}
 	if err != nil {
-		logrus.Errorf("[%s] %s: error getting cluster (apiversion=cluster.x-k8s.io): %v", harvMachineProvCleanupHandlerName, key, err)
+		log.Error("error getting cluster", "operation", "cleanup_harvester", "apiversion", "cluster.x-k8s.io", "handler", harvMachineProvCleanupHandlerName, "key", key, "error", err)
 		return obj, err
 	}
 
@@ -104,7 +104,7 @@ func (h *handler) onChange(obj runtime.Object) (runtime.Object, error) {
 
 	cluster, err := h.clusterCache.Get(objMeta.GetNamespace(), capiCluster.Name)
 	if err != nil {
-		logrus.Errorf("[%s] %s: error getting cluster (apiversion=provisioning.cattle.io): %v", harvMachineProvCleanupHandlerName, key, err)
+		log.Error("error getting cluster", "operation", "cleanup_harvester", "apiversion", "provisioning.cattle.io", "handler", harvMachineProvCleanupHandlerName, "key", key, "error", err)
 		return obj, err
 	}
 
@@ -118,13 +118,13 @@ func (h *handler) onChange(obj runtime.Object) (runtime.Object, error) {
 
 	secret, err := machineprovision.GetCloudCredentialSecret(h.secretCache, "", cluster.Spec.CloudCredentialSecretName)
 	if err != nil {
-		logrus.Errorf("[%s] %s: error getting cloud credential secret: %v", harvMachineProvCleanupHandlerName, key, err)
+		log.Error("error getting cloud credential secret", "operation", "cleanup_harvester", "handler", harvMachineProvCleanupHandlerName, "key", key, "error", err)
 		return obj, err
 	}
 
 	restConfig, err := clientcmd.RESTConfigFromKubeConfig(secret.Data["harvestercredentialConfig-kubeconfigContent"])
 	if err != nil {
-		logrus.Errorf("[%s] %s: error getting REST config from cloud credential secret: %v", harvMachineProvCleanupHandlerName, key, err)
+		log.Error("error getting REST config from cloud credential secret", "operation", "cleanup_harvester", "handler", harvMachineProvCleanupHandlerName, "key", key, "error", err)
 		return obj, err
 	}
 
@@ -132,7 +132,7 @@ func (h *handler) onChange(obj runtime.Object) (runtime.Object, error) {
 	// the kubevirt API into Rancher.
 	dynamicClient, err := k8dynamic.NewForConfig(restConfig)
 	if err != nil {
-		logrus.Errorf("[%s] %s: error getting dynamic client: %v", harvMachineProvCleanupHandlerName, key, err)
+		log.Error("error getting dynamic client", "operation", "cleanup_harvester", "handler", harvMachineProvCleanupHandlerName, "key", key, "error", err)
 		return obj, err
 	}
 
@@ -144,12 +144,12 @@ func (h *handler) onChange(obj runtime.Object) (runtime.Object, error) {
 
 	resource, err := dynamicClient.Resource(resourceGVR).Namespace(resourceNamespace).Get(context.TODO(), resourceName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		logrus.Warnf("[%s] %s: there is no VM (gvr=%s, namespace=%s, name=%s). Skipping ...",
+		log.Warn("there is no VM. Skipping", "operation", "cleanup_harvester", "handler", harvMachineProvCleanupHandlerName, "key", key, "gvr", harvMachineProvCleanupHandlerName,
 			harvMachineProvCleanupHandlerName, key, resourceGVR.String(), resourceNamespace, resourceName)
 		return obj, nil
 	}
 	if err != nil {
-		logrus.Errorf("[%s] %s: error getting VM (gvr=%s, namespace=%s, name=%s): %v",
+		log.Error("error getting VM", "operation", "cleanup_harvester", "handler", harvMachineProvCleanupHandlerName, "key", key,
 			harvMachineProvCleanupHandlerName, key, resourceGVR.String(), resourceNamespace, resourceName, err)
 		return obj, err
 	}
@@ -165,17 +165,17 @@ func (h *handler) onChange(obj runtime.Object) (runtime.Object, error) {
 		_, err = dynamicClient.Resource(resourceGVR).Namespace(resourceNamespace).Update(context.TODO(), resource, metav1.UpdateOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logrus.Warnf("[%s] %s: there is no VM to update (gvr=%s, namespace=%s, name=%s). Skipping ...",
+				log.Warn("there is no VM to update. Skipping", "operation", "cleanup_harvester", "handler", harvMachineProvCleanupHandlerName, "key", key,
 					harvMachineProvCleanupHandlerName, key, resourceGVR.String(), resourceNamespace, resourceName)
 				return obj, nil
 			} else {
 				err = fmt.Errorf("failed to update VM (gvr=%s, namespace=%s, name=%s): %w", resourceGVR.String(), resourceNamespace, resourceName, err)
-				logrus.Errorf("[%s] %s: %v", harvMachineProvCleanupHandlerName, key, err)
+				log.Error("cleanup harvester error", "operation", "cleanup_harvester", "handler", harvMachineProvCleanupHandlerName, "key", key, "error", err)
 				return obj, err
 			}
 		}
 
-		logrus.Infof("[%s] %s: VM successfully marked for removal (gvr=%s, namespace=%s, name=%s)",
+		log.Info("VM successfully marked for removal", "operation", "cleanup_harvester", "handler", harvMachineProvCleanupHandlerName, "key", key,
 			harvMachineProvCleanupHandlerName, key, resourceGVR.String(), resourceNamespace, resourceName)
 	}
 

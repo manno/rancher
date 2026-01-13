@@ -19,9 +19,9 @@ import (
 	"github.com/rancher/rancher/pkg/features"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/utils"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/wrangler"
 	steveauth "github.com/rancher/steve/pkg/auth"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apiserver/pkg/endpoints/request"
 )
@@ -89,7 +89,7 @@ func newAPIManagement(ctx context.Context, scaledContext *config.ScaledContext, 
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infof("Configuring auth server API body limit to %v bytes", apiLimit)
+	log.Info("configuring auth server API body limit", "operation", "new_api_management", "limit_bytes", apiLimit)
 
 	limitingHandler := utils.APIBodyLimitingHandler(apiLimit)
 	root.PathPrefix("/v1-saml").Handler(limitingHandler(saml))
@@ -147,7 +147,7 @@ func (s *Server) OnLeader(ctx context.Context) error {
 
 	tokens.StartPurgeDaemon(ctx, management)
 	providerrefresh.StartRefreshDaemon(s.scaledContext, management)
-	logrus.Infof("Steve auth startup complete")
+	log.Info("steve auth startup complete", "operation", "on_leader")
 	return nil
 }
 

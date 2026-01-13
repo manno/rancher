@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/rancher/pkg/controllers"
 	wranglerv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	rbacv1 "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -295,7 +295,7 @@ func reconcile[T generic.RuntimeMetaObject, TList runtime.Object](
 
 	for name := range existing {
 		if _, ok := builtRoles[name]; !ok {
-			logrus.Infof("Removing %v", name)
+			log.Info("removing role", "operation", "reconcile_roles", "name", name)
 			if err := client.Delete(name, nil); err != nil {
 				return errors.Wrapf(err, "couldn't delete %v", name)
 			}
@@ -317,7 +317,7 @@ func reconcile[T generic.RuntimeMetaObject, TList runtime.Object](
 			continue
 		}
 
-		logrus.Infof("Creating %v", name)
+		log.Info("creating role", "operation", "reconcile_roles", "name", name)
 		if _, err := client.Create(gr); err != nil {
 			return errors.Wrapf(err, "couldn't create %v", name)
 		}
@@ -327,7 +327,7 @@ func reconcile[T generic.RuntimeMetaObject, TList runtime.Object](
 }
 
 func (rb *roleBuilder) reconcileGlobalRoles(grClient wranglerv3.GlobalRoleClient) error {
-	logrus.Info("Reconciling GlobalRoles")
+	log.Info("reconciling globalroles", "operation", "add_roles_from_crds")
 	build := func(current *roleBuilder) (string, *v3.GlobalRole, error) {
 		gr := &v3.GlobalRole{
 			ObjectMeta: v1.ObjectMeta{
@@ -386,7 +386,7 @@ func (rb *roleBuilder) reconcileGlobalRoles(grClient wranglerv3.GlobalRoleClient
 }
 
 func (rb *roleBuilder) reconcileRoleTemplates(rtClient wranglerv3.RoleTemplateClient) error {
-	logrus.Info("Reconciling RoleTemplates")
+	log.Info("reconciling roletemplates", "operation", "add_roles_from_crds")
 	build := func(current *roleBuilder) (string, *v3.RoleTemplate, error) {
 		if current.externalRules != nil && !current.external {
 			return "", nil, fmt.Errorf("can't create RoleTemplate with externalRules and external=false")
