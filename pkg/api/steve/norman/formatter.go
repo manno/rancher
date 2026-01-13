@@ -37,13 +37,13 @@ func (a *LinksAndActionsFormatter) Formatter(request *types.APIRequest, resource
 
 	schema := schemas.Schema(&a.apiVersion, a.schemaID)
 	if schema == nil {
-		log.Error("failed to find schema", "operation", "formatter", "schema_id", a.schemaID, "api_version", a.apiVersion)
+		log.Error("Failed to find schema", "operation", "formatter", "schema_id", a.schemaID, "api_version", a.apiVersion)
 		return
 	}
 
 	data, err := convert.EncodeToMap(resource.APIObject.Object)
 	if err != nil {
-		log.Error("failed to json encode api object", "operation", "formatter", "error", err)
+		log.Error("Failed to json encode api object", "operation", "formatter", "error", err)
 		return
 	}
 	schema.Mapper.FromInternal(data)
@@ -63,7 +63,7 @@ func (a *LinksAndActionsFormatter) Formatter(request *types.APIRequest, resource
 		apiRequest: request,
 	}
 	if err != nil {
-		log.Error("failed to create url builder", "operation", "formatter", "error", err)
+		log.Error("Failed to create url builder", "operation", "formatter", "error", err)
 		return
 	}
 

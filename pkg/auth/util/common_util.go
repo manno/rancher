@@ -115,7 +115,7 @@ func ReturnAPIError(w http.ResponseWriter, err error) {
 	enc.SetEscapeHTML(false)
 
 	if eerr := enc.Encode(resp); eerr != nil {
-		log.Error("writing error response", "operation", "return_api_error", "error", eerr)
+		log.Error("Writing error response", "operation", "return_api_error", "error", eerr)
 	}
 }
 

@@ -35,7 +35,7 @@ func CleanupOrphanedSystemUsers(ctx context.Context, management *config.Manageme
 	cleanupCtx, cleanupCancel := context.WithCancel(ctx)
 	go func(context.Context, context.CancelFunc) {
 		wait.PollImmediate(time.Hour*24, 0, func() (bool, error) {
-			log.Debug("starting orphaned system users cleanup with exponentialbackoff", "operation", "cleanup_orphaned_system_users")
+			log.Debug("Starting orphaned system users cleanup with exponentialbackoff", "operation", "cleanup_orphaned_system_users")
 			steps := 5
 			backOffDuration := time.Minute * 10
 			factor := 2
@@ -52,7 +52,7 @@ func CleanupOrphanedSystemUsers(ctx context.Context, management *config.Manageme
 			}
 			if err != nil {
 				// returning false & nil because PollImmediate terminates on error
-				log.Error("failed to cleanup orphaned system users", "operation", "cleanup_orphaned_system_users", "error", err)
+				log.Error("Failed to cleanup orphaned system users", "operation", "cleanup_orphaned_system_users", "error", err)
 				return false, nil
 			}
 			// no error returned, user cleanup done, calling the child context's cancelfunc to terminate child context

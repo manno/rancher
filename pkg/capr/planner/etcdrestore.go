@@ -616,7 +616,7 @@ func (p *Planner) runEtcdRestoreInitNodeElection(controlPlane *rkev1.RKEControlP
 		if snapshot.SnapshotFile.S3 == nil {
 			// If the snapshot is not an S3 snapshot, then designate the init node by machine ID defined.
 			if id, ok := snapshot.Labels[capr.MachineIDLabel]; ok {
-				log.Info("designating init node for local snapshot restoration",
+				log.Info("Designating init node for local snapshot restoration",
 					"namespace", controlPlane.Namespace,
 					"cluster_name", controlPlane.Name,
 					"machine_id", id,
@@ -626,7 +626,7 @@ func (p *Planner) runEtcdRestoreInitNodeElection(controlPlane *rkev1.RKEControlP
 			}
 			return "", fmt.Errorf("unable to designate machine as label %s on snapshot %s/%s did not exist", capr.MachineIDLabel, snapshot.Namespace, snapshot.Name)
 		}
-		log.Info("electing init node for S3 snapshot restoration",
+		log.Info("Electing init node for S3 snapshot restoration",
 			"namespace", controlPlane.Namespace,
 			"cluster_name", controlPlane.Name,
 			"snapshot_namespace", snapshot.Namespace,
@@ -640,7 +640,7 @@ func (p *Planner) runEtcdRestoreInitNodeElection(controlPlane *rkev1.RKEControlP
 	} else if count > 1 {
 		return "", fmt.Errorf("more than one init node existed and no corresponding etcd snapshot CR found, no assumption can be made for the machine that contains the snapshot")
 	}
-	log.Info("electing init node for local snapshot with no associated CR",
+	log.Info("Electing init node for local snapshot with no associated CR",
 		"namespace", controlPlane.Namespace,
 		"cluster_name", controlPlane.Name)
 	return p.electInitNode(controlPlane, clusterPlan, true)
@@ -737,13 +737,13 @@ func (p *Planner) forceDeleteAllDeletingEtcdMachines(cp *rkev1.RKEControlPlane, 
 	etcdDeleting := collect(plan, roleAnd(isEtcd, isDeleting))
 	for _, deletingEtcdNode := range etcdDeleting {
 		if deletingEtcdNode.Machine == nil {
-			log.Warn("did not find CAPI machine for entry when deleting etcd nodes",
+			log.Warn("Did not find CAPI machine for entry when deleting etcd nodes",
 				"namespace", cp.Namespace,
 				"cluster_name", cp.Name)
 			continue
 		}
 		if deletingEtcdNode.Machine.Spec.Bootstrap.ConfigRef == nil {
-			log.Warn("did not find a corresponding CAPI machine",
+			log.Warn("Did not find a corresponding CAPI machine",
 				"namespace", cp.Namespace,
 				"cluster_name", cp.Name,
 				"machine_namespace", deletingEtcdNode.Machine.Namespace,
@@ -759,7 +759,7 @@ func (p *Planner) forceDeleteAllDeletingEtcdMachines(cp *rkev1.RKEControlPlane, 
 				"api_version", deletingEtcdNode.Machine.Spec.Bootstrap.ConfigRef.APIVersion)
 			continue
 		}
-		log.Info("force deleting etcd machine as cluster was not sane and machine was deleting",
+		log.Info("Force deleting etcd machine as cluster was not sane and machine was deleting",
 			"namespace", cp.Namespace,
 			"cluster_name", cp.Name,
 			"machine_namespace", deletingEtcdNode.Machine.Namespace,
@@ -824,7 +824,7 @@ func (p *Planner) restoreEtcdSnapshot(cp *rkev1.RKEControlPlane, status rkev1.RK
 	if snapshot != nil {
 		clusterSpec, err := capr.ParseSnapshotClusterSpecOrError(snapshot)
 		if err != nil || clusterSpec == nil {
-			log.Error("error parsing snapshot cluster spec for snapshot during etcd restoration",
+			log.Error("Error parsing snapshot cluster spec for snapshot during etcd restoration",
 				"namespace", cp.Namespace,
 				"cluster_name", cp.Name,
 				"snapshot_namespace", snapshot.Namespace,
@@ -846,7 +846,7 @@ func (p *Planner) restoreEtcdSnapshot(cp *rkev1.RKEControlPlane, status rkev1.RK
 		if status.Initialized || status.Ready {
 			status.Initialized = false
 			status.Ready = false
-			log.Debug("setting controlplane ready/initialized to false during etcd restore",
+			log.Debug("Setting controlplane ready/initialized to false during etcd restore",
 				"namespace", cp.Namespace,
 				"cluster_name", cp.Name)
 		}
@@ -876,7 +876,7 @@ func (p *Planner) restoreEtcdSnapshot(cp *rkev1.RKEControlPlane, status rkev1.RK
 		if err := p.pauseCAPICluster(cp, false); err != nil {
 			return status, err
 		}
-		log.Info("running full reconcile during etcd restore to initially restart cluster",
+		log.Info("Running full reconcile during etcd restore to initially restart cluster",
 			"namespace", cp.Namespace,
 			"cluster_name", cp.Name)
 		// Run a full reconcile of the cluster at this point, ignoring drain and concurrency.
@@ -893,7 +893,7 @@ func (p *Planner) restoreEtcdSnapshot(cp *rkev1.RKEControlPlane, status rkev1.RK
 		if err := p.pauseCAPICluster(cp, false); err != nil {
 			return status, err
 		}
-		log.Info("running full reconcile during etcd restore to restart cluster",
+		log.Info("Running full reconcile during etcd restore to restart cluster",
 			"namespace", cp.Namespace,
 			"cluster_name", cp.Name)
 		// Run a full reconcile of the cluster at this point, ignoring drain and concurrency.

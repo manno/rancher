@@ -130,7 +130,7 @@ Tries:
 
 			created, err = s.ByID(apiContext, schema, id)
 			if err != nil {
-				log.Warn("error while getting user", "operation", "create", "user_id", id, "error", err)
+				log.Warn("Error while getting user", "operation", "create", "user_id", id, "error", err)
 				continue
 			}
 
@@ -154,7 +154,7 @@ Tries:
 					continue
 				}
 
-				log.Warn("error while updating user", "operation", "create", "user_id", id, "error", err)
+				log.Warn("Error while updating user", "operation", "create", "user_id", id, "error", err)
 				break
 			}
 			break

@@ -38,13 +38,13 @@ func installScript(setting settings.Setting, files []string) ([]byte, error) {
 			script, err := ioutil.ReadFile(f)
 			if err != nil {
 				if !os.IsNotExist(err) {
-					log.Debug("error pulling system agent installation script", "operation", "install_script", "file", f, "error", err)
+					log.Debug("Error pulling system agent installation script", "operation", "install_script", "file", f, "error", err)
 				}
 				continue
 			}
 			return script, err
 		}
-		log.Debug("no local installation script found, moving on to url", "operation", "install_script", "url", setting.Get())
+		log.Debug("No local installation script found, moving on to url", "operation", "install_script", "url", setting.Get())
 	}
 
 	resp, err := http.Get(setting.Get())

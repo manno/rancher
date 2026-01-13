@@ -36,7 +36,7 @@ func (s *Server) Start() {
 // ListenAndServe is used to setup handlers and
 // start listening on the specified location
 func (s *Server) ListenAndServe() error {
-	log.Info("log server listening", "socket", s.SocketLocation)
+	log.Info("Log server listening", "socket", s.SocketLocation)
 	server := http.Server{}
 	http.HandleFunc("/v1/loglevel", s.loglevel)
 	socketListener, err := net.Listen("unix", s.SocketLocation)
@@ -48,7 +48,7 @@ func (s *Server) ListenAndServe() error {
 
 func (s *Server) loglevel(rw http.ResponseWriter, req *http.Request) {
 	// curl -X POST -d "level=debug" localhost:12345/v1/loglevel
-	log.Debug("received loglevel request")
+	log.Debug("Received loglevel request")
 	if req.Method == http.MethodGet {
 		level := log.GetLevel()
 		rw.Write([]byte(fmt.Sprintf("%s\n", level)))

@@ -17,7 +17,7 @@ func addCattleGlobalNamespaces(management *config.ManagementContext) error {
 		return err
 	}
 
-	log.Debug("calling sync for driver metadata", "operation", "add_namespaces")
+	log.Debug("Calling sync for driver metadata", "operation", "add_namespaces")
 	management.Management.Settings("").Controller().Enqueue("", settings.RkeMetadataConfig.Name)
 
 	return nil
@@ -33,7 +33,7 @@ func createNamespace(namespace string, management *config.ManagementContext) err
 		if _, err := management.Core.Namespaces("").Create(ns); err != nil {
 			return fmt.Errorf("error creating %v namespace: %v", namespace, err)
 		}
-		log.Info("created namespace", "operation", "add_namespaces", "namespace", namespace)
+		log.Info("Created namespace", "operation", "add_namespaces", "namespace", namespace)
 	} else if err != nil {
 		return fmt.Errorf("error creating %v namespace: %v", namespace, err)
 	}

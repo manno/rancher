@@ -52,7 +52,7 @@ func OrphanBindings(clientConfig *rest.Config) error {
 		return err
 	}
 
-	log.Info("cleaning up orphaned bindings", "operation", orphanBindingsOperation)
+	log.Info("Cleaning up orphaned bindings", "operation", orphanBindingsOperation)
 	return bc.cleanOrphans(dryRun)
 }
 
@@ -69,7 +69,7 @@ func newOrphanBindingsCleanup(restConfig *rest.Config) (*orphanBindingsCleanup, 
 	} else {
 		config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 		if err != nil {
-			log.Error("error in building the cluster config", "operation", orphanBindingsOperation, "error", err)
+			log.Error("Error in building the cluster config", "operation", orphanBindingsOperation, "error", err)
 			return nil, err
 		}
 	}
@@ -124,7 +124,7 @@ func (bc *orphanBindingsCleanup) cleanOrphans(dryRun bool) error {
 		}
 	}
 
-	log.Info("checking for orphaned rolebindings", "operation", orphanBindingsOperation)
+	log.Info("Checking for orphaned rolebindings", "operation", orphanBindingsOperation)
 
 	// check all rolebindings against orphan criteria
 	rbs, err := bc.roleBindings.List("", metav1.ListOptions{})
@@ -135,12 +135,12 @@ func (bc *orphanBindingsCleanup) cleanOrphans(dryRun bool) error {
 	var returnErr error
 	for _, rb := range rbs.Items {
 		if bc.isOrphanBinding(&rb) {
-			log.Info("found orphaned binding", "operation", orphanBindingsOperation, "namespace", rb.Namespace, "binding_name", rb.Name)
+			log.Info("Found orphaned binding", "operation", orphanBindingsOperation, "namespace", rb.Namespace, "binding_name", rb.Name)
 			if dryRun {
-				log.Info("dryRun is enabled, skipping deletion for orphaned binding", "operation", orphanBindingsOperation, "namespace", rb.Namespace, "binding_name", rb.Name)
+				log.Info("DryRun is enabled, skipping deletion for orphaned binding", "operation", orphanBindingsOperation, "namespace", rb.Namespace, "binding_name", rb.Name)
 				continue
 			}
-			log.Info("deleting orphaned binding", "operation", orphanBindingsOperation, "namespace", rb.Namespace, "binding_name", rb.Name)
+			log.Info("Deleting orphaned binding", "operation", orphanBindingsOperation, "namespace", rb.Namespace, "binding_name", rb.Name)
 			err := bc.roleBindings.Delete(rb.Namespace, rb.Name, &metav1.DeleteOptions{})
 			if err != nil && !k8serrors.IsNotFound(err) {
 				returnErr = errors.Join(returnErr, err)

@@ -24,7 +24,7 @@ func sync(_ string, obj *v3.Feature) (*v3.Feature, error) {
 	newVal, needsRestart := ReconcileFeatures(obj)
 	if needsRestart {
 		time.Sleep(3 * time.Second)
-		log.Info("feature flag value changed, rancher must be restarted", "operation", "sync_feature", "feature", obj.Name, "new_value", ptrBoolToString(newVal))
+		log.Info("Feature flag value changed, rancher must be restarted", "operation", "sync_feature", "feature", obj.Name, "new_value", ptrBoolToString(newVal))
 		os.Exit(0)
 	}
 

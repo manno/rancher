@@ -168,7 +168,7 @@ func extractConfig(baseDir, extractedConfig string) error {
 
 		filename := header.Name
 		filePath := filepath.Join(baseDir, filename)
-		log.Debug("extracting file", "operation", "restore", "file_path", filePath)
+		log.Debug("Extracting file", "operation", "restore", "file_path", filePath)
 
 		info := header.FileInfo()
 		if info.IsDir() {

@@ -40,13 +40,13 @@ func (r *reconcileController) reconcileNamespaces(_ string, p *apiv3.Project) (r
 		p.Spec.ResourceQuota != nil &&
 		!isEmpty(&p.Spec.ResourceQuota.UsedLimit) {
 
-		log.Warn("project clearing bogus used-limit", "operation", "projectOnChange", "project_name", p.Name)
+		log.Warn("Project clearing bogus used-limit", "operation", "projectOnChange", "project_name", p.Name)
 
 		newP := p.DeepCopy()
 		newP.Spec.ResourceQuota.UsedLimit = apiv3.ResourceQuotaLimit{}
 		_, err := r.projects.Update(newP)
 		if err != nil {
-			log.Error("project clearing bogus used-limit failed", "operation", "projectOnChange", "project_name", p.Name, "error", err)
+			log.Error("Project clearing bogus used-limit failed", "operation", "projectOnChange", "project_name", p.Name, "error", err)
 			return nil, err
 		}
 	}

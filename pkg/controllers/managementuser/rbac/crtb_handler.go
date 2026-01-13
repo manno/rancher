@@ -89,7 +89,7 @@ func (c *crtbLifecycle) syncCRTB(binding *v3.ClusterRoleTemplateBinding, remoteC
 	condition := metav1.Condition{Type: clusterRolesExists}
 
 	if binding.RoleTemplateName == "" {
-		log.Warn("clusterroletemplatebinding has no role template set, skipping", "operation", "sync_crtb", "binding", binding.Name)
+		log.Warn("Clusterroletemplatebinding has no role template set, skipping", "operation", "sync_crtb", "binding", binding.Name)
 		c.s.AddCondition(remoteConditions, condition, roleTemplateDoesNotExist, nil)
 		return nil
 	}
@@ -104,7 +104,7 @@ func (c *crtbLifecycle) syncCRTB(binding *v3.ClusterRoleTemplateBinding, remoteC
 		err = fmt.Errorf("couldn't get role template %v: %w", binding.RoleTemplateName, err)
 		c.s.AddCondition(remoteConditions, condition, failedToGetRoleTemplate, err)
 		if apierrors.IsNotFound(err) {
-			log.Warn("roletemplate not found for clusterroletemplatebinding, skipping", "operation", "sync_crtb", "role_template", binding.RoleTemplateName, "binding", binding.Name)
+			log.Warn("Roletemplate not found for clusterroletemplatebinding, skipping", "operation", "sync_crtb", "role_template", binding.RoleTemplateName, "binding", binding.Name)
 			return nil
 		}
 		return err

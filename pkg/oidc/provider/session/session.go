@@ -148,19 +148,19 @@ func (m *SecretSessionStore) cleanUpExpiredSessions(ctx context.Context, c <-cha
 			m.mu.Lock()
 			secrets, err := m.secretCache.List(namespace, labels.Set{secretLabel: "true"}.AsSelector())
 			if err != nil {
-				log.Error("oidc provider: error listing secrets", "operation", "cleanup_sessions", "error", err)
+				log.Error("Oidc provider: error listing secrets", "operation", "cleanup_sessions", "error", err)
 				return
 			}
 			for _, secret := range secrets {
 				var session Session
 				err = json.Unmarshal(secret.Data[secretKey], &session)
 				if err != nil {
-					log.Error("oidc provider: error unmarshalling session", "operation", "cleanup_sessions", "error", err)
+					log.Error("Oidc provider: error unmarshalling session", "operation", "cleanup_sessions", "error", err)
 				}
 				if time.Since(session.CreatedAt) > m.expiryTime {
 					err := m.secretClient.Delete(namespace, secret.Name, &metav1.DeleteOptions{})
 					if err != nil {
-						log.Error("oidc provider: error deleting secret", "operation", "cleanup_sessions", "error", err)
+						log.Error("Oidc provider: error deleting secret", "operation", "cleanup_sessions", "error", err)
 					}
 				}
 			}

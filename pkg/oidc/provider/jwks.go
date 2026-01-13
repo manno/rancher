@@ -53,7 +53,7 @@ func newJWKSHandler(secretCache corecontrollers.SecretCache, secretClient coreco
 	}
 
 	if errors.IsNotFound(err) {
-		log.Info("creating a new signing key")
+		log.Info("Creating a new signing key")
 		// generate a default RSA private key
 		privateKey, err := rsa.GenerateKey(rand.Reader, keyBits)
 		if err != nil {
@@ -121,7 +121,7 @@ func newJWKSHandler(secretCache corecontrollers.SecretCache, secretClient coreco
 func (h *jwksHandler) jwksEndpoint(w http.ResponseWriter, r *http.Request) {
 	s, err := h.secretCache.Get(keySecretNamespace, keySecretName)
 	if err != nil {
-		log.Error("failed to get secret with public keys", "error", err)
+		log.Error("Failed to get secret with public keys", "error", err)
 		oidcerror.WriteError(oidcerror.ServerError, "failed to get secret with public keys", http.StatusInternalServerError, w)
 		return
 	}
@@ -133,12 +133,12 @@ func (h *jwksHandler) jwksEndpoint(w http.ResponseWriter, r *http.Request) {
 
 		pubKey, err := getPublicKeyFromSecretData(value)
 		if err != nil {
-			log.Error("failed to extract public key from secret data", "error", err)
+			log.Error("Failed to extract public key from secret data", "error", err)
 			oidcerror.WriteError(oidcerror.ServerError, "failed to extract public key from secret data", http.StatusInternalServerError, w)
 			return
 		}
 		if pubKey.N.BitLen() < 2048 {
-			log.Warn("ignoring key because the size is less than 2048 bits")
+			log.Warn("Ignoring key because the size is less than 2048 bits")
 			continue
 		}
 

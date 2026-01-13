@@ -182,7 +182,7 @@ func (p *adProvider) saveActiveDirectoryConfig(config *v32.ActiveDirectoryConfig
 
 	config.ServiceAccountPassword = name
 
-	log.Debug("updating config", "provider", "activedirectory", "operation", "save_active_directory_config")
+	log.Debug("Updating config", "provider", "activedirectory", "operation", "save_active_directory_config")
 	_, err = p.authConfigs.ObjectClient().Update(config.ObjectMeta.Name, config)
 	if err != nil {
 		return err

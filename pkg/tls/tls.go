@@ -377,7 +377,7 @@ func filterCN(cns ...string) []string {
 	}
 	u, err := url.Parse(serverURL)
 	if err != nil {
-		log.Error("invalid server-url, cannot parse", "operation", "common_names", "server_url", serverURL, "error", err)
+		log.Error("Invalid server-url, cannot parse", "operation", "common_names", "server_url", serverURL, "error", err)
 		return cns
 	}
 	host := u.Hostname()

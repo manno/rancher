@@ -23,7 +23,7 @@ func UserGroupsToPrincipals(azureClient userPrincipalsClient, groupNames []strin
 	groupPrincipals := make([]v3.Principal, len(groupNames))
 
 	start := time.Now()
-	log.Debug("started gathering users groups", "provider", "azure", "operation", "user_groups_to_principals")
+	log.Debug("Started gathering users groups", "provider", "azure", "operation", "user_groups_to_principals")
 
 	for i, id := range groupNames {
 		if id == "" {
@@ -36,7 +36,7 @@ func UserGroupsToPrincipals(azureClient userPrincipalsClient, groupNames []strin
 		if principal, ok := GroupCache.Get(groupID); ok {
 			p, ok := principal.(v3.Principal)
 			if !ok {
-				log.Error("failed to convert cached group to principal", "provider", "azure", "group_id", groupID)
+				log.Error("Failed to convert cached group to principal", "provider", "azure", "group_id", groupID)
 				continue
 			}
 			groupPrincipals[j] = p
@@ -51,7 +51,7 @@ func UserGroupsToPrincipals(azureClient userPrincipalsClient, groupNames []strin
 			// So Microsoft Graph groups are effectively fetched twice. But this happens only once - before the groups are added to the cache.
 			groupObj, err := azureClient.GetGroup(groupID)
 			if err != nil {
-				log.Error("error getting group", "provider", "azure", "group_id", groupID, "error", err)
+				log.Error("Error getting group", "provider", "azure", "group_id", groupID, "error", err)
 				return err
 			}
 			groupObj.MemberOf = true
@@ -64,6 +64,6 @@ func UserGroupsToPrincipals(azureClient userPrincipalsClient, groupNames []strin
 	if err := tasksManager.Wait(); err != nil {
 		return nil, err
 	}
-	log.Debug("completed gathering users groups", "provider", "azure", "operation", "user_groups_to_principals", "duration", time.Since(start), "cache_size", GroupCache.Len())
+	log.Debug("Completed gathering users groups", "provider", "azure", "operation", "user_groups_to_principals", "duration", time.Since(start), "cache_size", GroupCache.Len())
 	return groupPrincipals, nil
 }

@@ -55,7 +55,7 @@ func (k *KeyCloakClient) searchPrincipals(searchTerm, principalType string, conf
 			return accounts, err
 		}
 		if err := json.Unmarshal(b, &userAccounts); err != nil {
-			log.Error("error unmarshalling search results", "provider", "keycloak_oidc", "operation", "search_principals", "error", err)
+			log.Error("Error unmarshalling search results", "provider", "keycloak_oidc", "operation", "search_principals", "error", err)
 			return accounts, err
 		}
 		for _, u := range userAccounts {
@@ -89,7 +89,7 @@ func (k *KeyCloakClient) groupSearch(searchTerm string, sURL string) ([]account,
 		return accounts, err
 	}
 	if err = json.Unmarshal(b, &groups); err != nil {
-		log.Error("error unmarshalling search results", "provider", "keycloak_oidc", "operation", "group_search", "error", err)
+		log.Error("Error unmarshalling search results", "provider", "keycloak_oidc", "operation", "group_search", "error", err)
 		return accounts, err
 	}
 	for _, g := range groups {
@@ -146,7 +146,7 @@ func (k *KeyCloakClient) getFromKeyCloakByID(principalID, principalType string, 
 			return searchResult, err
 		}
 		if err := json.Unmarshal(b, &searchResult); err != nil {
-			log.Error("error unmarshalling search results", "provider", "keycloak_oidc", "operation", "get_from_keycloak_by_id", "error", err)
+			log.Error("Error unmarshalling search results", "provider", "keycloak_oidc", "operation", "get_from_keycloak_by_id", "error", err)
 			return searchResult, err
 		}
 	} else {
@@ -180,7 +180,7 @@ func getSearchURL(issuer string) (string, error) {
 func URLEncoded(str string) string {
 	u, err := url.Parse(str)
 	if err != nil {
-		log.Error("error encoding url", "provider", "keycloak_oidc", "operation", "url_encoded", "url", str, "error", err)
+		log.Error("Error encoding url", "provider", "keycloak_oidc", "operation", "url_encoded", "url", str, "error", err)
 		return str
 	}
 	return u.String()
@@ -194,7 +194,7 @@ func (k *KeyCloakClient) getFromKeyCloak(url string) ([]byte, error) {
 	req.Header.Add("Accept", "application/json")
 	resp, err := k.httpClient.Do(req)
 	if err != nil {
-		log.Error("received error from keycloak", "provider", "keycloak_oidc", "operation", "get_from_keycloak", "error", err)
+		log.Error("Received error from keycloak", "provider", "keycloak_oidc", "operation", "get_from_keycloak", "error", err)
 		return nil, err
 	}
 	defer resp.Body.Close()

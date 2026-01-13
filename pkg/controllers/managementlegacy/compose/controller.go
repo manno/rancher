@@ -92,7 +92,7 @@ func (l Lifecycle) Create(obj *v3.ComposeConfig) (*v3.ComposeConfig, error) {
 	tokenName, _ := tokens.SplitTokenParts(token)
 	defer func() {
 		if err := l.systemTokens.DeleteToken(tokenName); err != nil {
-			log.Error("cleanup for compose token failed, will not retry", "operation", "Create", "token_name", tokenName, "error", err)
+			log.Error("Cleanup for compose token failed, will not retry", "operation", "Create", "token_name", tokenName, "error", err)
 		}
 	}()
 

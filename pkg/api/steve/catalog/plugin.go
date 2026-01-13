@@ -34,14 +34,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	index, err := json.Marshal(in)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Error("failed to marshal index", "operation", "index_handler", "error", err)
+		log.Error("Failed to marshal index", "operation", "index_handler", "error", err)
 	}
 	w.Write(index)
 }
 
 func pluginHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debug("processing http request for plugin", "operation", "plugin_handler", "vars", fmt.Sprintf("%v", vars))
+	log.Debug("Processing http request for plugin", "operation", "plugin_handler", "vars", fmt.Sprintf("%v", vars))
 	authed := isAuthenticated(r)
 	entry, ok := plugin.Index.Entries[vars["name"]]
 	// Checks if the requested plugin exists and if the user has authorization to see it
@@ -54,14 +54,14 @@ func pluginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if entry.NoCache || entry.CacheState == plugin.Pending {
 		if entry.Endpoint != "" {
-			log.Debug("proxying request to endpoint", "operation", "plugin_handler", "noCache", entry.NoCache, "endpoint", entry.Endpoint)
+			log.Debug("Proxying request to endpoint", "operation", "plugin_handler", "noCache", entry.NoCache, "endpoint", entry.Endpoint)
 			proxyRequest(entry.Endpoint, vars["rest"], w, r, denylist)
 		} else {
-			log.Error("caching still in progress", "operation", "plugin_handler", "noCache", entry.NoCache, "endpoint", entry.Endpoint)
+			log.Error("Caching still in progress", "operation", "plugin_handler", "noCache", entry.NoCache, "endpoint", entry.Endpoint)
 			http.Error(w, "caching still in progress", http.StatusTooEarly)
 		}
 	} else {
-		log.Debug("serving plugin files from filesystem cache", "operation", "plugin_handler", "noCache", entry.NoCache)
+		log.Debug("Serving plugin files from filesystem cache", "operation", "plugin_handler", "noCache", entry.NoCache)
 		r.URL.Path = fmt.Sprintf("/%s/%s/%s", vars["name"], vars["version"], vars["rest"])
 		http.FileServer(http.Dir(plugin.FSCacheRootDir)).ServeHTTP(w, r)
 	}

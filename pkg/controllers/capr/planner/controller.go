@@ -44,7 +44,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 			var relatedResources []relatedresource.Key
 			clusterName := secret.Labels[capr.ClusterNameLabel]
 			if clusterName != "" {
-				log.Trace("rkecluster enqueue triggered by secret", "namespace", secret.Namespace, "cluster", clusterName, "secret_namespace", secret.Namespace, "secret_name", secret.Name)
+				log.Trace("Rkecluster enqueue triggered by secret", "namespace", secret.Namespace, "cluster", clusterName, "secret_namespace", secret.Namespace, "secret_name", secret.Name)
 				relatedResources = append(relatedResources, relatedresource.Key{
 					Namespace: secret.Namespace,
 					Name:      clusterName,
@@ -53,7 +53,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 			authorizedObjects := secret.Annotations[capr.AuthorizedObjectAnnotation]
 			if authorizedObjects != "" {
 				for _, clusterName = range strings.Split(authorizedObjects, ",") {
-					log.Trace("rkecluster enqueue triggered by authorized secret", "namespace", secret.Namespace, "cluster", clusterName, "secret_namespace", secret.Namespace, "secret_name", secret.Name)
+					log.Trace("Rkecluster enqueue triggered by authorized secret", "namespace", secret.Namespace, "cluster", clusterName, "secret_namespace", secret.Namespace, "secret_name", secret.Name)
 					relatedResources = append(relatedResources, relatedresource.Key{
 						Namespace: secret.Namespace,
 						Name:      clusterName,
@@ -64,7 +64,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 		} else if machine, ok := obj.(*capi.Machine); ok {
 			clusterName := machine.Labels[capi.ClusterNameLabel]
 			if clusterName != "" {
-				log.Trace("rkecluster enqueue triggered by machine", "namespace", machine.Namespace, "cluster", clusterName, "machine_namespace", machine.Namespace, "machine_name", machine.Name)
+				log.Trace("Rkecluster enqueue triggered by machine", "namespace", machine.Namespace, "cluster", clusterName, "machine_namespace", machine.Namespace, "machine_name", machine.Name)
 				return []relatedresource.Key{{
 					Namespace: machine.Namespace,
 					Name:      clusterName,
@@ -75,7 +75,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 			authorizedObjects := configmap.Annotations[capr.AuthorizedObjectAnnotation]
 			if authorizedObjects != "" {
 				for _, clusterName := range strings.Split(authorizedObjects, ",") {
-					log.Trace("rkecluster enqueue triggered by authorized configmap", "namespace", configmap.Namespace, "cluster", clusterName, "configmap_namespace", configmap.Namespace, "configmap_name", configmap.Name)
+					log.Trace("Rkecluster enqueue triggered by authorized configmap", "namespace", configmap.Namespace, "cluster", clusterName, "configmap_namespace", configmap.Namespace, "configmap_name", configmap.Name)
 					relatedResources = append(relatedResources, relatedresource.Key{
 						Namespace: configmap.Namespace,
 						Name:      clusterName,
@@ -89,7 +89,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 }
 
 func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlaneStatus) (rkev1.RKEControlPlaneStatus, error) {
-	log.Debug("rkecluster handler WaitForClient called", "namespace", cp.Namespace, "name", cp.Name)
+	log.Debug("Rkecluster handler WaitForClient called", "namespace", cp.Namespace, "name", cp.Name)
 	if !cp.DeletionTimestamp.IsZero() {
 		return status, nil
 	}
@@ -112,7 +112,7 @@ func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPla
 	}
 
 	if !scalingUpFound || !scalingDownFound || !rollingOutFound {
-		log.Debug("rkecluster setting CAPI v1beta2 conditions", "namespace", cp.Namespace, "name", cp.Name)
+		log.Debug("Rkecluster setting CAPI v1beta2 conditions", "namespace", cp.Namespace, "name", cp.Name)
 		capiScalingUpCondition.False(&status)
 		capiScalingDownCondition.False(&status)
 		capiRollingOutCondition.False(&status)
@@ -121,7 +121,7 @@ func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPla
 
 	status.ObservedGeneration = cp.Generation
 
-	log.Debug("rkecluster calling planner process", "namespace", cp.Namespace, "name", cp.Name)
+	log.Debug("Rkecluster calling planner process", "namespace", cp.Namespace, "name", cp.Name)
 	status, err := h.planner.Process(cp, status)
 	if err != nil {
 		// planner.Process can encounter 3 types of errors:
@@ -129,7 +129,7 @@ func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPla
 		// * generic.ErrSkip - These will cause the object to be re-enqueued after 5 seconds.
 		// * error - All other errors. This should be an actual error during planner processing.
 		if caprplanner.IsErrWaiting(err) {
-			log.Info("rkecluster waiting for resources", "namespace", cp.Namespace, "name", cp.Name, "error", err)
+			log.Info("Rkecluster waiting for resources", "namespace", cp.Namespace, "name", cp.Name, "error", err)
 			capr.Ready.SetStatus(&status, "Unknown")
 			capr.Ready.Message(&status, err.Error())
 			capr.Ready.Reason(&status, "Waiting")
@@ -143,18 +143,18 @@ func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPla
 			return status, nil
 		}
 		if errors.Is(err, generic.ErrSkip) {
-			log.Debug("rkecluster skip processing", "namespace", cp.Namespace, "name", cp.Name, "error", err)
+			log.Debug("Rkecluster skip processing", "namespace", cp.Namespace, "name", cp.Name, "error", err)
 			h.controlPlanes.EnqueueAfter(cp.Namespace, cp.Name, 5*time.Second)
 			return status, err
 		}
 		// An actual error occurred, so set the Ready and Reconciled conditions to this error and return
-		log.Error("rkecluster error during plan processing", "namespace", cp.Namespace, "name", cp.Name, "error", err)
+		log.Error("Rkecluster error during plan processing", "namespace", cp.Namespace, "name", cp.Name, "error", err)
 		capr.Ready.SetError(&status, "", err)
 		capr.Reconciled.SetError(&status, "", err)
 		return status, err
 	}
 	// No error encountered during planner.Process
-	log.Debug("rkecluster reconciliation complete", "namespace", cp.Namespace, "name", cp.Name)
+	log.Debug("Rkecluster reconciliation complete", "namespace", cp.Namespace, "name", cp.Name)
 	capr.Ready.True(&status)
 	capr.Ready.Message(&status, "")
 	capr.Ready.Reason(&status, "")

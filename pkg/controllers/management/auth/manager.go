@@ -161,7 +161,7 @@ func (m *manager) ensureClusterMembershipBinding(roleName, rtbNsAndName string, 
 	}
 
 	if len(objs) == 0 {
-		log.Info("creating clusterRoleBinding for membership in cluster", "operation", "create_membership", "controller", m.controller, "cluster", cluster.Name, "subject", subject.Name)
+		log.Info("Creating clusterRoleBinding for membership in cluster", "operation", "create_membership", "controller", m.controller, "cluster", cluster.Name, "subject", subject.Name)
 		roleRef := v1.RoleRef{
 			Kind: "ClusterRole",
 			Name: roleName,
@@ -202,7 +202,7 @@ func (m *manager) ensureClusterMembershipBinding(roleName, rtbNsAndName string, 
 		crb.Labels = map[string]string{}
 	}
 	crb.Labels[rtbNsAndName] = MembershipBindingOwner
-	log.Info("updating clusterRoleBinding for cluster membership", "operation", "update_membership", "controller", m.controller, "cluster_role_binding", crb.Name, "cluster", cluster.Name, "subject", subject.Name)
+	log.Info("Updating clusterRoleBinding for cluster membership", "operation", "update_membership", "controller", m.controller, "cluster_role_binding", crb.Name, "cluster", cluster.Name, "subject", subject.Name)
 	_, err = m.mgmt.RBAC.ClusterRoleBindings("").Update(crb)
 	return err
 }
@@ -246,7 +246,7 @@ func (m *manager) ensureProjectMembershipBinding(roleName, rtbNsAndName, namespa
 	}
 
 	if len(objs) == 0 {
-		log.Info("creating roleBinding for membership in project", "operation", "create_membership", "controller", m.controller, "project", project.Name, "subject", subject.Name)
+		log.Info("Creating roleBinding for membership in project", "operation", "create_membership", "controller", m.controller, "project", project.Name, "subject", subject.Name)
 		roleRef := v1.RoleRef{
 			Kind: "Role",
 			Name: roleName,
@@ -287,7 +287,7 @@ func (m *manager) ensureProjectMembershipBinding(roleName, rtbNsAndName, namespa
 		rb.Labels = map[string]string{}
 	}
 	rb.Labels[rtbNsAndName] = MembershipBindingOwner
-	log.Info("updating roleBinding for project membership", "operation", "update_membership", "controller", m.controller, "role_binding", rb.Name, "project", project.Name, "subject", subject.Name)
+	log.Info("Updating roleBinding for project membership", "operation", "update_membership", "controller", m.controller, "role_binding", rb.Name, "project", project.Name, "subject", subject.Name)
 	_, err = m.mgmt.RBAC.RoleBindings(namespace).Update(rb)
 	return err
 }
@@ -333,7 +333,7 @@ func (m *manager) createMembershipRole(resourceType, roleName string, makeOwner 
 	} else {
 		rules[0].Verbs = []string{"get"}
 	}
-	log.Info("creating role or clusterRole", "operation", "create_role", "controller", m.controller, "role", roleName)
+	log.Info("Creating role or clusterRole", "operation", "create_role", "controller", m.controller, "role", roleName)
 	var toCreate runtime.Object
 	objectMeta := metav1.ObjectMeta{
 		Name: roleName,
@@ -421,7 +421,7 @@ func (m *manager) reconcileMembershipBindingForDelete(namespace, roleToKeep, rtb
 		}
 
 		if !otherOwners {
-			log.Info("deleting roleBinding", "operation", "delete_role_binding", "controller", m.controller, "role_binding", objMeta.GetName())
+			log.Info("Deleting roleBinding", "operation", "delete_role_binding", "controller", m.controller, "role_binding", objMeta.GetName())
 			if err := client.Delete(objMeta.GetName(), &metav1.DeleteOptions{}); err != nil {
 				if apierrors.IsNotFound(err) {
 					continue
@@ -429,7 +429,7 @@ func (m *manager) reconcileMembershipBindingForDelete(namespace, roleToKeep, rtb
 				return err
 			}
 		} else {
-			log.Info("updating owner label for roleBinding", "operation", "update_role_binding", "controller", m.controller, "role_binding", objMeta.GetName())
+			log.Info("Updating owner label for roleBinding", "operation", "update_role_binding", "controller", m.controller, "role_binding", objMeta.GetName())
 			if _, err := client.Update(objMeta.GetName(), objCopy); err != nil {
 				return err
 			}
@@ -714,7 +714,7 @@ func (m *manager) reconcileDesiredMGMTPlaneRoleBindings(currentRBs, desiredRBs m
 	}
 
 	for name := range rbsToDelete {
-		log.Info("deleting roleBinding", "controller", m.controller, "name", name)
+		log.Info("Deleting roleBinding", "controller", m.controller, "name", name)
 		if err := m.rbClient.DeleteNamespaced(namespace, name, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
@@ -726,12 +726,12 @@ func (m *manager) reconcileDesiredMGMTPlaneRoleBindings(currentRBs, desiredRBs m
 		return fmt.Errorf("couldn't get namespace %v: %w", namespace, err)
 	}
 	if ns.Status.Phase == corev1.NamespaceTerminating {
-		log.Warn("namespace is terminating, not creating roleBindings", "operation", "create_role_binding", "controller", m.controller, "namespace", namespace)
+		log.Warn("Namespace is terminating, not creating roleBindings", "operation", "create_role_binding", "controller", m.controller, "namespace", namespace)
 		return nil
 	}
 
 	for _, rb := range desiredRBs {
-		log.Info("creating roleBinding for subject with role in namespace", "operation", "create_role_binding", "controller", m.controller, "subject", rb.Subjects[0].Name, "role", rb.RoleRef.Name, "namespace", rb.Namespace)
+		log.Info("Creating roleBinding for subject with role in namespace", "operation", "create_role_binding", "controller", m.controller, "subject", rb.Subjects[0].Name, "role", rb.RoleRef.Name, "namespace", rb.Namespace)
 		_, err := m.rbClient.Create(rb)
 		if err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
@@ -836,7 +836,7 @@ func (m *manager) reconcileManagementPlaneRole(namespace string, resourceToVerbs
 		}
 
 		if update {
-			log.Info("updating role in namespace", "operation", "update_role", "controller", m.controller, "role", newRole.Name, "namespace", namespace)
+			log.Info("Updating role in namespace", "operation", "update_role", "controller", m.controller, "role", newRole.Name, "namespace", namespace)
 			_, err := m.rClient.Update(newRole)
 			return err
 		}
@@ -849,7 +849,7 @@ func (m *manager) reconcileManagementPlaneRole(namespace string, resourceToVerbs
 		return fmt.Errorf("couldn't get namespace %v: %w", namespace, err)
 	}
 	if ns.Status.Phase == corev1.NamespaceTerminating {
-		log.Warn("namespace is terminating, not creating role", "operation", "create_role", "controller", m.controller, "namespace", namespace)
+		log.Warn("Namespace is terminating, not creating role", "operation", "create_role", "controller", m.controller, "namespace", namespace)
 		return nil
 	}
 
@@ -857,7 +857,7 @@ func (m *manager) reconcileManagementPlaneRole(namespace string, resourceToVerbs
 	for resource, newVerbs := range resourceToVerbs {
 		rules = append(rules, buildRule(resource, newVerbs))
 	}
-	log.Info("creating role in namespace", "operation", "create_role", "controller", m.controller, "role", rt.Name, "namespace", namespace)
+	log.Info("Creating role in namespace", "operation", "create_role", "controller", m.controller, "role", rt.Name, "namespace", namespace)
 	_, err = m.rClient.Create(&v1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      rt.Name,
@@ -925,7 +925,7 @@ func buildRule(resource string, verbs map[string]string) v1.PolicyRule {
 
 func (m *manager) checkReferencedRoles(roleTemplateName, roleTemplateContext string, depthCounter int) (bool, error) {
 	if depthCounter == rolesCircularSoftLimit {
-		log.Warn("roletemplate has caused recursive function calls", "operation", "create_role", "soft_limit", rolesCircularSoftLimit)
+		log.Warn("Roletemplate has caused recursive function calls", "operation", "create_role", "soft_limit", rolesCircularSoftLimit)
 	}
 	if depthCounter >= rolesCircularHardLimit {
 		return false, fmt.Errorf("roletemplate '%s' has caused %d recursive function calls, possible circular dependency", roleTemplateName, rolesCircularHardLimit)

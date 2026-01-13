@@ -114,7 +114,7 @@ func (h *handler) OnUpstreamChange(_ string, snapshot *rkev1.ETCDSnapshot) (*rke
 	_, err = h.etcdSnapshotFileController.Get(snapshot.Annotations[capr.SnapshotNameAnnotation], metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		// If the downstream snapshot does not exist in the downstream cluster, delete the local version
-		log.Debug("deleting snapshot", "operation", "handle_upstream_change", "snapshot", snapshot.Name)
+		log.Debug("Deleting snapshot", "operation", "handle_upstream_change", "snapshot", snapshot.Name)
 		return nil, h.etcdSnapshotController.Delete(snapshot.Namespace, snapshot.Name, &metav1.DeleteOptions{})
 	} else if err != nil {
 		return snapshot, err
@@ -133,12 +133,12 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 	}
 
 	if cluster.DeletionTimestamp != nil {
-		log.Debug("skipping snapshot reconcile as cluster is being deleted", "operation", "handle_downstream_change")
+		log.Debug("Skipping snapshot reconcile as cluster is being deleted", "operation", "handle_downstream_change")
 		return downstream, nil
 	}
 
 	if downstream.DeletionTimestamp != nil {
-		log.Info("downstream snapshot was deleted, deleting local snapshot representation", "operation", "handle_downstream_change", "snapshot", downstream.Name)
+		log.Info("Downstream snapshot was deleted, deleting local snapshot representation", "operation", "handle_downstream_change", "snapshot", downstream.Name)
 
 		upstreamSnapshots, err := h.getSnapshotsFromSnapshotFile(cluster, downstream)
 		if err != nil {
@@ -146,11 +146,11 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 		}
 		var errs []error
 		for _, upstreamSnapshot := range upstreamSnapshots {
-			log.Info("deleting local snapshot", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name)
+			log.Info("Deleting local snapshot", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name)
 
 			err := h.etcdSnapshotController.Delete(upstreamSnapshot.Namespace, upstreamSnapshot.Name, &metav1.DeleteOptions{})
 			if err != nil {
-				log.Error("error deleting snapshot", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name, "error", err)
+				log.Error("Error deleting snapshot", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name, "error", err)
 				errs = append(errs, err)
 			}
 		}
@@ -165,13 +165,13 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 	// if controlplane is currently performing a restore, reconciling snapshots will be postponed until post restore
 	if controlPlane.Spec.ETCDSnapshotRestore != nil && controlPlane.Status.ETCDSnapshotRestore != nil &&
 		controlPlane.Spec.ETCDSnapshotRestore.Generation != controlPlane.Status.ETCDSnapshotRestore.Generation {
-		log.Debug("skipping snapshot reconcile as cluster is being restored", "operation", "handle_downstream_change")
+		log.Debug("Skipping snapshot reconcile as cluster is being restored", "operation", "handle_downstream_change")
 
 		h.etcdSnapshotFileController.EnqueueAfter(downstream.Name, 1*time.Minute)
 		return downstream, nil
 	}
 
-	log.Info("processing snapshot", "operation", "handle_downstream_change", "snapshot", downstream.Name)
+	log.Info("Processing snapshot", "operation", "handle_downstream_change", "snapshot", downstream.Name)
 
 	// get upstream snapshot object
 	// if upstream snapshot object does not exist, create it
@@ -186,7 +186,7 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 		if err != nil {
 			return downstream, err
 		}
-		log.Debug("creating snapshot", "operation", "handle_downstream_change", "snapshot", upstream.Name)
+		log.Debug("Creating snapshot", "operation", "handle_downstream_change", "snapshot", upstream.Name)
 
 		_, err = h.etcdSnapshotController.Create(upstream)
 		// snapshot may exist on a previous version of Rancher but fail to indexer criteria, update in this case
@@ -201,20 +201,20 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 				return downstream, err
 			}
 
-			log.Debug("snapshot already exists but does not match indexer criteria, updating", "operation", "handle_downstream_change", "snapshot", upstream.Name)
+			log.Debug("Snapshot already exists but does not match indexer criteria, updating", "operation", "handle_downstream_change", "snapshot", upstream.Name)
 			_, err = h.etcdSnapshotController.Update(upstream)
 		}
 		return downstream, err
 	} else if len(upstreamSnapshots) > 1 {
-		log.Warn("multiple snapshots objects found for snapshot", "operation", "handle_downstream_change", "snapshot", downstream.Name)
+		log.Warn("Multiple snapshots objects found for snapshot", "operation", "handle_downstream_change", "snapshot", downstream.Name)
 
 		var errs []error
 		for _, upstreamSnapshot := range upstreamSnapshots {
-			log.Info("deleting snapshot object", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name)
+			log.Info("Deleting snapshot object", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name)
 
 			err = h.etcdSnapshotController.Delete(upstreamSnapshot.Namespace, upstreamSnapshot.Name, &metav1.DeleteOptions{})
 			if err != nil {
-				log.Error("error deleting snapshot", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name, "error", err)
+				log.Error("Error deleting snapshot", "operation", "handle_downstream_change", "snapshot", upstreamSnapshot.Name, "error", err)
 				errs = append(errs, err)
 			}
 		}
@@ -239,7 +239,7 @@ func (h *handler) OnDownstreamChange(_ string, downstream *k3s.ETCDSnapshotFile)
 	if reflect.DeepEqual(generated, upstream) {
 		return downstream, nil
 	}
-	log.Debug("updating snapshot", "operation", "reconcile_etcd_snapshot", "snapshot", upstream.Name)
+	log.Debug("Updating snapshot", "operation", "reconcile_etcd_snapshot", "snapshot", upstream.Name)
 
 	original, err := json.Marshal(upstream)
 	if err != nil {
@@ -324,7 +324,7 @@ func (h *handler) populateUpstreamSnapshotFromDownstream(upstream *rkev1.ETCDSna
 		if upstream.Labels != nil && upstream.Labels[capr.MachineIDLabel] != "" {
 			machine, err = h.getMachineByID(upstream.Labels[capr.MachineIDLabel], cluster.Name, cluster.Namespace)
 			if err != nil {
-				log.Error("error getting machine by id for snapshot", "operation", "reconcile_etcd_snapshot", "snapshot", upstream.Name, "error", err)
+				log.Error("Error getting machine by id for snapshot", "operation", "reconcile_etcd_snapshot", "snapshot", upstream.Name, "error", err)
 			}
 		}
 		// fallback to getting by node name, also used on snapshot create
@@ -375,7 +375,7 @@ func (h *handler) getSnapshotsFromSnapshotFile(cluster *provv1.Cluster, snapshot
 	if err != nil {
 		return nil, err
 	}
-	log.Info("got snapshots from snapshot file", "operation", "get_snapshots_from_file")
+	log.Info("Got snapshots from snapshot file", "operation", "get_snapshots_from_file")
 	return snapshots, nil
 }
 

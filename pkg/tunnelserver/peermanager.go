@@ -88,7 +88,7 @@ func getTokenFromToken(ctx context.Context, tokenBytes []byte) ([]byte, error) {
 func startPeerManager(ctx context.Context, endpoints corecontrollers.EndpointsController, server *remotedialer.Server) (peermanager.PeerManager, error) {
 	tokenBytes, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
 	if os.IsNotExist(err) || settings.Namespace.Get() == "" || settings.PeerServices.Get() == "" {
-		log.Info("running in single server mode, will not peer connections", "operation", "start_peer_manager")
+		log.Info("Running in single server mode, will not peer connections", "operation", "start_peer_manager")
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func startPeerManager(ctx context.Context, endpoints corecontrollers.EndpointsCo
 		return nil, errors.Wrap(err, "choosing interface IP")
 	}
 
-	log.Info("running in clustered mode", "operation", "start_peer_manager", "peer_id", ip, "namespace", settings.Namespace.Get(), "peer_service", settings.PeerServices.Get())
+	log.Info("Running in clustered mode", "operation", "start_peer_manager", "peer_id", ip, "namespace", settings.Namespace.Get(), "peer_service", settings.PeerServices.Get())
 
 	server.PeerID = ip.String()
 	server.PeerToken = string(tokenBytes)

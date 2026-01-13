@@ -111,7 +111,7 @@ func (h *handler) syncHarvesterFeature(obj *v3.Feature) error {
 // exists. If it doesn't exist, the node driver is created.
 func (h *handler) syncHarvesterNodeDriver(feature *v3.Feature) error {
 	if feature.Spec.Value == nil {
-		log.Debug("feature contains nil value", "feature", feature.Name)
+		log.Debug("Feature contains nil value", "feature", feature.Name)
 		return nil
 	}
 
@@ -131,7 +131,7 @@ func (h *handler) syncHarvesterNodeDriver(feature *v3.Feature) error {
 	driver = driver.DeepCopy()
 	driver.Spec.Active = *feature.Spec.Value
 
-	log.Info("updating node driver", "driver", driver.Name)
+	log.Info("Updating node driver", "driver", driver.Name)
 	_, err = h.nodeDriverController.Update(driver)
 	if err != nil {
 		h.featureEnqueue(feature.Name, 10*time.Second)

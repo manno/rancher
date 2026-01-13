@@ -63,9 +63,9 @@ func (p *logger) saveMessage() {
 				"log": logContent,
 			},
 		})
-		log.Error("failed to save provisioning log", "operation", "save_message", "config_map", configMapName, "error", err)
+		log.Error("Failed to save provisioning log", "operation", "save_message", "config_map", configMapName, "error", err)
 	} else if err != nil {
-		log.Error("failed to get provisioning log", "operation", "save_message", "config_map", configMapName, "error", err)
+		log.Error("Failed to get provisioning log", "operation", "save_message", "config_map", configMapName, "error", err)
 	} else if logContent != cm.Data["log"] {
 		if cm.Data == nil {
 			cm.Data = map[string]string{}
@@ -73,7 +73,7 @@ func (p *logger) saveMessage() {
 		cm.Data["log"] = logContent
 		_, err := p.ConfigMaps.Update(cm)
 		if err != nil {
-			log.Error("failed to update provisioning log", "operation", "save_message", "config_map", configMapName, "error", err)
+			log.Error("Failed to update provisioning log", "operation", "save_message", "config_map", configMapName, "error", err)
 		}
 	}
 }
@@ -98,9 +98,9 @@ func (p *logger) logEvent(cluster *v3.Cluster, event logstream.LogEvent, cond co
 	defer p.bufferLock.Unlock()
 
 	if event.Error {
-		log.Error("cluster provisioning", "operation", "log_event", "cluster", cluster.Name, "message", event.Message)
+		log.Error("Cluster provisioning", "operation", "log_event", "cluster", cluster.Name, "message", event.Message)
 	} else {
-		log.Info("cluster provisioning", "operation", "log_event", "cluster", cluster.Name, "message", event.Message)
+		log.Info("Cluster provisioning", "operation", "log_event", "cluster", cluster.Name, "message", event.Message)
 	}
 	p.buffer.WriteString(time.Now().Format(time.RFC3339))
 	p.buffer.WriteString(" ")

@@ -56,10 +56,10 @@ func (ch *clusterHandler) Sync(key string, cluster *v3.Cluster) (runtime.Object,
 
 	var err error
 	if toEnable {
-		log.Info("clusterhandler: calling sync to create network policies", "operation", "sync", "cluster", cluster.Name)
+		log.Info("Clusterhandler: calling sync to create network policies", "operation", "sync", "cluster", cluster.Name)
 		err = ch.createNetworkPolicies(cluster)
 	} else {
-		log.Info("clusterhandler: deleting network policies for cluster", "operation", "remove", "cluster", cluster.Name)
+		log.Info("Clusterhandler: deleting network policies for cluster", "operation", "remove", "cluster", cluster.Name)
 		err = ch.deleteNetworkPolicies(cluster)
 	}
 

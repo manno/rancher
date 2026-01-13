@@ -18,7 +18,7 @@ const (
 func NewPersistentStore(namespaces v1.NamespaceInterface, secretsGetter v1.SecretsGetter, clusterClient v3.ClusterInterface) cluster.PersistentStore {
 	store, err := encryptedstore.NewGenericEncryptedStore("c-", "", namespaces, secretsGetter)
 	if err != nil {
-		log.Fatal("failed to create encrypted store", "error", err)
+		log.Fatal("Failed to create encrypted store", "error", err)
 	}
 
 	return &engineStore{

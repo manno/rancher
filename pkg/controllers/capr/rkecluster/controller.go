@@ -48,17 +48,17 @@ func (h *handler) OnChange(_ string, cluster *v1.RKECluster) (*v1.RKECluster, er
 
 	capiCluster, err := capr.GetOwnerCAPICluster(cluster, h.capiClusterCache)
 	if apierrors.IsNotFound(err) {
-		log.Debug("waiting: CAPI cluster does not exist", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
+		log.Debug("Waiting: CAPI cluster does not exist", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		h.rkeCluster.EnqueueAfter(cluster.Namespace, cluster.Name, 10*time.Second)
 		return cluster, generic.ErrSkip
 	}
 	if err != nil {
-		log.Error("error getting CAPI cluster", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
+		log.Error("Error getting CAPI cluster", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 		return cluster, err
 	}
 
 	if capiannotations.IsPaused(capiCluster, cluster) {
-		log.Info("waiting: CAPI cluster or RKECluster is paused", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
+		log.Info("Waiting: CAPI cluster or RKECluster is paused", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return cluster, generic.ErrSkip
 	}
 
@@ -68,7 +68,7 @@ func (h *handler) OnChange(_ string, cluster *v1.RKECluster) (*v1.RKECluster, er
 			Host: "localhost",
 			Port: 6443,
 		}
-		log.Debug("setting controlplane endpoint", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
+		log.Debug("Setting controlplane endpoint", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return h.rkeCluster.Update(cluster)
 	}
 
@@ -77,8 +77,8 @@ func (h *handler) OnChange(_ string, cluster *v1.RKECluster) (*v1.RKECluster, er
 		// the rke2.Ready and rke2.Removed conditions may still be present on the object, remove them if present
 		cluster.Status.Conditions = nil
 		cluster.Status.Ready = true
-		log.Trace("removing stale conditions", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
-		log.Debug("marking cluster ready", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
+		log.Trace("Removing stale conditions", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
+		log.Debug("Marking cluster ready", "operation", "on_change", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return h.rkeCluster.UpdateStatus(cluster)
 	}
 

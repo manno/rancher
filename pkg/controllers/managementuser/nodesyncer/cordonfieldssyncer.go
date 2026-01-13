@@ -50,7 +50,7 @@ func (m *nodesSyncer) syncCordonFields(key string, obj *v32.Node) (runtime.Objec
 		}
 	}
 
-	log.Debug("cordon node", "operation", "cordon_node", "node", obj.Name, "desired", desiredValue, "current", obj.Spec.InternalNodeSpec.Unschedulable)
+	log.Debug("Cordon node", "operation", "cordon_node", "node", obj.Name, "desired", desiredValue, "current", obj.Spec.InternalNodeSpec.Unschedulable)
 	// reset only after Unschedulable reflects correctly
 	if obj.Spec.InternalNodeSpec.Unschedulable == desiredValue {
 		nodeCopy := obj.DeepCopy()
@@ -118,13 +118,13 @@ func (d *nodeDrain) updateNode(node *v32.Node, updateFunc func(node *v32.Node, o
 		for i := 0; i < 12; i++ {
 			latestObj, err := d.machines.Get(node.Name, metav1.GetOptions{})
 			if err != nil {
-				log.Warn("error fetching node", "operation", "node_drain", "node", node.Spec.RequestedHostname)
+				log.Warn("Error fetching node", "operation", "node_drain", "node", node.Spec.RequestedHostname)
 				return nil, err
 			}
 			updateFunc(latestObj, originalErr, kubeErr)
 			updatedObj, err = d.machines.Update(latestObj)
 			if err != nil && errors.IsConflict(err) {
-				log.Debug("conflict error, will retry again", "operation", "node_drain", "node", node.Spec.RequestedHostname)
+				log.Debug("Conflict error, will retry again", "operation", "node_drain", "node", node.Spec.RequestedHostname)
 				time.Sleep(5 * time.Millisecond)
 				continue
 			}
@@ -148,12 +148,12 @@ func (d *nodeDrain) drain(ctx context.Context, obj *v32.Node, nodeName string, c
 		updatedObj, err := v32.NodeConditionDrained.DoUntilTrue(obj, func() (runtime.Object, error) {
 			kubeConfig, tokenName, err := d.getKubeConfig()
 			if err != nil {
-				log.Error("error getting kubeConfig for node", "operation", "node_drain", "node", obj.Name)
+				log.Error("Error getting kubeConfig for node", "operation", "node_drain", "node", obj.Name)
 				return obj, fmt.Errorf("error getting kubeConfig for node %s", obj.Name)
 			}
 			defer func() {
 				if err := d.systemTokens.DeleteToken(tokenName); err != nil {
-					log.Error("cleanup for nodesyncer token failed, will not retry", "operation", "node_drain", "token", tokenName, "error", err)
+					log.Error("Cleanup for nodesyncer token failed, will not retry", "operation", "node_drain", "token", tokenName, "error", err)
 				}
 			}()
 
@@ -163,12 +163,12 @@ func (d *nodeDrain) drain(ctx context.Context, obj *v32.Node, nodeName string, c
 			if err != nil {
 				return obj, err
 			}
-			log.Info("draining node", "operation", "node_drain", "node", nodeName, "namespace", obj.Namespace, "flags", strings.Join(nodehelper.GetDrainFlags(nodeObj), " "))
+			log.Info("Draining node", "operation", "node_drain", "node", nodeName, "namespace", obj.Namespace, "flags", strings.Join(nodehelper.GetDrainFlags(nodeObj), " "))
 			_, msg, err := kubectl.Drain(ctx, kubeConfig, nodeName, nodehelper.GetDrainFlags(nodeObj))
 			if err != nil {
 				if ctx.Err() == context.Canceled {
 					stopped = true
-					log.Info("stopped draining", "operation", "node_drain", "node", nodeName, "namespace", obj.Namespace)
+					log.Info("Stopped draining", "operation", "node_drain", "node", nodeName, "namespace", obj.Namespace)
 					return nodeObj, nil
 				}
 				errMsg := filterErrorMsg(msg, nodeName)
@@ -185,7 +185,7 @@ func (d *nodeDrain) drain(ctx context.Context, obj *v32.Node, nodeName string, c
 						obj.Spec.NodeDrainInput.Timeout)
 				} else {
 					// log before ignoring
-					log.Error("kubectl error ignore draining node", "operation", "node_drain", "node", nodeName, "cluster", d.clusterName, "error", kubeErr)
+					log.Error("Kubectl error ignore draining node", "operation", "node_drain", "node", nodeName, "cluster", d.clusterName, "error", kubeErr)
 				}
 				kubeErr = nil
 			}
@@ -196,9 +196,9 @@ func (d *nodeDrain) drain(ctx context.Context, obj *v32.Node, nodeName string, c
 			_, updateErr := d.updateNode(nodeCopy, setConditionComplete, err, kubeErr)
 			if kubeErr != nil || updateErr != nil {
 				if kubeErr != nil {
-					log.Error("kubectl error draining node", "operation", "node_drain", "node", nodeName, "cluster", d.clusterName, "error", kubeErr)
+					log.Error("Kubectl error draining node", "operation", "node_drain", "node", nodeName, "cluster", d.clusterName, "error", kubeErr)
 				} else {
-					log.Error("condition update failure for node", "operation", "node_drain", "node", nodeName, "cluster", d.clusterName, "error", updateErr)
+					log.Error("Condition update failure for node", "operation", "node_drain", "node", nodeName, "cluster", d.clusterName, "error", updateErr)
 				}
 				d.machines.Controller().Enqueue("", fmt.Sprintf("%s/%s", d.clusterName, obj.Name))
 			}

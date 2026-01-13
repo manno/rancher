@@ -74,7 +74,7 @@ func (h *handler) OnSecretRequestChange(key string, incomingObj *v1.SecretReques
 	if incomingObj == nil {
 		return nil, nil
 	}
-	log.Debug("received secret request", "secret_request", incomingObj.Name)
+	log.Debug("Received secret request", "secret_request", incomingObj.Name)
 
 	if !incomingObj.HasCondition(v1.ResourceConditionProgressing) {
 		preparedObj := incomingObj.DeepCopy()
@@ -126,7 +126,7 @@ func (h *handler) OnSecretRequestChange(key string, incomingObj *v1.SecretReques
 	if updateErr != nil {
 		return incomingObj, fmt.Errorf("error updating secret request '%s': %w", incomingObj.Spec.TargetSecretRef, updateErr)
 	}
-	log.Debug("updated secret request", "secret_request", updated.Name)
+	log.Debug("Updated secret request", "secret_request", updated.Name)
 	return incomingObj, nil
 }
 

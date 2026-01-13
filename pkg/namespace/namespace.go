@@ -56,7 +56,7 @@ func (n *NsEnqueuer) RoleTemplateEnqueueNamespace(_, _ string, obj runtime.Objec
 	}
 	rt, ok := obj.(*v3.RoleTemplate)
 	if !ok {
-		log.Error("unable to convert object to role template", "operation", "role_template_enqueue_namespace", "object", obj, "type", fmt.Sprintf("%T", obj))
+		log.Error("Unable to convert object to role template", "operation", "role_template_enqueue_namespace", "object", obj, "type", fmt.Sprintf("%T", obj))
 		return nil, nil
 	}
 
@@ -72,7 +72,7 @@ func (n *NsEnqueuer) RoleTemplateEnqueueNamespace(_, _ string, obj runtime.Objec
 	for _, obj := range prtbs {
 		prtb, ok := obj.(*v3.ProjectRoleTemplateBinding)
 		if !ok {
-			log.Error("unable to convert object to project role template binding", "operation", "role_template_enqueue_namespace", "object", obj, "type", fmt.Sprintf("%T", obj))
+			log.Error("Unable to convert object to project role template binding", "operation", "role_template_enqueue_namespace", "object", obj, "type", fmt.Sprintf("%T", obj))
 			return nil, nil
 		}
 

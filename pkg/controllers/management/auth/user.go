@@ -194,14 +194,14 @@ func (l *userLifecycle) Updated(user *v3.User) (runtime.Object, error) {
 		for _, token := range extTokens {
 			if token.GetIsDerived() {
 				// Non-login tokens are disabled
-				log.Info("disabling ext token for user", "operation", "delete_user", "controller", userController, "token", token.GetName(), "user", token.GetUserID())
+				log.Info("Disabling ext token for user", "operation", "delete_user", "controller", userController, "token", token.GetName(), "user", token.GetUserID())
 				err := l.extTokenStore.Disable(token.GetName())
 				if err != nil {
 					return nil, fmt.Errorf("error updating ext token: %v", err)
 				}
 			} else {
 				// Login tokens are deleted.
-				log.Info("deleting token for user", "operation", "delete_user", "controller", userController, "token", token.GetName(), "user", token.GetUserID())
+				log.Info("Deleting token for user", "operation", "delete_user", "controller", userController, "token", token.GetName(), "user", token.GetUserID())
 				err := l.extTokenStore.Delete(token.GetName(), &metav1.DeleteOptions{})
 				if err != nil {
 					return nil, fmt.Errorf("error deleting ext token: %v", err)
@@ -379,7 +379,7 @@ func (l *userLifecycle) getExtTokensByUserName(userName string) ([]*ext.Token, e
 func (l *userLifecycle) deleteAllCRTB(crtbs []*v3.ClusterRoleTemplateBinding) error {
 	for _, crtb := range crtbs {
 		var err error
-		log.Info("deleting clusterRoleTemplateBinding for user", "operation", "delete_user", "controller", userController, "crtb", crtb.Name, "user", crtb.UserName)
+		log.Info("Deleting clusterRoleTemplateBinding for user", "operation", "delete_user", "controller", userController, "crtb", crtb.Name, "user", crtb.UserName)
 		err = l.crtb.Delete(crtb.Namespace, crtb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting cluster role: %v", err)
@@ -392,7 +392,7 @@ func (l *userLifecycle) deleteAllCRTB(crtbs []*v3.ClusterRoleTemplateBinding) er
 func (l *userLifecycle) deleteAllPRTB(prtbs []*v3.ProjectRoleTemplateBinding) error {
 	for _, prtb := range prtbs {
 		var err error
-		log.Info("deleting projectRoleTemplateBinding for user", "operation", "delete_user", "controller", userController, "prtb", prtb.Name, "user", prtb.UserName)
+		log.Info("Deleting projectRoleTemplateBinding for user", "operation", "delete_user", "controller", userController, "prtb", prtb.Name, "user", prtb.UserName)
 		err = l.prtb.Delete(prtb.Namespace, prtb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting projet role: %v", err)
@@ -410,7 +410,7 @@ func (l *userLifecycle) deleteAllGRB(grbs []*v3.GlobalRoleBinding) error {
 		return fmt.Errorf("error when impersonating webhook to delete globalRoleBindings: %w", err)
 	}
 	for _, grb := range grbs {
-		log.Info("deleting globalRoleBinding for user", "operation", "delete_user", "controller", userController, "grb", grb.Name, "user", grb.UserName)
+		log.Info("Deleting globalRoleBinding for user", "operation", "delete_user", "controller", userController, "grb", grb.Name, "user", grb.UserName)
 		err = grbClient.Delete(grb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting globalRoleBinding %v: %v", grb.Name, err)
@@ -453,7 +453,7 @@ func (l *userLifecycle) deleteClusterUserAttributes(username string, tokens []*v
 
 func (l *userLifecycle) deleteAllTokens(tokens []*v3.Token) error {
 	for _, token := range tokens {
-		log.Info("deleting token for user", "operation", "delete_user", "controller", userController, "token", token.Name, "user", token.UserID)
+		log.Info("Deleting token for user", "operation", "delete_user", "controller", userController, "token", token.Name, "user", token.UserID)
 		err := l.tokens.Delete(token.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting token: %v", err)
@@ -465,7 +465,7 @@ func (l *userLifecycle) deleteAllTokens(tokens []*v3.Token) error {
 
 func (l *userLifecycle) deleteAllExtTokens(tokens []*ext.Token) error {
 	for _, token := range tokens {
-		log.Info("deleting token for user", "operation", "delete_user", "controller", userController, "token", token.GetName(), "user", token.GetUserID())
+		log.Info("Deleting token for user", "operation", "delete_user", "controller", userController, "token", token.GetName(), "user", token.GetUserID())
 		err := l.extTokenStore.Delete(token.GetName(), &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting ext token: %v", err)
@@ -489,7 +489,7 @@ func (l *userLifecycle) deleteUserNamespace(username string) error {
 		return nil // nothing to do namespace is already deleting
 	}
 
-	log.Info("deleting namespace backing user", "operation", "delete_user", "controller", userController, "user", username)
+	log.Info("Deleting namespace backing user", "operation", "delete_user", "controller", userController, "user", username)
 	err = l.namespaces.Delete(username, &metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error deleting user namespace: %v", err)
@@ -507,7 +507,7 @@ func (l *userLifecycle) deleteUserSecret(username string) error {
 		return fmt.Errorf("error getting user secret: %v", err)
 	}
 
-	log.Info("deleting secret backing user", "operation", "delete_user", "controller", userController, "user", username)
+	log.Info("Deleting secret backing user", "operation", "delete_user", "controller", userController, "user", username)
 	return l.secrets.Delete("cattle-system", username+"-secret", &metav1.DeleteOptions{})
 }
 

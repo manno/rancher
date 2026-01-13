@@ -130,7 +130,7 @@ func NewProxy(prefix string, validHosts Supplier, scaledContext *config.ScaledCo
 	return &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
 			if err := p.proxy(req); err != nil {
-				log.Info("failed to proxy", "error", err)
+				log.Info("Failed to proxy", "error", err)
 			}
 		},
 		ModifyResponse: setModifiedHeaders,

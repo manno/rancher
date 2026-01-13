@@ -72,7 +72,7 @@ func (d *Deployer) Ensure(_ context.Context, labels map[string]string) error {
 			return fmt.Errorf("error creating cluster role binding %s: %w", consts.ClusterRoleBindingName, err)
 		}
 
-		d.log.Info("created cluster role binding", "name", consts.ClusterRoleBindingName)
+		d.log.Info("Created cluster role binding", "name", consts.ClusterRoleBindingName)
 	}
 
 	return nil

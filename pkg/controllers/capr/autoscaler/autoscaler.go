@@ -97,7 +97,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext) {
 	// warn the user if they have the autoscaling feature-flag enabled but no chart repo set,
 	// then do not run the controller.
 	if settings.ClusterAutoscalerChartRepository.Get() == "" {
-		log.Warn("no value is set for cluster-autoscaler-chart-repo setting, cannot enable autoscaling", "operation", "register_autoscaler")
+		log.Warn("No value is set for cluster-autoscaler-chart-repo setting, cannot enable autoscaling", "operation", "register_autoscaler")
 		return
 	}
 
@@ -130,13 +130,13 @@ func (h *autoscalerHandler) OnChange(_ string, cluster *capi.Cluster) (*capi.Clu
 	// fetch appropriate capi resources related to this cluster (machineDeployments + machines)
 	mds, err := h.capiMachineDeploymentCache.List(cluster.Namespace, labels.SelectorFromSet(labels.Set{capi.ClusterNameLabel: cluster.Name}))
 	if err != nil {
-		log.Warn("failed to list machinedeployments for capi cluster", "operation", "autoscaler_on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
+		log.Warn("Failed to list machinedeployments for capi cluster", "operation", "autoscaler_on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 		return nil, err
 	}
 
 	machines, err := h.capiMachineCache.List(cluster.Namespace, labels.SelectorFromSet(labels.Set{capi.ClusterNameLabel: cluster.Name}))
 	if err != nil {
-		log.Warn("failed to list machines for capi cluster", "operation", "autoscaler_on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
+		log.Warn("Failed to list machines for capi cluster", "operation", "autoscaler_on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 		return nil, err
 	}
 
@@ -149,14 +149,14 @@ func (h *autoscalerHandler) OnChange(_ string, cluster *capi.Cluster) (*capi.Clu
 	if autoscalingPaused(cluster) {
 		err := h.pauseAutoscaling(cluster)
 		if err != nil {
-			log.Debug("failed to pause autoscaling", "operation", "autoscaler_on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
+			log.Debug("Failed to pause autoscaling", "operation", "autoscaler_on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 			return nil, err
 		}
 		return cluster, nil
 	} else if autoscalingEnabled := h.isAutoscalingEnabled(cluster, mds); !autoscalingEnabled {
 		err := h.handleUninstall(cluster)
 		if err != nil {
-			log.Debug("failed to cleanup autoscaler resources", "operation", "autoscaler_on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
+			log.Debug("Failed to cleanup autoscaler resources", "operation", "autoscaler_on_change", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 		}
 
 		return cluster, nil
@@ -188,7 +188,7 @@ func (h *autoscalerHandler) isAutoscalingEnabled(cluster *capi.Cluster, mds []*c
 		return false
 	}
 
-	log.Info("cluster is ready and has autoscaler enabled for at least one machine pool", "operation", "is_autoscaling_enabled", "namespace", cluster.Namespace, "cluster", cluster.Name)
+	log.Info("Cluster is ready and has autoscaler enabled for at least one machine pool", "operation", "is_autoscaling_enabled", "namespace", cluster.Namespace, "cluster", cluster.Name)
 	return true
 }
 
@@ -234,35 +234,35 @@ func (h *autoscalerHandler) handleUninstall(cluster *capi.Cluster) error {
 // a token for the user, and creates the kubeconfig secret. Returns the kubeconfig
 // secret that will be used to deploy the cluster-autoscaler chart.
 func (h *autoscalerHandler) setupRBAC(capiCluster *capi.Cluster, mds []*capi.MachineDeployment, machines []*capi.Machine) (*v1.Secret, error) {
-	log.Info("setting up rbac resources for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name)
+	log.Info("Setting up rbac resources for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name)
 
 	user, err := h.ensureUser(capiCluster)
 	if err != nil {
-		log.Error("failed to create user for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
+		log.Error("Failed to create user for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
 		return nil, err
 	}
 
 	globalRole, err := h.ensureGlobalRole(capiCluster, mds, machines)
 	if err != nil {
-		log.Error("failed to create global role for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
+		log.Error("Failed to create global role for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
 		return nil, err
 	}
 
 	err = h.ensureGlobalRoleBinding(capiCluster, user.Username, globalRole.Name)
 	if err != nil {
-		log.Error("failed to create global role binding for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
+		log.Error("Failed to create global role binding for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
 		return nil, err
 	}
 
 	tokenStr, err := h.ensureUserToken(capiCluster, autoscalerUserName(capiCluster))
 	if err != nil {
-		log.Error("failed to create token for user", "operation", "setup_rbac", "user", user.Username, "error", err)
+		log.Error("Failed to create token for user", "operation", "setup_rbac", "user", user.Username, "error", err)
 		return nil, err
 	}
 
 	kubeconfig, err := h.ensureKubeconfigSecretUsingTemplate(capiCluster, tokenStr)
 	if err != nil {
-		log.Error("failed to create kubeconfig secret for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
+		log.Error("Failed to create kubeconfig secret for cluster", "operation", "setup_rbac", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
 		return nil, err
 	}
 
@@ -275,11 +275,11 @@ func (h *autoscalerHandler) setupRBAC(capiCluster *capi.Cluster, mds []*capi.Mac
 // with 1 replica to enable autoscaling.
 // Returns an error if the HelmOp creation fails.
 func (h *autoscalerHandler) deployChart(capiCluster *capi.Cluster, kubeconfig *v1.Secret) error {
-	log.Info("deploying cluster-autoscaler helm chart for cluster", "operation", "deploy_chart", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name)
+	log.Info("Deploying cluster-autoscaler helm chart for cluster", "operation", "deploy_chart", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name)
 
 	err := h.ensureFleetHelmOp(capiCluster, kubeconfig.ResourceVersion, 1)
 	if err != nil {
-		log.Error("failed to create fleet-managed autoscaler helmop for cluster", "operation", "deploy_chart", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
+		log.Error("Failed to create fleet-managed autoscaler helmop for cluster", "operation", "deploy_chart", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
 		return err
 	}
 
@@ -340,7 +340,7 @@ func (h *autoscalerHandler) syncHelmOpStatus(_ string, helmOp *fleet.HelmOp) (*f
 	if !reflect.DeepEqual(originalStatus, cluster.Status) {
 		_, err = h.clusterClient.UpdateStatus(cluster)
 		if err != nil {
-			log.Debug("failed to update provisioning cluster status", "operation", "sync_helmop_status", "error", err)
+			log.Debug("Failed to update provisioning cluster status", "operation", "sync_helmop_status", "error", err)
 			h.helmOp.EnqueueAfter(helmOp.Namespace, helmOp.Name, 5*time.Second)
 		}
 	}

@@ -47,13 +47,13 @@ func (c *SettingController) sync(key string, obj *v3.Setting) (runtime.Object, e
 		azure.UpdateGroupCacheSize(obj.Value)
 	case settings.UserRetentionCron.Name:
 		if err := c.scheduleUserRetention(obj.Value); err != nil {
-			log.Error("error scheduling user retention daemon", "operation", "schedule_user_retention", "error", err)
+			log.Error("Error scheduling user retention daemon", "operation", "schedule_user_retention", "error", err)
 		}
 	case settings.DisableInactiveUserAfter.Name,
 		settings.DeleteInactiveUserAfter.Name,
 		settings.UserLastLoginDefault.Name:
 		if err := c.ensureUserRetentionLabels(); err != nil {
-			log.Error("error updating retention labels for users", "operation", "update_user_retention", "error", err)
+			log.Error("Error updating retention labels for users", "operation", "update_user_retention", "error", err)
 		}
 	}
 	return nil, nil

@@ -58,7 +58,7 @@ func RDPStart(ctx context.Context, restConfig *rest.Config, wranglerContext *wra
 	// Retry to get or create the connect secret for approx 15 minutes
 	retry.OnError(rdpSecretBackoff, func(err error) bool {
 		retryCount++
-		log.Error("error getting connect secret, will retry", "retry", retryCount, "error", err.Error())
+		log.Error("Error getting connect secret, will retry", "retry", retryCount, "error", err.Error())
 		return true
 	}, func() error {
 		connectSecret, retryErr = GetOrCreateRDPConnectSecret(wranglerContext.Core.Secret())
@@ -98,11 +98,11 @@ func GetOrCreateRDPConnectSecret(secretController corecontrollers.SecretControll
 	}
 
 	if secret == nil {
-		log.Warn("couldn't read connect secret, will attempt to create new one")
+		log.Warn("Couldn't read connect secret, will attempt to create new one")
 	}
 
 	if err != nil {
-		log.Error("error reading connect secret, will attempt to create new one", "error", err.Error())
+		log.Error("Error reading connect secret, will attempt to create new one", "error", err.Error())
 	}
 
 	secretValue, err := randomtoken.Generate()
@@ -120,7 +120,7 @@ func GetOrCreateRDPConnectSecret(secretController corecontrollers.SecretControll
 			"data": secretValue,
 		},
 	}); err != nil {
-		log.Error("error creating connect secret", "error", err.Error())
+		log.Error("Error creating connect secret", "error", err.Error())
 		return "", err
 	}
 

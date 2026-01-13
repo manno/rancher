@@ -234,7 +234,7 @@ type Feature struct {
 func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs string) {
 	// applies any default values assigned in --features flag to feature map
 	if err := applyArgumentDefaults(featureArgs); err != nil {
-		log.Error("failed to apply feature args", "operation", "initialize_features", "error", err)
+		log.Error("Failed to apply feature args", "operation", "initialize_features", "error", err)
 	}
 
 	if featuresClient == nil {
@@ -244,7 +244,7 @@ func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs s
 	// external-rules feature flag was removed in 2.9. We need to delete it for users upgrading from 2.8.
 	err := featuresClient.Delete("external-rules", &metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
-		log.Error("unable to delete external-rules feature", "operation", "initialize_features", "error", err)
+		log.Error("Unable to delete external-rules feature", "operation", "initialize_features", "error", err)
 	}
 
 	// creates any features in map that do not exist, updates features with new default value
@@ -252,7 +252,7 @@ func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs s
 		featureState, err := featuresClient.Get(key, metav1.GetOptions{})
 		if err != nil {
 			if !errors.IsNotFound(err) {
-				log.Error("unable to retrieve feature in initialize features", "operation", "initialize_features", "feature", f.name, "error", err)
+				log.Error("Unable to retrieve feature in initialize features", "operation", "initialize_features", "feature", f.name, "error", err)
 			}
 
 			if f.install {
@@ -275,7 +275,7 @@ func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs s
 				}
 
 				if _, err := featuresClient.Create(newFeature); err != nil {
-					log.Error("unable to create feature in initialize features", "operation", "initialize_features", "feature", f.name, "error", err)
+					log.Error("Unable to create feature in initialize features", "operation", "initialize_features", "feature", f.name, "error", err)
 				}
 			}
 		} else {
@@ -297,7 +297,7 @@ func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs s
 
 			newFeatureState, err = featuresClient.Update(newFeatureState)
 			if err != nil {
-				log.Error("unable to update feature in initialize features", "operation", "initialize_features", "feature", f.name, "error", err)
+				log.Error("Unable to update feature in initialize features", "operation", "initialize_features", "feature", f.name, "error", err)
 				continue
 			}
 

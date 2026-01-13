@@ -81,7 +81,7 @@ func (c *ResourceSyncController) bootstrap(mgmtClusterClient v3.ClusterInterface
 		return fmt.Errorf("failed to list secrets in %v namespace: %w", c.namespace, err)
 	}
 
-	log.Debug("looking for secrets to synchronize to cluster", "operation", "sync_bootstrap_secrets", "cluster", c.clusterName)
+	log.Debug("Looking for secrets to synchronize to cluster", "operation", "sync_bootstrap_secrets", "cluster", c.clusterName)
 
 	for _, sec := range secrets.Items {
 		s := &sec
@@ -90,14 +90,14 @@ func (c *ResourceSyncController) bootstrap(mgmtClusterClient v3.ClusterInterface
 			continue
 		}
 
-		log.Debug("syncing secret to cluster", "operation", "sync_bootstrap_secrets", "secret", fmt.Sprintf("%s/%s", s.Namespace, s.Name), "cluster", c.clusterName)
+		log.Debug("Syncing secret to cluster", "operation", "sync_bootstrap_secrets", "secret", fmt.Sprintf("%s/%s", s.Namespace, s.Name), "cluster", c.clusterName)
 
 		_, err = c.sync("", s)
 		if err != nil {
 			return fmt.Errorf("failed to synchronize secret %v/%v to cluster %v: %w", s.Namespace, s.Name, c.clusterName, err)
 		}
 
-		log.Debug("successfully synced secret to downstream cluster", "operation", "sync_bootstrap_secrets", "secret", fmt.Sprintf("%s/%s", s.Namespace, s.Name), "cluster", c.clusterName)
+		log.Debug("Successfully synced secret to downstream cluster", "operation", "sync_bootstrap_secrets", "secret", fmt.Sprintf("%s/%s", s.Namespace, s.Name), "cluster", c.clusterName)
 	}
 
 	apimgmtv3.ClusterConditionPreBootstrapped.True(mgmtCluster)
@@ -171,7 +171,7 @@ func (c *ResourceSyncController) sync(_ string, obj *corev1.Secret) (*corev1.Sec
 		ns = obj.Namespace
 	}
 
-	log.Debug("synchronizing secret", "operation", "resource_sync", "source_secret", fmt.Sprintf("%s/%s", obj.Namespace, obj.Name), "target", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
+	log.Debug("Synchronizing secret", "operation", "resource_sync", "source_secret", fmt.Sprintf("%s/%s", obj.Namespace, obj.Name), "target", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
 
 	var targetSecret *corev1.Secret
 	var err error
@@ -180,7 +180,7 @@ func (c *ResourceSyncController) sync(_ string, obj *corev1.Secret) (*corev1.Sec
 	}
 
 	if targetSecret == nil || errors.IsNotFound(err) {
-		log.Debug("creating secret in cluster", "operation", "resource_sync", "secret", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
+		log.Debug("Creating secret in cluster", "operation", "resource_sync", "secret", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
 
 		newSecret := &corev1.Secret{
 			Type:       obj.Type,
@@ -195,7 +195,7 @@ func (c *ResourceSyncController) sync(_ string, obj *corev1.Secret) (*corev1.Sec
 			return nil, fmt.Errorf("failed to create secret %v/%v in cluster %v: %w", ns, name, c.clusterName, err)
 		}
 	} else if !reflect.DeepEqual(c.removeClusterIdFromSecretData(targetSecret).Data, obj.Data) {
-		log.Debug("updating secret in cluster", "operation", "resource_sync", "secret", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
+		log.Debug("Updating secret in cluster", "operation", "resource_sync", "secret", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
 
 		targetSecret.Data = obj.Data
 		targetSecret = c.injectClusterIdIntoSecretData(targetSecret)
@@ -205,11 +205,11 @@ func (c *ResourceSyncController) sync(_ string, obj *corev1.Secret) (*corev1.Sec
 			return nil, fmt.Errorf("failed to update secret %v/%v in cluster %v: %w", ns, name, c.clusterName, err)
 		}
 	} else {
-		log.Debug("skipping downstream update - contents are the same", "operation", "resource_sync")
+		log.Debug("Skipping downstream update - contents are the same", "operation", "resource_sync")
 		return obj, nil
 	}
 
-	log.Debug("successfully synchronized secret", "operation", "resource_sync", "source_secret", fmt.Sprintf("%s/%s", obj.Namespace, obj.Name), "target", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
+	log.Debug("Successfully synchronized secret", "operation", "resource_sync", "source_secret", fmt.Sprintf("%s/%s", obj.Namespace, obj.Name), "target", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
 
 	obj.Annotations[syncedAtAnnotation] = time.Now().Format(time.RFC3339)
 	return obj, nil

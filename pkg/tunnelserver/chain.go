@@ -18,8 +18,8 @@ func ErrorWriter(rw http.ResponseWriter, req *http.Request, code int, err error)
 	if forwardedFor != "" {
 		fullAddress = fmt.Sprintf("%s (X-Forwarded-For: %s)", req.RemoteAddr, forwardedFor)
 	}
-	log.Error("failed to handle tunnel request", "operation", "error_writer", "remote_addr", fullAddress, "response_code", code, "error", err)
-	log.Trace("error writer response", "operation", "error_writer", "response_code", code, "request", req)
+	log.Error("Failed to handle tunnel request", "operation", "error_writer", "remote_addr", fullAddress, "response_code", code, "error", err)
+	log.Trace("Error writer response", "operation", "error_writer", "response_code", code, "request", req)
 	remotedialer.DefaultErrorWriter(rw, req, code, err)
 }
 

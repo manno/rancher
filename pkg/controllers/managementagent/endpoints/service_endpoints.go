@@ -59,7 +59,7 @@ func (s *ServicesController) reconcileEndpointsForService(svc *corev1.Service) (
 		return false, err
 	}
 
-	log.Info("updating service with public endpoints", "operation", "reconcile_endpoints_for_service", "service", svc.Name, "endpoints", epsToUpdate)
+	log.Info("Updating service with public endpoints", "operation", "reconcile_endpoints_for_service", "service", svc.Name, "endpoints", epsToUpdate)
 	if toUpdate.Annotations == nil {
 		toUpdate.Annotations = map[string]string{}
 	}

@@ -24,7 +24,7 @@ func (nh *nodeHandler) Sync(key string, machine *v3.Node) (runtime.Object, error
 		if disabled {
 			return nil, nil
 		}
-		log.Debug("nodehandler: sync", "operation", "sync", "key", key)
+		log.Debug("Nodehandler: sync", "operation", "sync", "key", key)
 		return nil, nh.npmgr.handleHostNetwork(nh.clusterNamespace)
 	}
 	return nil, nil

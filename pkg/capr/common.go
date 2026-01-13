@@ -674,7 +674,7 @@ func ParseSnapshotClusterSpecOrError(snapshot *rkev1.ETCDSnapshot) (*provv1.Clus
 func PreBootstrap(mgmtCluster *v3.Cluster) bool {
 	// if the upstream rancher _does not_ have pre-bootstrapping enabled just always return false.
 	if !features.ProvisioningPreBootstrap.Enabled() {
-		log.Debug("feature-flag disabled, skipping pre-bootstrap flow", "operation", "pre_bootstrap")
+		log.Debug("Feature-flag disabled, skipping pre-bootstrap flow", "operation", "pre_bootstrap")
 		return false
 	}
 

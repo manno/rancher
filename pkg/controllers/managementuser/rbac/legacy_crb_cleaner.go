@@ -80,7 +80,7 @@ func (c *crbCleaner) sync(key string, crb *rbacv1.ClusterRoleBinding) (*rbacv1.C
 				return nil, fmt.Errorf("checking if ClusterRoleBinding %s has global admin role: %w", crb.Name, err)
 			}
 			if !ok {
-				log.Warn("crbcleaner: marking clusterrolebinding as orphaned", "operation", "sync_crb", "cluster", c.clusterName, "crb", key)
+				log.Warn("Crbcleaner: marking clusterrolebinding as orphaned", "operation", "sync_crb", "cluster", c.clusterName, "crb", key)
 				crb.Annotations[crbAdminGlobalRoleMissingAnnotation] = "true"
 			}
 		}

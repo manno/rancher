@@ -42,7 +42,7 @@ func (h *clusterUserAttributeHandler) Sync(key string, clusterUserAttribute *clu
 				return nil, fmt.Errorf("error deleting orphaned clusteruserattribute %s: %w", clusterUserAttribute.Name, err)
 			}
 
-			log.Info("deleted orphaned clusteruserattribute", "operation", "delete_orphaned_cua", "cluster_user_attribute", clusterUserAttribute.Name)
+			log.Info("Deleted orphaned clusteruserattribute", "operation", "delete_orphaned_cua", "cluster_user_attribute", clusterUserAttribute.Name)
 			return nil, nil
 		}
 		// The userAttribute exists, proceed.

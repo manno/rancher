@@ -40,7 +40,7 @@ func deleteNamespace(controller string, nsName string, nsClient v1.NamespaceInte
 		return err
 	}
 	if ns.Status.Phase != v12.NamespaceTerminating {
-		log.Info("deleting namespace", "operation", "delete_namespace", "controller", controller, "namespace", nsName)
+		log.Info("Deleting namespace", "operation", "delete_namespace", "controller", controller, "namespace", nsName)
 		err = nsClient.Delete(context.TODO(), nsName, metav1.DeleteOptions{})
 		if apierrors.IsNotFound(err) {
 			return nil
@@ -58,7 +58,7 @@ func reconcileResourceToNamespace(obj runtime.Object, controller string, nsName 
 
 		ns, _ := nsLister.Get(nsName)
 		if ns == nil {
-			log.Info("creating namespace", "operation", "reconcile_resource_to_namespace", "controller", controller, "namespace", nsName)
+			log.Info("Creating namespace", "operation", "reconcile_resource_to_namespace", "controller", controller, "namespace", nsName)
 			_, err := nsClient.Create(context.TODO(), &v12.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,

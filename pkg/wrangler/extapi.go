@@ -44,7 +44,7 @@ func (d *DeferredEXTAPIInitializer) WaitForClient(ctx context.Context) (*EXTAPIC
 	var done atomic.Bool
 	ready := make(chan struct{})
 
-	log.Info("starting waiter for EXT api-service availability", "operation", "deferred_extapi_wait_for_client")
+	log.Info("Starting waiter for EXT api-service availability", "operation", "deferred_extapi_wait_for_client")
 
 	d.context.API.APIService().OnChange(ctx, "extapi-deferred-registration", func(key string, api *apiregv1.APIService) (*apiregv1.APIService, error) {
 		if done.Load() {
@@ -69,7 +69,7 @@ func (d *DeferredEXTAPIInitializer) WaitForClient(ctx context.Context) (*EXTAPIC
 		return nil, ctx.Err()
 	}
 
-	log.Debug("creating ext factory", "operation", "deferred_extapi_wait_for_client")
+	log.Debug("Creating ext factory", "operation", "deferred_extapi_wait_for_client")
 
 	ext, err := ext.NewFactoryFromConfigWithOptions(d.context.RESTConfig, &generic.FactoryOptions{
 		SharedControllerFactory: d.context.ControllerFactory,
@@ -91,16 +91,16 @@ func extReady(apiServiceCache wapiregv1.APIServiceCache) bool {
 		"v1.ext.cattle.io",
 	}
 
-	log.Debug("checking EXT api-service availability and establishment status", "operation", "ext_ready")
+	log.Debug("Checking EXT api-service availability and establishment status", "operation", "ext_ready")
 
 	for _, apiServiceName := range requiredAPIServices {
 		apiService, err := apiServiceCache.Get(apiServiceName)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				log.Debug("api-service not found, continuing to wait", "operation", "ext_ready", "api_service", apiServiceName)
+				log.Debug("Api-service not found, continuing to wait", "operation", "ext_ready", "api_service", apiServiceName)
 				return false
 			}
-			log.Debug("api-service error during check", "operation", "ext_ready", "api_service", apiServiceName, "error", err)
+			log.Debug("Api-service error during check", "operation", "ext_ready", "api_service", apiServiceName, "error", err)
 			return false
 		}
 
@@ -113,11 +113,11 @@ func extReady(apiServiceCache wapiregv1.APIServiceCache) bool {
 		}
 
 		if !established {
-			log.Debug("api-service exists but not yet established, continuing to wait", "operation", "ext_ready", "api_service", apiServiceName)
+			log.Debug("Api-service exists but not yet established, continuing to wait", "operation", "ext_ready", "api_service", apiServiceName)
 			return false
 		}
 
-		log.Debug("api-service is available and established", "operation", "ext_ready", "api_service", apiServiceName)
+		log.Debug("Api-service is available and established", "operation", "ext_ready", "api_service", apiServiceName)
 	}
 
 	return true

@@ -202,7 +202,7 @@ func NameForRoleBinding(namespace string, role rbacv1.RoleRef, subject rbacv1.Su
 	name.WriteString("rb-")
 	name.WriteString(getBindingHash(namespace, role, subject))
 	nm := name.String()
-	log.Debug("role binding name calculated", "operation", "name_for_rolebinding", "namespace", namespace, "role_kind", role.Kind, "role_name", role.Name, "subject_kind", subject.Kind, "subject_name", subject.Name, "name", nm)
+	log.Debug("Role binding name calculated", "operation", "name_for_rolebinding", "namespace", namespace, "role_kind", role.Kind, "role_name", role.Name, "subject_kind", subject.Kind, "subject_name", subject.Name, "name", nm)
 	return nm
 }
 
@@ -212,7 +212,7 @@ func NameForClusterRoleBinding(role rbacv1.RoleRef, subject rbacv1.Subject) stri
 	name.WriteString("crb-")
 	name.WriteString(getBindingHash("", role, subject))
 	nm := name.String()
-	log.Debug("cluster role binding name calculated", "operation", "name_for_clusterrolebinding", "role_kind", role.Kind, "role_name", role.Name, "subject_kind", subject.Kind, "subject_name", subject.Name, "name", nm)
+	log.Debug("Cluster role binding name calculated", "operation", "name_for_clusterrolebinding", "role_kind", role.Kind, "role_name", role.Name, "subject_kind", subject.Kind, "subject_name", subject.Name, "name", nm)
 	return nm
 }
 
@@ -396,13 +396,13 @@ func CreateOrUpdateNamespacedResource[T generic.RuntimeMetaObject, TList runtime
 			return err
 		}
 		// resource doesn't exist, create it
-		log.Info("creating resource", "operation", "create_resource", "type", fmt.Sprintf("%T", obj), "name", obj.GetName(), "namespace", obj.GetNamespace())
+		log.Info("Creating resource", "operation", "create_resource", "type", fmt.Sprintf("%T", obj), "name", obj.GetName(), "namespace", obj.GetNamespace())
 		_, err := client.Create(obj)
 		return err
 	}
 
 	if same, updatedResource := areResourcesTheSame(resource, obj); !same {
-		log.Info("updating resource", "operation", "update_resource", "type", fmt.Sprintf("%T", obj), "name", obj.GetName(), "namespace", obj.GetNamespace())
+		log.Info("Updating resource", "operation", "update_resource", "type", fmt.Sprintf("%T", obj), "name", obj.GetName(), "namespace", obj.GetNamespace())
 		_, err := client.Update(updatedResource)
 		return err
 

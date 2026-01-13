@@ -77,7 +77,7 @@ func (f *Format) Formatter(request *types.APIContext, resource *types.RawResourc
 	if resName != nil {
 		clustersWithKontainerDriver, err := f.ClusterIndexer.ByIndex(clusterByGenericEngineConfigKey, resName.(string))
 		if err != nil {
-			log.Warn("failed to determine if kontainer driver was in use by a cluster", "operation", "formatter", "driver_name", resName.(string), "error", err)
+			log.Warn("Failed to determine if kontainer driver was in use by a cluster", "operation", "formatter", "driver_name", resName.(string), "error", err)
 		} else if len(clustersWithKontainerDriver) != 0 {
 			// if cluster driver in use, delete removal link from UI
 			delete(resource.Links, "remove")

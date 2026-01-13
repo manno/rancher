@@ -32,7 +32,7 @@ func (m *manager) reconcileProjectAccessToGlobalResources(binding *v3.ProjectRol
 		crbKey := rbRoleSubjectKey(role, subject)
 		crbs, _ := m.crbIndexer.ByIndex(crbByRoleAndSubjectIndex, crbKey)
 		if len(crbs) == 0 {
-			log.Info("creating clusterrolebinding for project access to global resource", "operation", "reconcile_project_access", "subject", subject.Name, "role", role)
+			log.Info("Creating clusterrolebinding for project access to global resource", "operation", "reconcile_project_access", "subject", subject.Name, "role", role)
 			roleRef := rbacv1.RoleRef{
 				Kind: "ClusterRole",
 				Name: role,
@@ -84,7 +84,7 @@ func (m *manager) reconcileProjectAccessToGlobalResources(binding *v3.ProjectRol
 				crb.Labels = map[string]string{}
 			}
 			crb.Labels[rtbUID] = owner
-			log.Info("updating clusterrolebinding for project access to global resource", "operation", "reconcile_project_access", "crb", crb.Name, "subject", subject.Name, "role", role)
+			log.Info("Updating clusterrolebinding for project access to global resource", "operation", "reconcile_project_access", "crb", crb.Name, "subject", subject.Name, "role", role)
 			_, err := bindingCli.Update(crb)
 			if err != nil {
 				return nil, err

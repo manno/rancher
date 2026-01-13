@@ -275,7 +275,7 @@ func (s *StatsAggregator) restartAgentDeployment(cluster *v3.Cluster) error {
 		deployment.Spec.Template.Annotations = make(map[string]string)
 	}
 	if deployment.Spec.Template.Annotations[agentVersionUpgraded] != "true" {
-		log.Trace("updated cluster to v1.22, annotating agent deployment", "cluster", cluster.Name)
+		log.Trace("Updated cluster to v1.22, annotating agent deployment", "cluster", cluster.Name)
 		toUpdate := deployment.DeepCopy()
 		toUpdate.Spec.Template.Annotations[agentVersionUpgraded] = "true"
 		_, err = userContext.Apps.Deployments("cattle-system").Update(toUpdate)

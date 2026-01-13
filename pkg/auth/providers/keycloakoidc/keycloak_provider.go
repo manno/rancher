@@ -85,12 +85,12 @@ func (k *keyCloakOIDCProvider) SearchPrincipals(searchValue, principalType strin
 	}
 	keyCloakClient, err := k.newClient(config, token)
 	if err != nil {
-		log.Error("error creating new http client", "provider", "keycloak_oidc", "operation", "search_principals", "error", err)
+		log.Error("Error creating new http client", "provider", "keycloak_oidc", "operation", "search_principals", "error", err)
 		return principals, err
 	}
 	accts, err := keyCloakClient.searchPrincipals(searchValue, principalType, config)
 	if err != nil {
-		log.Error("problem searching keycloak", "provider", "keycloak_oidc", "operation", "search_principals", "error", err)
+		log.Error("Problem searching keycloak", "provider", "keycloak_oidc", "operation", "search_principals", "error", err)
 		return principals, err
 	}
 	for _, acct := range accts {
@@ -146,7 +146,7 @@ func (k *keyCloakOIDCProvider) GetPrincipal(principalID string, token accessor.T
 	principalType := parts[1]
 	keyCloakClient, err := k.newClient(config, token)
 	if err != nil {
-		log.Warn("error creating new http client", "provider", "keycloak_oidc", "operation", "get_principal", "error", err)
+		log.Warn("Error creating new http client", "provider", "keycloak_oidc", "operation", "get_principal", "error", err)
 		return apiv3.Principal{}, err
 	}
 	acct, err := keyCloakClient.getFromKeyCloakByID(externalID, principalType, config)
@@ -173,7 +173,7 @@ func (k *keyCloakOIDCProvider) getRefreshAndUpdateToken(ctx context.Context, oau
 	if !oauthToken.Valid() {
 		// since token is not valid, the TokenSource func used in the Client func will attempt to refresh the access token
 		// if the refresh token has not expired
-		log.Debug("attempting to refresh access token", "provider", "keycloak_oidc", "operation", "get_refresh_and_update_token")
+		log.Debug("Attempting to refresh access token", "provider", "keycloak_oidc", "operation", "get_refresh_and_update_token")
 	}
 	reusedToken, err := oauth2.ReuseTokenSource(oauthToken, oauthConfig.TokenSource(ctx, oauthToken)).Token()
 	if err != nil {

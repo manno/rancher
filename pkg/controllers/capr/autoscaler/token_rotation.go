@@ -61,7 +61,7 @@ func (h *autoscalerHandler) checkAndRenewTokens() error {
 
 		expiresAt, err := time.Parse(time.RFC3339, token.ExpiresAt)
 		if err != nil {
-			log.Warn("invalid token expires at on token", "operation", "autoscaler.checkAndRenewTokens", "token", token.Name, "error", err)
+			log.Warn("Invalid token expires at on token", "operation", "autoscaler.checkAndRenewTokens", "token", token.Name, "error", err)
 			processingErrs = append(processingErrs, err)
 		}
 

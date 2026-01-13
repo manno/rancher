@@ -211,7 +211,7 @@ func (o *Client) SetAuthClient() error {
 		}
 		pool, err := x509.SystemCertPool()
 		if err != nil {
-			log.Debug("getting system cert pool failed", "operation", "new_client", "error", err)
+			log.Debug("Getting system cert pool failed", "operation", "new_client", "error", err)
 			pool = x509.NewCertPool()
 		}
 		pool.AddCert(cert)
@@ -302,7 +302,7 @@ func (o *Client) addToIndex(indexFile *repo.IndexFile, chartTarFilePath string) 
 	// This is misleading and so emptying the created date field
 	indexFile.Entries[chart.Metadata.Name][len(indexFile.Entries[chart.Metadata.Name])-1].Created = time.Time{}
 
-	log.Debug("added chart to index", "operation", "add_chart", "chart", chart.Metadata.Name, "version", chart.Metadata.Version)
+	log.Debug("Added chart to index", "operation", "add_chart", "chart", chart.Metadata.Name, "version", chart.Metadata.Version)
 	return nil
 }
 

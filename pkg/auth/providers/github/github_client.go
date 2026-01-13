@@ -72,7 +72,7 @@ func (g *GClient) getUser(githubAccessToken string, config *apiv3.GithubConfig) 
 	var githubAcct common.GitHubAccount
 
 	if err := json.Unmarshal(b, &githubAcct); err != nil {
-		log.Error("error unmarshalling response", "provider", "github", "operation", "get_user", "error", err)
+		log.Error("Error unmarshalling response", "provider", "github", "operation", "get_user", "error", err)
 		return common.GitHubAccount{}, err
 	}
 
@@ -92,7 +92,7 @@ func (g *GClient) getOrgs(githubAccessToken string, config *apiv3.GithubConfig) 
 	for _, b := range responses {
 		var orgObjs []common.GitHubAccount
 		if err := json.Unmarshal(b, &orgObjs); err != nil {
-			log.Error("error unmarshalling org array", "provider", "github", "operation", "get_orgs", "error", err)
+			log.Error("Error unmarshalling org array", "provider", "github", "operation", "get_orgs", "error", err)
 			return nil, err
 		}
 		orgs = append(orgs, orgObjs...)
@@ -114,7 +114,7 @@ func (g *GClient) getTeams(githubAccessToken string, config *apiv3.GithubConfig)
 		teamObjs, err := g.getTeamInfo(response, config)
 
 		if err != nil {
-			log.Error("error unmarshalling teams array", "provider", "github", "operation", "get_teams", "error", err)
+			log.Error("Error unmarshalling teams array", "provider", "github", "operation", "get_teams", "error", err)
 			return teams, err
 		}
 		teams = append(teams, teamObjs...)
@@ -136,7 +136,7 @@ func (g *GClient) getOrgTeams(githubAccessToken string, config *apiv3.GithubConf
 	for _, response := range responses {
 		respTeams, err = g.getOrgTeamInfo(response, config, org)
 		if err != nil {
-			log.Error("error unmarshalling teams array", "provider", "github", "operation", "get_org_teams", "error", err)
+			log.Error("Error unmarshalling teams array", "provider", "github", "operation", "get_org_teams", "error", err)
 			return teams, err
 		}
 		teams = append(teams, respTeams...)
@@ -150,7 +150,7 @@ func (g *GClient) getOrgTeamInfo(b []byte, config *apiv3.GithubConfig, org commo
 	var teams []common.GitHubAccount
 	var teamObjs []common.GitHubTeam
 	if err := json.Unmarshal(b, &teamObjs); err != nil {
-		log.Error("error unmarshalling team array", "provider", "github", "operation", "get_org_team_info", "error", err)
+		log.Error("Error unmarshalling team array", "provider", "github", "operation", "get_org_team_info", "error", err)
 		return teams, err
 	}
 
@@ -172,7 +172,7 @@ func (g *GClient) getTeamInfo(b []byte, config *apiv3.GithubConfig) ([]common.Gi
 	var teams []common.GitHubAccount
 	var teamObjs []common.GitHubTeam
 	if err := json.Unmarshal(b, &teamObjs); err != nil {
-		log.Error("error unmarshalling team array", "provider", "github", "operation", "get_team_info", "error", err)
+		log.Error("Error unmarshalling team array", "provider", "github", "operation", "get_team_info", "error", err)
 		return teams, err
 	}
 
@@ -195,7 +195,7 @@ func (g *GClient) getTeamByID(id string, githubAccessToken string, config *apiv3
 	}
 	var teamObj common.GitHubTeam
 	if err := json.Unmarshal(b, &teamObj); err != nil {
-		log.Error("error unmarshalling team array", "provider", "github", "operation", "get_team_by_id", "error", err)
+		log.Error("Error unmarshalling team array", "provider", "github", "operation", "get_team_by_id", "error", err)
 		return teamAcct, err
 	}
 	url = g.getURL("TEAM_PROFILE", config)
@@ -301,7 +301,7 @@ func (g *GClient) getUserOrgByID(id string, githubAccessToken string, config *ap
 	var githubAcct common.GitHubAccount
 
 	if err := json.Unmarshal(b, &githubAcct); err != nil {
-		log.Error("error unmarshalling response", "provider", "github", "operation", "get_user_org_by_id", "error", err)
+		log.Error("Error unmarshalling response", "provider", "github", "operation", "get_user_org_by_id", "error", err)
 		return common.GitHubAccount{}, err
 	}
 
@@ -312,7 +312,7 @@ func (g *GClient) getUserOrgByID(id string, githubAccessToken string, config *ap
 func URLEncoded(str string) string {
 	u, err := url.Parse(str)
 	if err != nil {
-		log.Error("error encoding url", "provider", "github", "operation", "url_encoded", "url", str, "error", err)
+		log.Error("Error encoding url", "provider", "github", "operation", "url_encoded", "url", str, "error", err)
 		return str
 	}
 	return u.String()
@@ -321,14 +321,14 @@ func URLEncoded(str string) string {
 func (g *GClient) postToGithub(url string, form url.Values) ([]byte, error) {
 	req, err := http.NewRequest("POST", url, strings.NewReader(form.Encode()))
 	if err != nil {
-		log.Error("error creating request", "provider", "github", "operation", "post_to_github", "error", err)
+		log.Error("Error creating request", "provider", "github", "operation", "post_to_github", "error", err)
 	}
 	req.PostForm = form
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Accept", "application/json")
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		log.Error("received error from github", "provider", "github", "operation", "post_to_github", "error", err)
+		log.Error("Received error from github", "provider", "github", "operation", "post_to_github", "error", err)
 		return nil, err
 	}
 
@@ -356,7 +356,7 @@ func (g *GClient) getFromGithub(githubAccessToken string, url string) ([]byte, s
 	req.Header.Add("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36)")
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		log.Error("received error from github", "provider", "github", "operation", "get_from_github", "error", err)
+		log.Error("Received error from github", "provider", "github", "operation", "get_from_github", "error", err)
 		return nil, "", err
 	}
 	defer resp.Body.Close()

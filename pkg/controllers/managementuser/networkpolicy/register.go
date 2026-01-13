@@ -28,7 +28,7 @@ func Register(ctx context.Context, cluster *config.UserContext) {
 }
 
 func registerDeferred(ctx context.Context, cluster *config.UserContext) {
-	log.Info("registering project network policy", "operation", "register")
+	log.Info("Registering project network policy", "operation", "register")
 
 	pnpLister := cluster.Management.Management.ProjectNetworkPolicies("").Controller().Lister()
 	pnps := cluster.Management.Management.ProjectNetworkPolicies("")

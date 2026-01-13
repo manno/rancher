@@ -165,7 +165,7 @@ func (s *settingsProvider) SetAll(settingsMap map[string]settings.Setting) error
 	s.fallback = fallback
 
 	if err := s.cleanupUnknownSettings(settingsMap); err != nil {
-		log.Error("error cleaning up unknown settings", "operation", "set_all", "error", err)
+		log.Error("Error cleaning up unknown settings", "operation", "set_all", "error", err)
 	}
 
 	return nil
@@ -186,11 +186,11 @@ func (s *settingsProvider) cleanupUnknownSettings(settingsMap map[string]setting
 
 		err = s.settings.Delete(setting.Name, &metav1.DeleteOptions{})
 		if err != nil {
-			log.Error("error deleting unknown setting", "operation", "cleanup_unknown_settings", "setting", setting.Name, "error", err)
+			log.Error("Error deleting unknown setting", "operation", "cleanup_unknown_settings", "setting", setting.Name, "error", err)
 			continue
 		}
 
-		log.Warn("deleted unknown setting", "operation", "cleanup_unknown_settings", "setting", setting.Name)
+		log.Warn("Deleted unknown setting", "operation", "cleanup_unknown_settings", "setting", setting.Name)
 	}
 
 	return nil

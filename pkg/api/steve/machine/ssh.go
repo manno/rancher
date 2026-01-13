@@ -98,7 +98,7 @@ func getAccessibleAddress(machineInfo *machineInfo) (string, error) {
 			_ = conn.Close()
 			return addrWithPort, nil
 		}
-		log.Debug("failed to probe machine at address", "operation", "get_accessible_address", "machine", name, "address", addrWithPort, "error", err)
+		log.Debug("Failed to probe machine at address", "operation", "get_accessible_address", "machine", name, "address", addrWithPort, "error", err)
 	}
 
 	return "", fmt.Errorf("failed to find an accessible IP address for machine %s", name)
@@ -132,7 +132,7 @@ func (s *sshClient) shell(apiRequest *types.APIRequest) error {
 		return err
 	}
 
-	log.Debug("attempting to connect to machine via ssh", "operation", "shell", "machine", apiRequest.Name, "address", addrWithPort)
+	log.Debug("Attempting to connect to machine via ssh", "operation", "shell", "machine", apiRequest.Name, "address", addrWithPort)
 	client, err := ssh.Dial("tcp", addrWithPort, &ssh.ClientConfig{
 		User: machineInfo.Driver.SSHUser,
 		Auth: []ssh.AuthMethod{

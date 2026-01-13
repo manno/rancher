@@ -58,7 +58,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	storedToken, status, err := h.tokenMgr.GetToken(tokenAuthValue)
 	if err != nil {
-		log.Error("getting token", "operation", "logout", "error", err)
+		log.Error("Getting token", "operation", "logout", "error", err)
 
 		if status == http.StatusNotFound {
 			status = http.StatusInternalServerError
@@ -78,7 +78,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		err = h.logout(w, r, storedToken)
 	}
 	if err != nil {
-		log.Error("provider logout", "operation", "logout", "error", err)
+		log.Error("Provider logout", "operation", "logout", "error", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -89,7 +89,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.tokenMgr.DeleteTokenByName(storedToken.Name)
 	if err != nil { // NotFound is already handled by DeleteTokenByName.
-		log.Error("deleting session token", "operation", "logout", "token_name", storedToken.Name, "error", err)
+		log.Error("Deleting session token", "operation", "logout", "token_name", storedToken.Name, "error", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }

@@ -57,7 +57,7 @@ func syncKEv2OperatorsSetting(driversLister v3.KontainerDriverLister) error {
 	if existingVal != "{}" && existingVal != "" {
 		if err := json.Unmarshal([]byte(existingVal), &updatedValueData); err != nil {
 			// if the setting is corrupt, log it and reset to defaults
-			log.Warn("failed to unmarshal KEv2Operators setting, will reset to default", "error", err)
+			log.Warn("Failed to unmarshal KEv2Operators setting, will reset to default", "error", err)
 		}
 	}
 

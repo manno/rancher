@@ -159,7 +159,7 @@ func (t *Authorizer) Authorize(req *http.Request) (*Client, bool, error) {
 
 func (t *Authorizer) getMachine(cluster *v3.Cluster, inNode *client.Node) (*v3.Node, error) {
 	machineName := machineName(inNode)
-	log.Trace("getMachine looking up machine in cluster", "operation", "get_machine", "machine", machineName, "cluster", cluster.Name)
+	log.Trace("GetMachine looking up machine in cluster", "operation", "get_machine", "machine", machineName, "cluster", cluster.Name)
 	machine, err := t.machineLister.Get(cluster.Name, machineName)
 	if apierrors.IsNotFound(err) {
 		if objs, err := t.nodeIndexer.ByIndex(nodeKeyIndex, fmt.Sprintf("%s/%s", cluster.Name, inNode.RequestedHostname)); err == nil {
@@ -168,17 +168,17 @@ func (t *Authorizer) getMachine(cluster *v3.Cluster, inNode *client.Node) (*v3.N
 			}
 		}
 
-		log.Trace("getMachine looking up as node name in cluster", "operation", "get_machine", "hostname", inNode.RequestedHostname, "cluster", cluster.Name)
+		log.Trace("GetMachine looking up as node name in cluster", "operation", "get_machine", "hostname", inNode.RequestedHostname, "cluster", cluster.Name)
 		machine, err := t.machineLister.Get(cluster.Name, inNode.RequestedHostname)
 		if err == nil {
-			log.Debug("found as node name in cluster", "operation", "get_machine", "hostname", inNode.RequestedHostname, "cluster", cluster.Name, "error", err)
+			log.Debug("Found as node name in cluster", "operation", "get_machine", "hostname", inNode.RequestedHostname, "cluster", cluster.Name, "error", err)
 			return machine, nil
 		}
 
-		log.Trace("getMachine looking up as RequestedHostname in cluster", "operation", "get_machine", "hostname", inNode.RequestedHostname, "cluster", cluster.Name)
+		log.Trace("GetMachine looking up as RequestedHostname in cluster", "operation", "get_machine", "hostname", inNode.RequestedHostname, "cluster", cluster.Name)
 		machines, _ := t.machineLister.List(cluster.Name, labels.NewSelector())
 		for _, machine := range machines {
-			log.Trace("getMachine comparing machine RequestedHostname to inNode RequestedHostname", "operation", "get_machine", "machine_hostname", machine.Spec.RequestedHostname, "innode_hostname", inNode.RequestedHostname)
+			log.Trace("GetMachine comparing machine RequestedHostname to inNode RequestedHostname", "operation", "get_machine", "machine_hostname", machine.Spec.RequestedHostname, "innode_hostname", inNode.RequestedHostname)
 			if machine.Spec.RequestedHostname == inNode.RequestedHostname {
 				return machine, nil
 			}
@@ -209,7 +209,7 @@ func (t *Authorizer) authorizeNode(register bool, cluster *v3.Cluster, inNode *c
 		}
 	}
 
-	log.Trace("updateDockerInfo cluster node dockerInfo", "operation", "update_docker_info", "cluster", cluster.Name, "machine", machine.Name)
+	log.Trace("UpdateDockerInfo cluster node dockerInfo", "operation", "update_docker_info", "cluster", cluster.Name, "machine", machine.Name)
 	machine, err = t.updateDockerInfo(machine, inNode)
 	return machine, true, err
 }
@@ -291,7 +291,7 @@ func (t *Authorizer) authorizeCluster(cluster *v3.Cluster, inCluster *cluster, r
 			return cluster, true, err
 		}
 		if driver == "" {
-			log.Trace("setting driver to imported for cluster", "operation", "import_cluster", "cluster", cluster.Name, "display_name", cluster.Spec.DisplayName)
+			log.Trace("Setting driver to imported for cluster", "operation", "import_cluster", "cluster", cluster.Name, "display_name", cluster.Spec.DisplayName)
 			cluster.Status.Driver = v32.ClusterDriverImported
 			changed = true
 		}
@@ -314,7 +314,7 @@ func (t *Authorizer) authorizeCluster(cluster *v3.Cluster, inCluster *cluster, r
 				return cluster, true, err
 			}
 			if currentSecret != nil && secret.GetResourceVersion() != currentSecret.GetResourceVersion() {
-				log.Info("updated service account token for cluster", "operation", "update_sa_token", "cluster", cluster.Name, "display_name", cluster.Spec.DisplayName)
+				log.Info("Updated service account token for cluster", "operation", "update_sa_token", "cluster", cluster.Name, "display_name", cluster.Spec.DisplayName)
 			}
 			cluster.Status.APIEndpoint = apiEndpoint
 			cluster.Status.ServiceAccountTokenSecret = secret.Name
@@ -377,7 +377,7 @@ func (t *Authorizer) readInput(cluster *v3.Cluster, req *http.Request) (*input, 
 func machineName(machine *client.Node) string {
 	digest := md5.Sum([]byte(machine.RequestedHostname))
 	machineNameMD5 := fmt.Sprintf("m-%s", hex.EncodeToString(digest[:])[:12])
-	log.Trace("machineName returning for node with RequestedHostname", "operation", "get_machine_name", "machine_name_md5", machineNameMD5, "hostname", machine.RequestedHostname)
+	log.Trace("MachineName returning for node with RequestedHostname", "operation", "get_machine_name", "machine_name_md5", machineNameMD5, "hostname", machine.RequestedHostname)
 	return machineNameMD5
 }
 

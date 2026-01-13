@@ -136,7 +136,7 @@ func (h *handler) onSetting(key string, setting *v3.Setting) (*v3.Setting, error
 	// add priority class value
 	if priorityClassName, err := h.chartsConfig.GetGlobalValue(chart.PriorityClassKey); err != nil {
 		if !chart.IsNotFoundError(err) {
-			log.Warn("failed to get rancher priorityClassName", "operation", "deploy_fleet_chart", "chart", fleetChart.ChartName, "error", err)
+			log.Warn("Failed to get rancher priorityClassName", "operation", "deploy_fleet_chart", "chart", fleetChart.ChartName, "error", err)
 		}
 	} else {
 		fleetChartValues[priorityClassKey] = priorityClassName

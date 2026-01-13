@@ -38,7 +38,7 @@ func (h *clusterAuthTokenHandler) sync(key string, clusterAuthToken *clusterv3.C
 	}
 
 	tokenName := clusterAuthToken.Name
-	log.Debug("sync cluster auth token", "operation", "sync_cluster_auth_token", "controller", clusterAuthTokenController, "key", key, "token", tokenName)
+	log.Debug("Sync cluster auth token", "operation", "sync_cluster_auth_token", "controller", clusterAuthTokenController, "key", key, "token", tokenName)
 
 	// check ext token first, if feature is enabled
 	if h.extTokenCache != nil {
@@ -61,7 +61,7 @@ func (h *clusterAuthTokenHandler) sync(key string, clusterAuthToken *clusterv3.C
 				return nil, fmt.Errorf("error updating lastUsedAt for token %s: %w", tokenName, err)
 			}
 
-			log.Debug("updated lastUsedAt for token", "operation", "update_last_used", "controller", clusterAuthTokenController, "token", tokenName)
+			log.Debug("Updated lastUsedAt for token", "operation", "update_last_used", "controller", clusterAuthTokenController, "token", tokenName)
 
 			return clusterAuthToken, nil
 		} else {
@@ -108,7 +108,7 @@ func (h *clusterAuthTokenHandler) sync(key string, clusterAuthToken *clusterv3.C
 		return nil, fmt.Errorf("error updating lastUsedAt for token %s: %v", tokenName, err)
 	}
 
-	log.Debug("updated lastUsedAt for token", "operation", "update_last_used", "controller", clusterAuthTokenController, "token", tokenName)
+	log.Debug("Updated lastUsedAt for token", "operation", "update_last_used", "controller", clusterAuthTokenController, "token", tokenName)
 
 	return clusterAuthToken, nil
 }

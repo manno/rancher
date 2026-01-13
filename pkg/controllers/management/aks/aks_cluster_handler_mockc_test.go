@@ -83,7 +83,7 @@ func getMockAksOperatorController(t *testing.T, clusterState string) mockAksOper
 // test setInitialUpstreamSpec
 
 func (m *mockAksOperatorController) setInitialUpstreamSpec(cluster *mgmtv3.Cluster) (*mgmtv3.Cluster, error) {
-	log.Info("setting initial upstream spec on cluster", "cluster_name", cluster.Name)
+	log.Info("Setting initial upstream spec on cluster", "cluster_name", cluster.Name)
 
 	// mock
 	upstreamSpec := &v1.AKSClusterConfigSpec{}

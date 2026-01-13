@@ -28,7 +28,7 @@ type defaultSvcAccountHandler struct {
 }
 
 func Register(ctx context.Context, cluster *config.UserContext) {
-	log.Debug("registering defaultSvcAccountHandler for checking default service account of system namespaces", "operation", "register_default_sa_handler")
+	log.Debug("Registering defaultSvcAccountHandler for checking default service account of system namespaces", "operation", "register_default_sa_handler")
 	nsh := &defaultSvcAccountHandler{
 		namespaces:    cluster.Corew.Namespace(),
 		clusterName:   cluster.ClusterName,
@@ -41,11 +41,11 @@ func (nsh *defaultSvcAccountHandler) Sync(key string, ns *corev1.Namespace) (*co
 	if ns == nil || ns.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	log.Debug("defaultSvcAccountHandler sync service account", "operation", "sync_default_sa", "key", key)
+	log.Debug("DefaultSvcAccountHandler sync service account", "operation", "sync_default_sa", "key", key)
 	//handle default svcAccount of system namespaces only
 	ret, err := nsh.handleIfSystemNSDefaultSA(ns)
 	if err != nil {
-		log.Error("error handling default ServiceAccount", "operation", "sync_default_sa", "key", key, "error", err)
+		log.Error("Error handling default ServiceAccount", "operation", "sync_default_sa", "key", key, "error", err)
 	}
 	return ret, err
 }

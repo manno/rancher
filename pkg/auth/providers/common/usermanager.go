@@ -155,7 +155,7 @@ func (m *userManager) SetPrincipalOnCurrentUserByUserID(userID string, principal
 	if conflict, err := m.GetUserByPrincipalID(principal.Name); err != nil {
 		return nil, err
 	} else if conflict != nil && conflict.UID != user.UID {
-		log.Error("refusing to set principal on user, principal already in use", "operation", "set_principal_on_current_user_by_user_id", "principal", principal.Name, "user", user.DisplayName, "conflict_user", conflict.DisplayName)
+		log.Error("Refusing to set principal on user, principal already in use", "operation", "set_principal_on_current_user_by_user_id", "principal", principal.Name, "user", user.DisplayName, "conflict_user", conflict.DisplayName)
 		return user, errors.New("refusing to set principal on user that is already bound to another user")
 	}
 
@@ -171,7 +171,7 @@ func (m *userManager) SetPrincipalOnCurrentUserByUserID(userID string, principal
 
 	if !slice.ContainsString(user.PrincipalIDs, principal.Name) {
 		user.PrincipalIDs = append(user.PrincipalIDs, principal.Name)
-		log.Info("updating user, adding principal", "operation", "set_principal_on_current_user_by_user_id", "user_name", user.Name)
+		log.Info("Updating user, adding principal", "operation", "set_principal_on_current_user_by_user_id", "user_name", user.Name)
 		return m.users.Update(user)
 	}
 	return user, nil
@@ -273,7 +273,7 @@ func (m *userManager) EnsureUser(principalName, displayName string) (*v3.User, e
 		}
 	} else {
 		// User doesn't exist, create user
-		log.Info("creating user for principal", "operation", "ensure_user", "principal", principalName)
+		log.Info("Creating user for principal", "operation", "ensure_user", "principal", principalName)
 
 		// Create a hash of the principalName to use as the name for the user,
 		// this lets k8s tell us if there are duplicate users with the same name
@@ -308,7 +308,7 @@ func (m *userManager) EnsureUser(principalName, displayName string) (*v3.User, e
 		}
 	}
 
-	log.Info("creating globalRoleBindings for user", "operation", "ensure_user", "user_name", user.Name)
+	log.Info("Creating globalRoleBindings for user", "operation", "ensure_user", "user_name", user.Name)
 	err = m.createUsersBindings(user)
 	if err != nil {
 		return nil, err
@@ -437,7 +437,7 @@ func (m *userManager) userAttributeChanged(attribs *v3.UserAttribute, provider s
 func (m *userManager) IsMemberOf(token accessor.TokenAccessor, group v3.Principal) bool {
 	attribs, err := m.userAttributeCache.Get(token.GetUserID())
 	if err != nil && !apierrors.IsNotFound(err) {
-		log.Warn("problem getting userAttribute while determining group membership", "operation", "is_member_of", "user_id", token.GetUserID(), "group_name", group.Name, "group_display_name", group.DisplayName, "error", err)
+		log.Warn("Problem getting userAttribute while determining group membership", "operation", "is_member_of", "user_id", token.GetUserID(), "group_name", group.Name, "group_display_name", group.DisplayName, "error", err)
 		// if err not nil, then attribs will be nil. So, below code will handle it
 	}
 
@@ -467,7 +467,7 @@ func (m *userManager) GetGroupsForTokenAuthProvider(token accessor.TokenAccessor
 
 	attribs, err := m.userAttributeCache.Get(token.GetUserID())
 	if err != nil && !apierrors.IsNotFound(err) {
-		log.Warn("problem getting userAttribute while getting groups", "operation", "get_groups_for_token_auth_provider", "user_id", token.GetUserID(), "error", err)
+		log.Warn("Problem getting userAttribute while getting groups", "operation", "get_groups_for_token_auth_provider", "user_id", token.GetUserID(), "error", err)
 		// if err is not nil, then attribs will be. So, below code will handle it
 	}
 

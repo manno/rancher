@@ -42,7 +42,7 @@ func NewNodeConfig(store *encryptedstore.GenericEncryptedStore, node *v3.Node) (
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("created node storage directory", "operation", "new_node_config", "path", fullMachinePath)
+	log.Debug("Created node storage directory", "operation", "new_node_config", "path", fullMachinePath)
 
 	return &NodeConfig{
 		store:           store,
@@ -91,13 +91,13 @@ func (m *NodeConfig) FullDir() string {
 }
 
 func (m *NodeConfig) Cleanup() error {
-	log.Debug("cleaning up node config", "operation", "cleanup", "path", m.fullMachinePath)
+	log.Debug("Cleaning up node config", "operation", "cleanup", "path", m.fullMachinePath)
 	return os.RemoveAll(m.fullMachinePath)
 }
 
 func (m *NodeConfig) Remove() error {
 	_ = m.Cleanup()
-	log.Debug("removing node config", "operation", "remove", "id", m.id)
+	log.Debug("Removing node config", "operation", "remove", "id", m.id)
 	return m.store.Remove(m.id)
 }
 
@@ -191,7 +191,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 	c := convert.ToMapInterface(rawConfig)
 
 	machines := filepath.Join(m.fullMachinePath, "machines")
-	log.Debug("machine path for amazon auth update", "operation", "update_amazon_auth", "path", machines)
+	log.Debug("Machine path for amazon auth update", "operation", "update_amazon_auth", "path", machines)
 	files, err := ioutil.ReadDir(machines)
 	if err != nil {
 		// There aren't any machines, nothing to update
@@ -213,7 +213,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 				return update, err
 			}
 
-			log.Debug("config file found for amazon auth update", "operation", "update_amazon_auth", "path", configPath)
+			log.Debug("Config file found for amazon auth update", "operation", "update_amazon_auth", "path", configPath)
 
 			result := make(map[string]interface{})
 
@@ -222,7 +222,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 			}
 
 			if _, ok := result["Driver"]; !ok {
-				log.Debug("config file does not have driver key", "operation", "update_amazon_auth")
+				log.Debug("Config file does not have driver key", "operation", "update_amazon_auth")
 				// No Driver config so no changes to be made
 				continue
 			}
@@ -231,7 +231,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 
 			if _, ok := driverConfig["AccessKey"]; ok {
 				if driverConfig["AccessKey"] != c["accessKey"] {
-					log.Debug("updating access key", "operation", "update_amazon_auth")
+					log.Debug("Updating access key", "operation", "update_amazon_auth")
 					driverConfig["AccessKey"] = c["accessKey"]
 					update = true
 				}
@@ -239,7 +239,7 @@ func (m *NodeConfig) UpdateAmazonAuth(rawConfig interface{}) (bool, error) {
 
 			if _, ok := driverConfig["SecretKey"]; ok {
 				if driverConfig["SecretKey"] != c["secretKey"] {
-					log.Debug("updating secret key", "operation", "update_amazon_auth")
+					log.Debug("Updating secret key", "operation", "update_amazon_auth")
 					driverConfig["SecretKey"] = c["secretKey"]
 					update = true
 				}

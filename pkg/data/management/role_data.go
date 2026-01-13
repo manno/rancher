@@ -493,7 +493,7 @@ func BootstrapAdmin(management *wrangler.Context) (string, error) {
 			log.Info("-----------------------------------------")
 			log.Info("Welcome to Rancher")
 			if bootstrapPasswordIsGenerated {
-				log.Info("A bootstrap password has been generated for your admin user.")
+				log.Info("A bootstrap password has been generated for your admin user")
 				log.Info("")
 				log.Info("Bootstrap Password", "password", bootstrapPassword)
 				log.Info("")
@@ -546,7 +546,7 @@ func BootstrapAdmin(management *wrangler.Context) (string, error) {
 			} else if err != nil {
 				log.Warn("Failed to create default admin global role binding", "error", err)
 			} else {
-				log.Info("created default admin user and binding", "operation", "add_roles")
+				log.Info("Created default admin user and binding", "operation", "add_roles")
 			}
 		}
 	}

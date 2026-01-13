@@ -109,16 +109,16 @@ func (s *Provider) AuthenticateUser(http.ResponseWriter, *http.Request, any) (ap
 func (s *Provider) Logout(w http.ResponseWriter, r *http.Request, token accessor.TokenAccessor) error {
 	providerName := token.GetAuthProvider()
 
-	log.Debug("logout triggered", "provider", providerName, "operation", "logout")
+	log.Debug("Logout triggered", "provider", providerName, "operation", "logout")
 
 	provider, ok := SamlProviders[providerName]
 	if !ok {
-		log.Debug("provider resource not configured", "provider", providerName, "operation", "logout")
+		log.Debug("Provider resource not configured", "provider", providerName, "operation", "logout")
 		return fmt.Errorf("SAML [logout]: Rancher provider resource `%v` not configured at all", providerName)
 	}
 
 	if provider.sloForced {
-		log.Debug("rejecting regular logout", "provider", providerName, "operation", "logout", "reason", "forced_slo_configured")
+		log.Debug("Rejecting regular logout", "provider", providerName, "operation", "logout", "reason", "forced_slo_configured")
 		return fmt.Errorf("SAML [logout]: Rancher provider resource `%v` configured for forced SLO, rejecting regular logout", providerName)
 	}
 
@@ -128,16 +128,16 @@ func (s *Provider) Logout(w http.ResponseWriter, r *http.Request, token accessor
 func (s *Provider) LogoutAll(w http.ResponseWriter, r *http.Request, token accessor.TokenAccessor) error {
 	providerName := token.GetAuthProvider()
 
-	log.Debug("logout-all triggered", "provider", providerName, "operation", "logout_all")
+	log.Debug("Logout-all triggered", "provider", providerName, "operation", "logout_all")
 
 	provider, ok := SamlProviders[providerName]
 	if !ok {
-		log.Debug("provider resource not configured", "provider", providerName, "operation", "logout_all")
+		log.Debug("Provider resource not configured", "provider", providerName, "operation", "logout_all")
 		return fmt.Errorf("SAML [logout-all]: Rancher provider resource `%v` not configured at all", providerName)
 	}
 
 	if !provider.sloEnabled {
-		log.Debug("provider not configured for SLO", "provider", providerName, "operation", "logout_all")
+		log.Debug("Provider not configured for SLO", "provider", providerName, "operation", "logout_all")
 		return fmt.Errorf("SAML [logout-all]: Rancher provider resource `%v` not configured for SLO", providerName)
 	}
 
@@ -170,7 +170,7 @@ func (s *Provider) LogoutAll(w http.ResponseWriter, r *http.Request, token acces
 		return err
 	}
 
-	log.Debug("redirecting to identity provider logout page", "provider", providerName, "operation", "logout_all", "redirect_url", idpRedirectURL)
+	log.Debug("Redirecting to identity provider logout page", "provider", providerName, "operation", "logout_all", "redirect_url", idpRedirectURL)
 
 	data := map[string]any{
 		"idpRedirectUrl": idpRedirectURL,
@@ -190,15 +190,15 @@ func PerformSamlLogin(r *http.Request, w http.ResponseWriter, name string, input
 	}
 	finalRedirectURL := login.FinalRedirectURL
 
-	log.Debug("id provider", "provider", name, "operation", "perform_saml_login")
+	log.Debug("Id provider", "provider", name, "operation", "perform_saml_login")
 
 	if provider, ok := SamlProviders[name]; ok {
 		if provider == nil {
-			log.Error("provider resource not initialized", "provider", name, "operation", "perform_saml_login")
+			log.Error("Provider resource not initialized", "provider", name, "operation", "perform_saml_login")
 			return fmt.Errorf("SAML: Rancher provider resource %v not initialized", name)
 		}
 		if provider.clientState == nil {
-			log.Error("provider client state not set", "provider", name, "operation", "perform_saml_login")
+			log.Error("Provider client state not set", "provider", name, "operation", "perform_saml_login")
 			return fmt.Errorf("SAML: Provider %v clientState not set", name)
 		}
 
@@ -215,7 +215,7 @@ func PerformSamlLogin(r *http.Request, w http.ResponseWriter, name string, input
 			return err
 		}
 
-		log.Debug("redirecting to identity provider login page", "provider", name, "operation", "perform_saml_login", "redirect_url", idpRedirectURL)
+		log.Debug("Redirecting to identity provider login page", "provider", name, "operation", "perform_saml_login", "redirect_url", idpRedirectURL)
 		data := map[string]any{
 			"idpRedirectUrl": idpRedirectURL,
 			"type":           "samlLoginOutput",
@@ -310,7 +310,7 @@ func (s *Provider) saveSamlConfig(config *apiv3.SamlConfig) error {
 	if s.hasLdapGroupSearch() {
 		combinedConfig, err := s.combineSamlAndLdapConfig(config)
 		if err != nil {
-			log.Warn("problem combining saml and ldap config, saving partial configuration", "provider", s.name, "operation", "save_saml_config", "error", err)
+			log.Warn("Problem combining saml and ldap config, saving partial configuration", "provider", s.name, "operation", "save_saml_config", "error", err)
 		}
 		_, err = s.authConfigs.ObjectClient().Update(config.ObjectMeta.Name, combinedConfig)
 		if err != nil {
@@ -422,7 +422,7 @@ func (s *Provider) isThisUserMe(me, other apiv3.Principal) bool {
 func (s *Provider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []apiv3.Principal) (bool, error) {
 	config, err := s.getSamlConfig()
 	if err != nil {
-		log.Error("error fetching saml config", "provider", s.name, "operation", "can_access_with_group_providers", "error", err)
+		log.Error("Error fetching saml config", "provider", s.name, "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 	allowed, err := s.userMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipalID, groupPrincipals)
@@ -466,7 +466,7 @@ func (s *Provider) combineSamlAndLdapConfig(config *apiv3.SamlConfig) (runtime.O
 
 	// can be misconfigured but still want it saved
 	if err != nil {
-		log.Warn("error pulling ldap configs", "provider", s.name, "operation", "combine_saml_and_ldap_config", "error", err)
+		log.Warn("Error pulling ldap configs", "provider", s.name, "operation", "combine_saml_and_ldap_config", "error", err)
 
 		// if the the config subkey not in the crd
 		if ldapConfig == nil {

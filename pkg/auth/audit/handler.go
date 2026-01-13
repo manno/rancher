@@ -78,7 +78,7 @@ func (w *wrapWriter) CloseNotify() <-chan bool {
 	if cn, ok := w.ResponseWriter.(http.CloseNotifier); ok {
 		return cn.CloseNotify()
 	}
-	rlog.Error("upstream ResponseWriter does not implement http.CloseNotifier", "operation", "close_notify", "type", reflect.TypeOf(w.ResponseWriter))
+	rlog.Error("Upstream ResponseWriter does not implement http.CloseNotifier", "operation", "close_notify", "type", reflect.TypeOf(w.ResponseWriter))
 	return make(<-chan bool)
 }
 
@@ -90,7 +90,7 @@ func (w *wrapWriter) Flush() {
 		flusher.Flush()
 		return
 	}
-	rlog.Error("upstream ResponseWriter does not implement http.Flusher", "operation", "flush", "type", reflect.TypeOf(w.ResponseWriter))
+	rlog.Error("Upstream ResponseWriter does not implement http.Flusher", "operation", "flush", "type", reflect.TypeOf(w.ResponseWriter))
 }
 
 var _ http.ResponseWriter = (*wrapWriter)(nil)

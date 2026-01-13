@@ -28,7 +28,7 @@ var (
 func GetURLAndInterval() (string, time.Duration) {
 	val := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(settings.RkeMetadataConfig.Get()), &val); err != nil {
-		log.Error("failed to parse metadata config value", "operation", "get_url_and_interval", "setting", settings.RkeMetadataConfig.Name, "error", err)
+		log.Error("Failed to parse metadata config value", "operation", "get_url_and_interval", "setting", settings.RkeMetadataConfig.Name, "error", err)
 		return "", 0
 	}
 	url := data.Object(val).String("url")
@@ -67,7 +67,7 @@ func (d *DynamicInterval) Wait(ctx context.Context) bool {
 			continue
 		case msg := <-action:
 			if msg == d.subKey {
-				log.Info("reloading config", "operation", "get_release_config", "runtime", d.subKey)
+				log.Info("Reloading config", "operation", "get_release_config", "runtime", d.subKey)
 				return true
 			}
 			action <- msg
@@ -133,7 +133,7 @@ func NewHandler(ctx context.Context) http.Handler {
 func GetDefaultByRuntimeAndServerVersion(ctx context.Context, runtime, serverVersion string) string {
 	version, err := getDefaultFromAppDefaultsByRuntimeAndServerVersion(ctx, runtime, serverVersion)
 	if err != nil {
-		log.Debug("fallback to use the default channel", "operation", "get_default_version", "runtime", runtime, "server_version", serverVersion, "error", err)
+		log.Debug("Fallback to use the default channel", "operation", "get_default_version", "runtime", runtime, "server_version", serverVersion, "error", err)
 		version = getDefaultFromChannel(ctx, runtime, "default")
 	}
 	return version
@@ -173,7 +173,7 @@ func getDefaultFromAppDefaultsByRuntimeAndServerVersion(ctx context.Context, run
 	for _, release := range config.ReleasesConfig().Releases {
 		version, err := semver.ParseTolerant(release.Version)
 		if err != nil {
-			log.Debug("failed to parse release version", "operation", "get_default_from_app_defaults", "version", release.Version, "error", err)
+			log.Debug("Failed to parse release version", "operation", "get_default_from_app_defaults", "version", release.Version, "error", err)
 			continue
 		}
 		if dvrParsed(version) {

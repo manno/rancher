@@ -1009,7 +1009,7 @@ func (s *Store) Watch(
 
 	configMapWatch, err := s.configMapClient.Watch(namespace, *listOptions)
 	if err != nil {
-		log.Error("kubeconfig watch error starting watch", "operation", "watch_kubeconfig", "error", err)
+		log.Error("Kubeconfig watch error starting watch", "operation", "watch_kubeconfig", "error", err)
 		return nil, apierrors.NewInternalError(fmt.Errorf("kubeconfig: watch: error starting watch: %w", err))
 	}
 
@@ -1034,7 +1034,7 @@ func (s *Store) Watch(
 				case watch.Bookmark:
 					configMap, ok := event.Object.(*corev1.ConfigMap)
 					if !ok {
-						log.Warn("kubeconfig watch expected configmap", "operation", "watch_kubeconfig", "object_type", "unknown")
+						log.Warn("Kubeconfig watch expected configmap", "operation", "watch_kubeconfig", "object_type", "unknown")
 						continue
 					}
 
@@ -1049,13 +1049,13 @@ func (s *Store) Watch(
 				case watch.Added, watch.Modified, watch.Deleted:
 					configMap, ok := event.Object.(*corev1.ConfigMap)
 					if !ok {
-						log.Warn("kubeconfig watch expected configmap", "operation", "watch_kubeconfig", "object_type", "unknown")
+						log.Warn("Kubeconfig watch expected configmap", "operation", "watch_kubeconfig", "object_type", "unknown")
 						continue
 					}
 
 					obj, err = s.fromConfigMap(configMap)
 					if err != nil {
-						log.Error("kubeconfig watch error converting configmap to kubeconfig", "operation", "watch_kubeconfig", "configmap", configMap.Name, "error", err)
+						log.Error("Kubeconfig watch error converting configmap to kubeconfig", "operation", "watch_kubeconfig", "configmap", configMap.Name, "error", err)
 						continue
 					}
 				default: // watch.Error

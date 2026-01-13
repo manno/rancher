@@ -126,7 +126,7 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 
 	// check for changes between ali spec on cluster and the ali spec on the aliClusterConfig object
 	if !reflect.DeepEqual(aliClusterConfigMap, aliClusterConfigDynamic.Object["spec"]) {
-		log.Info("change detected for cluster, updating AliClusterConfig", "operation", "onClusterChange", "cluster_name", cluster.Name)
+		log.Info("Change detected for cluster, updating AliClusterConfig", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		return e.updateAliClusterConfig(cluster, aliClusterConfigDynamic, aliClusterConfigMap)
 	}
 
@@ -150,10 +150,10 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			log.Info("waiting for cluster to finish creating", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
+			log.Info("Waiting for cluster to finish creating", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		log.Info("waiting for cluster create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
+		log.Info("Waiting for cluster create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	case "active":
 		if cluster.Spec.AliConfig.Imported {
@@ -239,10 +239,10 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			log.Info("waiting for cluster to update", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
+			log.Info("Waiting for cluster to update", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionUpdated, "")
 		}
-		log.Info("waiting for cluster update failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
+		log.Info("Waiting for cluster update failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionUpdated, failureMessage)
 	default:
 		if cluster.Spec.AliConfig.Imported {
@@ -250,9 +250,9 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 			if err != nil {
 				return cluster, err
 			}
-			log.Info("waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
+			log.Info("Waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		} else {
-			log.Info("waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
+			log.Info("Waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		}
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
@@ -262,13 +262,13 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 				if err != nil {
 					return cluster, err
 				}
-				log.Info("waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
+				log.Info("Waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 			} else {
-				log.Info("waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
+				log.Info("Waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 			}
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		log.Info("waiting for cluster pre-create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name)
+		log.Info("Waiting for cluster pre-create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	}
 }
@@ -345,7 +345,7 @@ func (e *aliOperatorController) updateAliClusterConfig(cluster *apimgmtv3.Cluste
 }
 
 func (e *aliOperatorController) setInitialUpstreamSpec(cluster *apimgmtv3.Cluster) (*apimgmtv3.Cluster, error) {
-	log.Info("setting initial upstreamSpec on cluster", "operation", "setInitialUpstreamSpec", "cluster_name", cluster.Name)
+	log.Info("Setting initial upstreamSpec on cluster", "operation", "setInitialUpstreamSpec", "cluster_name", cluster.Name)
 	cluster = cluster.DeepCopy()
 	upstreamSpec, err := clusterupstreamrefresher.BuildAlibabaUpstreamSpec(e.SecretsCache, cluster)
 	if err != nil {

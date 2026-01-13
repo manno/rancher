@@ -259,7 +259,7 @@ func listKubernetesUpgradeVersions(ctx context.Context, clusterLister mgmtv3.Clu
 	var upgradeVersions map[string]bool
 	for _, v := range res.Values {
 		if v == nil {
-			log.Warn("unexpected nil version", "operation", "list_kubernetes_upgrade_versions")
+			log.Warn("Unexpected nil version", "operation", "list_kubernetes_upgrade_versions")
 			continue
 		}
 

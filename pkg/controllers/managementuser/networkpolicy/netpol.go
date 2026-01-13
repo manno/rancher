@@ -56,10 +56,10 @@ type netpolMgr struct {
 
 func (npmgr *netpolMgr) program(np *knetworkingv1.NetworkPolicy) error {
 	existing, err := npmgr.npLister.Get(np.Namespace, np.Name)
-	log.Debug("netpolmgr: program", "operation", "program", "existing", existing, "error", err)
+	log.Debug("Netpolmgr: program", "operation", "program", "existing", existing, "error", err)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
-			log.Debug("netpolmgr: program: about to create np", "operation", "program", "network_policy", *np)
+			log.Debug("Netpolmgr: program: about to create np", "operation", "program", "network_policy", *np)
 			_, err = npmgr.npClient.NetworkPolicies(np.Namespace).Create(np)
 			if err != nil && !kerrors.IsAlreadyExists(err) && !kerrors.IsForbidden(err) {
 				return fmt.Errorf("netpolMgr: program: error creating network policy err=%v", err)
@@ -68,15 +68,15 @@ func (npmgr *netpolMgr) program(np *knetworkingv1.NetworkPolicy) error {
 			return fmt.Errorf("netpolMgr: program: got unexpected error while getting network policy=%v", err)
 		}
 	} else {
-		log.Debug("netpolmgr: program: existing", "operation", "program", "existing", existing)
+		log.Debug("Netpolmgr: program: existing", "operation", "program", "existing", existing)
 		if existing.DeletionTimestamp == nil && !reflect.DeepEqual(existing.Spec, np.Spec) {
-			log.Debug("netpolmgr: program: about to update np", "operation", "program", "network_policy", *np)
+			log.Debug("Netpolmgr: program: about to update np", "operation", "program", "network_policy", *np)
 			_, err = npmgr.npClient.NetworkPolicies(np.Namespace).Update(np)
 			if err != nil {
 				return fmt.Errorf("netpolMgr: program: error updating network policy err=%v", err)
 			}
 		} else {
-			log.Debug("netpolmgr: program: no need to update np", "operation", "program", "network_policy", *np)
+			log.Debug("Netpolmgr: program: no need to update np", "operation", "program", "network_policy", *np)
 		}
 	}
 	return nil
@@ -84,14 +84,14 @@ func (npmgr *netpolMgr) program(np *knetworkingv1.NetworkPolicy) error {
 
 func (npmgr *netpolMgr) delete(policyNamespace, policyName string) error {
 	existing, err := npmgr.npLister.Get(policyNamespace, policyName)
-	log.Debug("netpolmgr: delete", "operation", "delete", "existing", existing, "error", err)
+	log.Debug("Netpolmgr: delete", "operation", "delete", "existing", existing, "error", err)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			return nil
 		}
 		return fmt.Errorf("netpolMgr: delete: got unexpected error while getting network policy=%v", err)
 	}
-	log.Debug("netpolmgr: delete: existing", "operation", "delete", "existing", existing)
+	log.Debug("Netpolmgr: delete: existing", "operation", "delete", "existing", existing)
 	err = npmgr.npClient.NetworkPolicies(existing.Namespace).Delete(existing.Name, &v1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("netpolMgr: delete: error deleting network policy err=%v", err)
@@ -100,14 +100,14 @@ func (npmgr *netpolMgr) delete(policyNamespace, policyName string) error {
 }
 
 func (npmgr *netpolMgr) programNetworkPolicy(projectID string, clusterNamespace string) error {
-	log.Debug("netpolmgr: programnetworkpolicy", "operation", "program_network_policy", "project_id", projectID)
+	log.Debug("Netpolmgr: programnetworkpolicy", "operation", "program_network_policy", "project_id", projectID)
 	// Get namespaces belonging to project
 	set := labels.Set(map[string]string{nslabels.ProjectIDFieldLabel: projectID})
 	namespaces, err := npmgr.nsLister.List(set.AsSelector())
 	if err != nil {
 		return fmt.Errorf("netpolMgr: couldn't list namespaces with projectID %v err=%v", projectID, err)
 	}
-	log.Debug("netpolmgr: programnetworkpolicy: namespaces", "operation", "program_network_policy", "namespaces", namespaces)
+	log.Debug("Netpolmgr: programnetworkpolicy: namespaces", "operation", "program_network_policy", "namespaces", namespaces)
 
 	systemNamespaces, systemProjectID, err := npmgr.getSystemNSInfo(clusterNamespace)
 	if err != nil {
@@ -138,12 +138,12 @@ func (npmgr *netpolMgr) programNetworkPolicy(projectID string, clusterNamespace 
 
 			// there are existing network policies in this system project based namespace, skip programming default
 			if len(nps) > 0 {
-				log.Debug("netpolmgr: namespace has existing network policies, skipping programming", "operation", "program_network_policy", "namespace", aNS.Name, "project", id, "policy", defaultSystemProjectNamespacePolicyName)
+				log.Debug("Netpolmgr: namespace has existing network policies, skipping programming", "operation", "program_network_policy", "namespace", aNS.Name, "project", id, "policy", defaultSystemProjectNamespacePolicyName)
 				continue
 			}
 
 			// program default network policy for system project based namespace
-			log.Debug("netpolmgr: programming policy for namespace", "operation", "program_network_policy", "policy", defaultSystemProjectNamespacePolicyName, "namespace", aNS.Name, "project", id)
+			log.Debug("Netpolmgr: programming policy for namespace", "operation", "program_network_policy", "policy", defaultSystemProjectNamespacePolicyName, "namespace", aNS.Name, "project", id)
 			if err := npmgr.program(generateAllowAllNetworkPolicy(aNS, systemProjectID)); err != nil {
 				return fmt.Errorf(
 					"netPolMgr: programNetworkPolicy: error programming network policy %s for system project based namespace=%s err=%v",
@@ -162,7 +162,7 @@ func (npmgr *netpolMgr) programNetworkPolicy(projectID string, clusterNamespace 
 			continue
 		}
 		if aNS.DeletionTimestamp != nil {
-			log.Debug("netpolmgr: programnetworkpolicy: namespace marked for deletion, skipping", "operation", "program_network_policy", "namespace", aNS)
+			log.Debug("Netpolmgr: programnetworkpolicy: namespace marked for deletion, skipping", "operation", "program_network_policy", "namespace", aNS)
 			continue
 		}
 
@@ -197,7 +197,7 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 		return err
 	}
 
-	log.Debug("netpolmgr: handlehostnetwork: processing nodes", "operation", "handle_host_network", "node_count", len(nodes))
+	log.Debug("Netpolmgr: handlehostnetwork: processing nodes", "operation", "handle_host_network", "node_count", len(nodes))
 	np := generateNodesNetworkPolicy()
 
 	// This for loop builds CNI specific host network policies to allow traffic from ingress controllers through to endpoints.
@@ -214,8 +214,8 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 				tunnelAddr = node.Annotations[calicoVXLANTunnelAddrAnno]
 			}
 			if tunnelAddr == "" {
-				log.Debug("netpolmgr: handlehostnetwork: calico: node", "operation", "handle_host_network", "node", node)
-				log.Error("netpolmgr: handlehostnetwork: calico: couldn't get tunnel address for node", "operation", "handle_host_network", "node", node.Name, "error", err)
+				log.Debug("Netpolmgr: handlehostnetwork: calico: node", "operation", "handle_host_network", "node", node)
+				log.Error("Netpolmgr: handlehostnetwork: calico: couldn't get tunnel address for node", "operation", "handle_host_network", "node", node.Name, "error", err)
 				continue
 			}
 			ipBlock := knetworkingv1.IPBlock{
@@ -228,8 +228,8 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 		// other CNIs
 		podCIDRFirstIP, _, err := net.ParseCIDR(node.Spec.PodCIDR)
 		if err != nil {
-			log.Debug("netpolmgr: handlehostnetwork: node", "operation", "handle_host_network", "node", node)
-			log.Error("netpolmgr: handlehostnetwork: couldn't parse podcidr for node", "operation", "handle_host_network", "podcidr", node.Spec.PodCIDR, "node", node.Name, "error", err)
+			log.Debug("Netpolmgr: handlehostnetwork: node", "operation", "handle_host_network", "node", node)
+			log.Error("Netpolmgr: handlehostnetwork: couldn't parse podcidr for node", "operation", "handle_host_network", "podcidr", node.Spec.PodCIDR, "node", node.Name, "error", err)
 			continue
 		}
 		ipBlock := knetworkingv1.IPBlock{
@@ -244,7 +244,7 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 	// An empty ingress rule allows all traffic to the namespace
 	// so we need to skip creating the network policy here if that's what we have.
 	if len(np.Spec.Ingress[0].From) == 0 {
-		log.Debug("netpolmgr: handlehostnetwork: no host addresses found, skipping programming policy", "operation", "handle_host_network", "policy", hostNetworkPolicyName)
+		log.Debug("Netpolmgr: handlehostnetwork: no host addresses found, skipping programming policy", "operation", "handle_host_network", "policy", hostNetworkPolicyName)
 		return nil
 	}
 
@@ -269,14 +269,14 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 			continue
 		}
 		if aNS.DeletionTimestamp != nil || aNS.Status.Phase == corev1.NamespaceTerminating {
-			log.Debug("netpolmgr: handlehostnetwork: namespace marked for deletion/termination, skipping", "operation", "handle_host_network", "namespace", aNS)
+			log.Debug("Netpolmgr: handlehostnetwork: namespace marked for deletion/termination, skipping", "operation", "handle_host_network", "namespace", aNS)
 			continue
 		}
 		if _, ok := aNS.Labels[nslabels.ProjectIDFieldLabel]; !ok {
 			continue
 		}
 
-		log.Debug("netpolmgr: handlehostnetwork: namespace", "operation", "handle_host_network", "namespace", aNS)
+		log.Debug("Netpolmgr: handlehostnetwork: namespace", "operation", "handle_host_network", "namespace", aNS)
 
 		np.OwnerReferences = []v1.OwnerReference{
 			{
@@ -288,7 +288,7 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 		}
 		np.Namespace = aNS.Name
 		if err := npmgr.program(np); err != nil {
-			log.Error("netpolmgr: handlehostnetwork: error programming hostnetwork network policy", "operation", "handle_host_network", "namespace", aNS.Name, "error", err)
+			log.Error("Netpolmgr: handlehostnetwork: error programming hostnetwork network policy", "operation", "handle_host_network", "namespace", aNS.Name, "error", err)
 		}
 	}
 	return nil
@@ -496,9 +496,9 @@ func (npmgr *netpolMgr) SyncDefaultNetworkPolicies(key string, np *rnetworkingv1
 	}
 
 	if np == nil {
-		log.Debug("netpolmgr: syncdefaultnetworkpolicies: default network policy was deleted", "operation", "sync_default_policies", "policy", npName, "namespace", nsName)
+		log.Debug("Netpolmgr: syncdefaultnetworkpolicies: default network policy was deleted", "operation", "sync_default_policies", "policy", npName, "namespace", nsName)
 	} else {
-		log.Debug("netpolmgr: syncdefaultnetworkpolicies: default network policy was edited", "operation", "sync_default_policies", "policy", npName, "namespace", nsName)
+		log.Debug("Netpolmgr: syncdefaultnetworkpolicies: default network policy was edited", "operation", "sync_default_policies", "policy", npName, "namespace", nsName)
 	}
 
 	if npName == hostNetworkPolicyName {

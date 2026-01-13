@@ -46,7 +46,7 @@ func (s *Provider) testAndEnable(request *types.APIContext) error {
 		return err
 	}
 
-	log.Debug("initializing SAML service provider", "provider", s.name, "operation", "test_and_enable")
+	log.Debug("Initializing SAML service provider", "provider", s.name, "operation", "test_and_enable")
 	err = InitializeSamlServiceProvider(samlConfig, s.name)
 	if err != nil {
 		return err
@@ -57,10 +57,10 @@ func (s *Provider) testAndEnable(request *types.APIContext) error {
 		return fmt.Errorf("SAML [testAndEnable]: Provider %v not configured", s.name)
 	}
 
-	log.Debug("setting clientState for SAML service provider", "provider", s.name, "operation", "test_and_enable")
+	log.Debug("Setting clientState for SAML service provider", "provider", s.name, "operation", "test_and_enable")
 
 	finalRedirectURL := samlLogin.FinalRedirectURL
-	log.Debug("final redirect will be set", "provider", s.name, "operation", "test_and_enable", "redirect_url", finalRedirectURL)
+	log.Debug("Final redirect will be set", "provider", s.name, "operation", "test_and_enable", "redirect_url", finalRedirectURL)
 
 	provider.clientState.SetPath(provider.serviceProvider.AcsURL.Path)
 	provider.clientState.SetState(request.Response, request.Request, "Rancher_FinalRedirectURL", finalRedirectURL)
@@ -70,7 +70,7 @@ func (s *Provider) testAndEnable(request *types.APIContext) error {
 	if err != nil {
 		return err
 	}
-	log.Debug("redirecting to identity provider login page", "provider", s.name, "operation", "test_and_enable", "idp_redirect_url", idpRedirectURL)
+	log.Debug("Redirecting to identity provider login page", "provider", s.name, "operation", "test_and_enable", "idp_redirect_url", idpRedirectURL)
 	data := map[string]any{
 		"idpRedirectUrl": idpRedirectURL,
 		"type":           "samlConfigTestOutput",

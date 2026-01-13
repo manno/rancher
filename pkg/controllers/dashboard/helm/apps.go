@@ -137,7 +137,7 @@ func (a *appHandler) OnConfigMapChange(key string, configMap *corev1.ConfigMap) 
 	if err == helm.ErrNotHelmRelease {
 		return configMap, nil
 	} else if err != nil {
-		log.Error("failed to process configmap for helm data", "operation", "on_configmap_change", "key", key, "error", err)
+		log.Error("Failed to process configmap for helm data", "operation", "on_configmap_change", "key", key, "error", err)
 		// ignore error
 		return configMap, nil
 	}
@@ -182,7 +182,7 @@ func (a *appHandler) OnSecretChange(key string, secret *corev1.Secret) (*corev1.
 	if errors.Is(err, helm.ErrNotHelmRelease) {
 		return secret, nil
 	} else if err != nil {
-		log.Error("failed to process secret for helm data", "operation", "on_secret_change", "key", key, "error", err)
+		log.Error("Failed to process secret for helm data", "operation", "on_secret_change", "key", key, "error", err)
 		// ignore error
 		return secret, nil
 	}

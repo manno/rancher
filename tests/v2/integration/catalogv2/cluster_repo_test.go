@@ -985,7 +985,7 @@ func (c *ClusterRepoTestSuite) testClusterRepoRetries(params ClusterRepoParams) 
 
 		for _, condition := range cr.Status.Conditions {
 			if v1.RepoCondition(condition.Type) == v1.RepoDownloaded {
-				log.Info("condition status and retry count", "actual_status", condition.Status, "wanted_status", corev1.ConditionFalse, "actual_retries", cr.Status.NumberOfRetries, "wanted_retries", retryNumber)
+				log.Info("Condition status and retry count", "actual_status", condition.Status, "wanted_status", corev1.ConditionFalse, "actual_retries", cr.Status.NumberOfRetries, "wanted_retries", retryNumber)
 				if condition.Status == corev1.ConditionFalse && cr.Status.NumberOfRetries == retryNumber {
 					retryNumber++
 					return false, nil
@@ -998,7 +998,7 @@ func (c *ClusterRepoTestSuite) testClusterRepoRetries(params ClusterRepoParams) 
 	})
 
 	if err != nil {
-		log.Info("cluster repo status details",
+		log.Info("Cluster repo status details",
 			"resource_version", cr.ResourceVersion,
 			"conditions", cr.Status.Conditions,
 			"retries", cr.Status.NumberOfRetries,

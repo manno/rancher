@@ -129,12 +129,12 @@ func (g *git) injectAgent(cmd *exec.Cmd) (io.Closer, error) {
 			conn, err := l.Accept()
 			if err != nil {
 				if !k8snet.IsProbableEOF(err) {
-					log.Error("failed to accept ssh-agent client connection", "operation", "start_ssh_agent", "error", err)
+					log.Error("Failed to accept ssh-agent client connection", "operation", "start_ssh_agent", "error", err)
 				}
 				return
 			}
 			if err := agent.ServeAgent(*g.agent, conn); err != nil && err != io.EOF {
-				log.Error("failed to handle ssh-agent client connection", "operation", "start_ssh_agent", "error", err)
+				log.Error("Failed to handle ssh-agent client connection", "operation", "start_ssh_agent", "error", err)
 			}
 		}
 	}()
@@ -170,7 +170,7 @@ func (g *git) httpClientWithCreds() (*http.Client, error) {
 		}
 		pool, err := x509.SystemCertPool()
 		if err != nil {
-			log.Debug("getting system cert pool failed", "operation", "http_client_with_creds", "error", err)
+			log.Debug("Getting system cert pool failed", "operation", "http_client_with_creds", "error", err)
 			pool = x509.NewCertPool()
 		}
 		pool.AddCert(cert)
@@ -274,14 +274,14 @@ func (g *git) remoteSHAChanged(branch, sha string) (bool, error) {
 
 	client, err := g.httpClientWithCreds()
 	if err != nil {
-		log.Warn("problem creating http client to check git remote sha", "operation", "remote_sha_changed", "repo", g.URL, "error", err)
+		log.Warn("Problem creating http client to check git remote sha", "operation", "remote_sha_changed", "repo", g.URL, "error", err)
 		return true, nil
 	}
 	defer client.CloseIdleConnections()
 
 	req, err := http.NewRequest("GET", formattedURL, nil)
 	if err != nil {
-		log.Warn("problem creating request to check git remote sha", "operation", "remote_sha_changed", "repo", g.URL, "error", err)
+		log.Warn("Problem creating request to check git remote sha", "operation", "remote_sha_changed", "repo", g.URL, "error", err)
 		return true, nil
 	}
 

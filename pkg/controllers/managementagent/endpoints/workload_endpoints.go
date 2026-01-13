@@ -116,7 +116,7 @@ func (c *WorkloadEndpointsController) UpdateEndpoints(key string, obj *workloadu
 				var workloadIDs []string
 				err := json.Unmarshal([]byte(value), &workloadIDs)
 				if err != nil {
-					log.Error("failed to unmarshal workload IDs", "operation", "update_endpoints", "value", value, "service", svc.Name, "error", err)
+					log.Error("Failed to unmarshal workload IDs", "operation", "update_endpoints", "value", value, "service", svc.Name, "error", err)
 					continue
 				}
 				for _, workloadID := range workloadIDs {
@@ -170,7 +170,7 @@ func (c *WorkloadEndpointsController) UpdateEndpoints(key string, obj *workloadu
 			return err
 		}
 
-		log.Info("updating workload with public endpoints", "operation", "update_endpoints", "workload", key, "endpoints", epsToUpdate)
+		log.Info("Updating workload with public endpoints", "operation", "update_endpoints", "workload", key, "endpoints", epsToUpdate)
 
 		annotations := map[string]string{
 			endpointsAnnotation: epsToUpdate,

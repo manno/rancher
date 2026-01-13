@@ -157,7 +157,7 @@ func (h *authorizeHandler) authEndpoint(w http.ResponseWriter, r *http.Request) 
 
 	code, err := h.codeCreator.GenerateCode()
 	if err != nil {
-		log.Error("error generating code", "error", err)
+		log.Error("Error generating code", "error", err)
 		oidcerror.RedirectWithError(params.redirectURI, oidcerror.ServerError, fmt.Sprintf("failed to generate code: %v", err), params.state, w, r)
 		return
 	}
@@ -172,7 +172,7 @@ func (h *authorizeHandler) authEndpoint(w http.ResponseWriter, r *http.Request) 
 		CreatedAt:     h.now(),
 	})
 	if err != nil {
-		log.Error("error adding session", "error", err)
+		log.Error("Error adding session", "error", err)
 		oidcerror.RedirectWithError(params.redirectURI, oidcerror.ServerError, fmt.Sprintf("failed to store auth session: %v", err), params.state, w, r)
 		return
 	}

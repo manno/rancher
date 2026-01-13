@@ -185,7 +185,7 @@ func (c *SyncController) CreateResourceQuota(ns *corev1.Namespace) (runtime.Obje
 	}
 
 	if operationErr != nil {
-		log.Error("failed to perform operation on namespace", "operation", "apply_ns_resources", "ns", ns.Name, "error", operationErr)
+		log.Error("Failed to perform operation on namespace", "operation", "apply_ns_resources", "ns", ns.Name, "error", operationErr)
 		return updated, operationErr
 	}
 
@@ -209,7 +209,7 @@ func (c *SyncController) updateResourceQuota(quota *corev1.ResourceQuota, spec *
 	}
 	toUpdate := quota.DeepCopy()
 	toUpdate.Spec = *spec
-	log.Info("updating default resource quota for namespace", "operation", "apply_ns_resources", "namespace", toUpdate.Namespace)
+	log.Info("Updating default resource quota for namespace", "operation", "apply_ns_resources", "namespace", toUpdate.Namespace)
 	_, err := c.ResourceQuotas.Update(toUpdate)
 	return err
 }
@@ -221,18 +221,18 @@ func (c *SyncController) updateDefaultLimitRange(limitRange *corev1.LimitRange, 
 	}
 	toUpdate := limitRange.DeepCopy()
 	toUpdate.Spec = *spec
-	log.Info("updating default limit range for namespace", "operation", "apply_ns_resources", "namespace", toUpdate.Namespace)
+	log.Info("Updating default limit range for namespace", "operation", "apply_ns_resources", "namespace", toUpdate.Namespace)
 	_, err := c.LimitRange.Update(toUpdate)
 	return err
 }
 
 func (c *SyncController) deleteResourceQuota(quota *corev1.ResourceQuota) error {
-	log.Info("deleting default resource quota for namespace", "operation", "apply_ns_resources", "namespace", quota.Namespace)
+	log.Info("Deleting default resource quota for namespace", "operation", "apply_ns_resources", "namespace", quota.Namespace)
 	return c.ResourceQuotas.Delete(quota.Namespace, quota.Name, &metav1.DeleteOptions{})
 }
 
 func (c *SyncController) deleteDefaultLimitRange(limitRange *corev1.LimitRange) error {
-	log.Info("deleting limit range for namespace", "operation", "apply_ns_resources", "limit_range", limitRange.Name, "namespace", limitRange.Namespace)
+	log.Info("Deleting limit range for namespace", "operation", "apply_ns_resources", "limit_range", limitRange.Name, "namespace", limitRange.Namespace)
 	return c.LimitRange.Delete(limitRange.Namespace, limitRange.Name, &metav1.DeleteOptions{})
 }
 
@@ -309,7 +309,7 @@ func (c *SyncController) createResourceQuota(ns *corev1.Namespace, spec *corev1.
 		},
 		Spec: *spec,
 	}
-	log.Info("creating default resource quota for namespace", "operation", "apply_ns_resources", "namespace", ns.Name)
+	log.Info("Creating default resource quota for namespace", "operation", "apply_ns_resources", "namespace", ns.Name)
 	_, err := c.ResourceQuotas.Create(resourceQuota)
 	return err
 }
@@ -323,7 +323,7 @@ func (c *SyncController) createDefaultLimitRange(ns *corev1.Namespace, spec *cor
 		},
 		Spec: *spec,
 	}
-	log.Info("creating limit range for namespace", "operation", "apply_ns_resources", "limit_range_spec", limitRange.Spec, "namespace", ns.Name)
+	log.Info("Creating limit range for namespace", "operation", "apply_ns_resources", "limit_range_spec", limitRange.Spec, "namespace", ns.Name)
 	_, err := c.LimitRange.Create(limitRange)
 	return err
 }

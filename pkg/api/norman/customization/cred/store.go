@@ -144,7 +144,7 @@ func (s *Store) processHarvesterCloudCredential(data map[string]any) error {
 				err := TokenNamesFromContent(secret.Data["harvestercredentialConfig-kubeconfigContent"], knownTokens)
 				if err != nil {
 					// If a secret is all messed up, let the user do whatever they want: it shouldn't be usable anyway and will be remediated when updated.
-					log.Error("failed to get tokens from secret", "operation", "process_harvester_cloud_credential", "secret_name", secret.Name, "error", err)
+					log.Error("Failed to get tokens from secret", "operation", "process_harvester_cloud_credential", "secret_name", secret.Name, "error", err)
 					continue
 				}
 			}

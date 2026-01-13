@@ -82,7 +82,7 @@ func (c *UserAttributeController) sync(key string, attribs *v3.UserAttribute) (r
 		// Stop retrying if the token has expired.
 		if errors.As(err, &retrieveErr) {
 			if retrieveErr.ErrorCode == "invalid_grant" {
-				log.Warn("token has expired, UserAttributes will not be refreshed until user logs in", "operation", "sync_user_attribute", "user", name, "error", err)
+				log.Warn("Token has expired, UserAttributes will not be refreshed until user logs in", "operation", "sync_user_attribute", "user", name, "error", err)
 				return nil, nil
 			}
 		}
@@ -103,7 +103,7 @@ func (c *UserAttributeController) sync(key string, attribs *v3.UserAttribute) (r
 
 	newAttribs, nerr := c.userAttributes.Get(name, metav1.GetOptions{})
 	if nerr != nil {
-		log.Error("error getting new version of user attribute", "operation", "sync_user_attribute", "user_attribute", name, "error", nerr)
+		log.Error("Error getting new version of user attribute", "operation", "sync_user_attribute", "user_attribute", name, "error", nerr)
 		return nil, err // Deliberately return the original error.
 	}
 
@@ -114,7 +114,7 @@ func (c *UserAttributeController) sync(key string, attribs *v3.UserAttribute) (r
 
 	updated, nerr = c.userAttributes.Update(newAttribs)
 	if nerr != nil {
-		log.Error("error updating new version of user attribute", "operation", "sync_user_attribute", "user_attribute", name, "error", nerr)
+		log.Error("Error updating new version of user attribute", "operation", "sync_user_attribute", "user_attribute", name, "error", nerr)
 		return nil, err // Deliberately return the original error.
 	}
 

@@ -36,13 +36,13 @@ func (p *Store) Create(apiContext *types.APIContext, schema *types.Schema, data 
 	// Check for unset ipFamilyPolicy, for headless services this defaults to dual stack but will not function if the cluster does not have dual stack properly configured (IPv6 CIDRs)
 	// If its not explicitly configured in the request, we default to SingleStack
 	if schema.ID == "service" || schema.ID == "dnsRecord" {
-		log.Trace("service create", "operation", "create", "data", data)
+		log.Trace("Service create", "operation", "create", "data", data)
 		if val, ok := data["kind"]; ok {
 			if val == "ClusterIP" {
 				if val, ok := data["clusterIp"]; ok {
 					if val == nil || val == "None" {
 						if val, ok := data["ipFamilyPolicy"]; !ok || val == nil {
-							log.Debug("setting ipfamilypolicy to singlestack", "operation", "create", "service_name", data["name"], "service_kind", data["kind"])
+							log.Debug("Setting ipfamilypolicy to singlestack", "operation", "create", "service_name", data["name"], "service_kind", data["kind"])
 							data["ipFamilyPolicy"] = "SingleStack"
 						}
 					}
@@ -73,7 +73,7 @@ func formatData(schema *types.Schema, data map[string]interface{}) {
 		}
 		m, err := convert.EncodeToMap(servicePort)
 		if err != nil {
-			log.Warn("failed to transform service port to map", "operation", "format_data", "error", err)
+			log.Warn("Failed to transform service port to map", "operation", "format_data", "error", err)
 			return
 		}
 		ports = append(ports, m)

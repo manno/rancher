@@ -235,7 +235,7 @@ func (c *crtbLifecycle) reconcileBindings(binding *v3.ClusterRoleTemplateBinding
 	for _, p := range projects {
 		backingNamespace := p.GetProjectBackingNamespace()
 		if p.DeletionTimestamp != nil {
-			log.Warn("project is being deleted, not creating membership bindings", "operation", "sync_crtb", "namespace", backingNamespace)
+			log.Warn("Project is being deleted, not creating membership bindings", "operation", "sync_crtb", "namespace", backingNamespace)
 			continue
 		}
 		if err := c.mgr.grantManagementClusterScopedPrivilegesInProjectNamespace(binding.RoleTemplateName, backingNamespace, projectManagementPlaneResources, subject, binding); err != nil {
@@ -262,7 +262,7 @@ func (c *crtbLifecycle) removeMGMTClusterScopedPrivilegesInProjectNamespace(bind
 			return err
 		}
 		for _, rb := range rbs {
-			log.Info("deleting rolebinding in namespace for crtb", "operation", "sync_crtb", "controller", ctrbMGMTController, "rolebinding", rb.Name, "namespace", backingNamespace, "crtb", binding.Name)
+			log.Info("Deleting rolebinding in namespace for crtb", "operation", "sync_crtb", "controller", ctrbMGMTController, "rolebinding", rb.Name, "namespace", backingNamespace, "crtb", binding.Name)
 			if err := c.rbClient.DeleteNamespaced(backingNamespace, rb.Name, &metav1.DeleteOptions{}); err != nil {
 				return err
 			}

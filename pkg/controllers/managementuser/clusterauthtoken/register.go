@@ -40,7 +40,7 @@ const (
 // RegisterExtIndexers adds indexing of ext tokens by user and cluster to their
 // controller.
 func RegisterExtIndexers(extAPI ext.Interface) error {
-	log.Debug("register ext indexer", "operation", "register_indexer", "controller", clusterAuthTokenController)
+	log.Debug("Register ext indexer", "operation", "register_indexer", "controller", clusterAuthTokenController)
 	return extAPI.Token().Informer().
 		AddIndexers(map[string]cache.IndexFunc{
 			tokenByUserAndClusterIndex: extTokenByUserAndCluster,
@@ -50,7 +50,7 @@ func RegisterExtIndexers(extAPI ext.Interface) error {
 // RegisterIndexers adds indexing of v3 tokens by user and cluster to their
 // controller.
 func RegisterIndexers(scaledContext *config.ScaledContext) error {
-	log.Debug("register v3 indexer", "operation", "register_indexer", "controller", clusterAuthTokenController)
+	log.Debug("Register v3 indexer", "operation", "register_indexer", "controller", clusterAuthTokenController)
 	return scaledContext.Management.Tokens("").Controller().Informer().
 		AddIndexers(map[string]cache.IndexFunc{
 			tokenByUserAndClusterIndex: tokenByUserAndCluster,
@@ -64,7 +64,7 @@ func Register(ctx context.Context, cluster *config.UserContext) {
 	cluster.Management.Wrangler.DeferredEXTAPIRegistration.DeferFunc(func(w *wrangler.EXTAPIContext) {
 		starter := cluster.DeferredStart(ctx, func(ctx context.Context) error {
 			if err := registerDeferred(ctx, cluster, w); err != nil {
-				log.Error("failed to register controller", "operation", "register_controller", "controller", clusterAuthTokenController, "error", err)
+				log.Error("Failed to register controller", "operation", "register_controller", "controller", clusterAuthTokenController, "error", err)
 				return err
 			}
 			return nil
@@ -215,7 +215,7 @@ func extTokenUserClusterKey(token *extv1.Token) string {
 // cluster. The handlers sync changes in these tokens to the remote cluster, as
 // cluster auth tokens.
 func extTokenLifecycle(ctx context.Context, tok ext.TokenController, controller, clusterName string, h *tokenHandler) {
-	log.Debug("watch cluster", "operation", "watch_cluster", "controller", clusterAuthTokenController, "cluster", clusterName)
+	log.Debug("Watch cluster", "operation", "watch_cluster", "controller", clusterAuthTokenController, "cluster", clusterName)
 
 	tok.OnChange(ctx,
 		controller+"-change-"+clusterName,
@@ -228,7 +228,7 @@ func extTokenLifecycle(ctx context.Context, tok ext.TokenController, controller,
 			if clusterName != obj.Spec.ClusterName {
 				return obj, nil
 			}
-			log.Debug("cluster token sync down", "operation", "sync_cluster_token", "controller", clusterAuthTokenController, "cluster", obj.Name, "token", clusterName)
+			log.Debug("Cluster token sync down", "operation", "sync_cluster_token", "controller", clusterAuthTokenController, "cluster", obj.Name, "token", clusterName)
 			return h.ExtUpdated(obj)
 		})
 
@@ -239,7 +239,7 @@ func extTokenLifecycle(ctx context.Context, tok ext.TokenController, controller,
 			if clusterName != obj.Spec.ClusterName {
 				return obj, nil
 			}
-			log.Debug("cluster token remove down", "operation", "remove_cluster_token", "controller", clusterAuthTokenController, "cluster", obj.Name, "token", clusterName)
+			log.Debug("Cluster token remove down", "operation", "remove_cluster_token", "controller", clusterAuthTokenController, "cluster", obj.Name, "token", clusterName)
 			return h.ExtRemove(obj)
 		})
 }

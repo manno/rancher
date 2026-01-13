@@ -72,7 +72,7 @@ func (c *controller) capsSync(key string, cluster *v3.Cluster) (runtime.Object, 
 		capabilities.NodePortRange = DefaultNodePortRange
 		driverName, ok := (*cluster.Spec.GenericEngineConfig)["driverName"].(string)
 		if !ok {
-			log.Warn("cluster had generic engine config but no driver name, k8s capabilities will not be populated correctly", "operation", "get_capabilities", "cluster", key)
+			log.Warn("Cluster had generic engine config but no driver name, k8s capabilities will not be populated correctly", "operation", "get_capabilities", "cluster", key)
 			return nil, nil
 		}
 

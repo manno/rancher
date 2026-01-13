@@ -15,6 +15,6 @@ func (pnps *projectNetworkPolicySyncer) Sync(key string, pnp *v3.ProjectNetworkP
 	if pnp == nil || pnp.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	log.Debug("projectnetworkpolicysyncer: sync", "operation", "sync", "pnp", pnp.Name)
+	log.Debug("Projectnetworkpolicysyncer: sync", "operation", "sync", "pnp", pnp.Name)
 	return nil, pnps.npmgr.programNetworkPolicy(pnp.Namespace, pnps.npmgr.clusterNamespace)
 }

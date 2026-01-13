@@ -329,7 +329,7 @@ func CAChecksum() string {
 }
 
 func GetDesiredAgentImage(cluster *apimgmtv3.Cluster) string {
-	log.Trace("clusterdeploy: deployagent called", "operation", "get_desired_agent_image", "cluster_name", cluster.Name)
+	log.Trace("Clusterdeploy: deployagent called", "operation", "get_desired_agent_image", "cluster_name", cluster.Name)
 	desiredAgent := cluster.Spec.DesiredAgentImage
 	if cluster.Spec.AgentImageOverride != "" {
 		desiredAgent = cluster.Spec.AgentImageOverride
@@ -337,7 +337,7 @@ func GetDesiredAgentImage(cluster *apimgmtv3.Cluster) string {
 	if desiredAgent == "" || desiredAgent == "fixed" {
 		desiredAgent = image.ResolveWithCluster(settings.AgentImage.Get(), cluster)
 	}
-	log.Trace("clusterdeploy: deployagent: desired agent determined", "operation", "get_desired_agent_image", "desired_agent", desiredAgent, "cluster_name", cluster.Name)
+	log.Trace("Clusterdeploy: deployagent: desired agent determined", "operation", "get_desired_agent_image", "desired_agent", desiredAgent, "cluster_name", cluster.Name)
 	return desiredAgent
 }
 
@@ -349,7 +349,7 @@ func GetDesiredAuthImage(cluster *apimgmtv3.Cluster) string {
 			desiredAuth = image.ResolveWithCluster(settings.AuthImage.Get(), cluster)
 		}
 	}
-	log.Trace("clusterdeploy: deployagent: desired auth determined", "operation", "get_desired_auth_image", "desired_auth", desiredAuth, "cluster_name", cluster.Name)
+	log.Trace("Clusterdeploy: deployagent: desired auth determined", "operation", "get_desired_auth_image", "desired_auth", desiredAuth, "cluster_name", cluster.Name)
 	return desiredAuth
 }
 
@@ -357,13 +357,13 @@ func toYAML(v interface{}) string {
 	data, err := json.Marshal(v)
 	if err != nil {
 		// Swallow errors inside of a template so it doesn't affect remaining template lines
-		log.Error("toyaml: error marshaling data", "operation", "to_yaml", "error", err)
+		log.Error("Toyaml: error marshaling data", "operation", "to_yaml", "error", err)
 		return ""
 	}
 	yamlData, err := yaml.JSONToYAML(data)
 	if err != nil {
 		// Swallow errors inside of a template so it doesn't affect remaining template lines
-		log.Error("toyaml: error converting json to yaml", "operation", "to_yaml", "data", string(data), "error", err)
+		log.Error("Toyaml: error converting json to yaml", "operation", "to_yaml", "data", string(data), "error", err)
 		return ""
 	}
 	return strings.TrimSuffix(string(yamlData), "\n")

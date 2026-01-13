@@ -87,7 +87,7 @@ func (c Charts) FetchImages(imagesSet map[string]map[string]struct{}) error {
 		tgzPath := filepath.Join(c.Config.ChartsPath, version.URLs[0])
 		versionValues, err := decodeValuesFilesInTgz(tgzPath)
 		if err != nil {
-			log.Info("error decoding values files in tgz", "operation", "fetch_images", "tgz_path", tgzPath, "error", err)
+			log.Info("Error decoding values files in tgz", "operation", "fetch_images", "tgz_path", tgzPath, "error", err)
 			continue
 		}
 		tag := chartsToIgnoreTags[version.Name]

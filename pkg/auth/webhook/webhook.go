@@ -65,7 +65,7 @@ func writeResp(rw http.ResponseWriter, tr *v1.TokenReview) {
 	enc := json.NewEncoder(rw)
 	err := enc.Encode(tr)
 	if err != nil {
-		log.Info("failed to encode token review response", "operation", "write_resp")
+		log.Info("Failed to encode token review response", "operation", "write_resp")
 	}
 }
 

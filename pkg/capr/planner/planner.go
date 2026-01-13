@@ -223,13 +223,13 @@ func (p *Planner) setMachineConditionStatus(clusterPlan *plan.Plan, machineNames
 }
 
 func (p *Planner) Process(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlaneStatus) (rkev1.RKEControlPlaneStatus, error) {
-	log.Debug("attempting to lock for processing",
+	log.Debug("Attempting to lock for processing",
 		"namespace", cp.Namespace,
 		"cluster_name", cp.Name,
 		"uid", string(cp.UID))
 	p.locker.Lock(string(cp.UID))
 	defer func(namespace, name, uid string) {
-		log.Debug("unlocking",
+		log.Debug("Unlocking",
 			"namespace", namespace,
 			"cluster_name", name,
 			"uid", uid)
@@ -264,10 +264,10 @@ func (p *Planner) Process(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlan
 		if capiannotations.IsPaused(capiCluster, cp) {
 			err = p.pauseCAPICluster(cp, false)
 			if err != nil {
-				log.Error("error unpausing CAPI cluster during deletion", "error", err)
+				log.Error("Error unpausing CAPI cluster during deletion", "error", err)
 			}
 		}
-		log.Info("reconciliation stopped: CAPI cluster is deleting",
+		log.Info("Reconciliation stopped: CAPI cluster is deleting",
 			"namespace", cp.Namespace,
 			"cluster_name", cp.Name)
 		return status, nil
@@ -295,7 +295,7 @@ func (p *Planner) Process(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlan
 		if status.Initialized || status.Ready {
 			status.Initialized = false
 			status.Ready = false
-			log.Debug("setting controlplane ready/initialized to false as cluster was not sane",
+			log.Debug("Setting controlplane ready/initialized to false as cluster was not sane",
 				"namespace", cp.Namespace,
 				"cluster_name", cp.Name)
 			return status, errWaitingf("uninitializing rkecontrolplane %s/%s", cp.Namespace, cp.Name)
@@ -453,7 +453,7 @@ func getLowestMachineKubeletVersion(plan *plan.Plan) *semver.Version {
 		if machine.Status.NodeInfo != nil {
 			ver, err := semver.NewVersion(machine.Status.NodeInfo.KubeletVersion)
 			if err != nil {
-				log.Error("error while parsing node kubelet version",
+				log.Error("Error while parsing node kubelet version",
 					"kubelet_version", machine.Status.NodeInfo.KubeletVersion,
 					"error", err)
 				continue
@@ -496,7 +496,7 @@ func calculateJoinURL(cp *rkev1.RKEControlPlane, entry *planEntry, plan *plan.Pl
 	}
 
 	scaled := int(ck) * len(entries) / math.MaxUint32
-	log.Debug("determined join URL for machine",
+	log.Debug("Determined join URL for machine",
 		"namespace", cp.Namespace,
 		"cluster_name", cp.Name,
 		"machine_namespace", entry.Machine.Namespace,
@@ -533,7 +533,7 @@ func determineJoinURL(cp *rkev1.RKEControlPlane, entry *planEntry, plan *plan.Pl
 			if entry.Plan != nil {
 				joinedTo = entry.Plan.JoinedTo
 			}
-			log.Info("previous join server was not valid, using new join server",
+			log.Info("Previous join server was not valid, using new join server",
 				"namespace", cp.Namespace,
 				"cluster_name", cp.Name,
 				"machine_namespace", entry.Machine.Namespace,
@@ -690,18 +690,18 @@ func splitArgKeyVal(val string, delim string) (string, string) {
 // getArgValue will search the passed in interface (arg) for a key that matches the searchArg. If a match is found, it
 // returns the value of the argument, otherwise it returns an empty string.
 func getArgValue(arg interface{}, searchArg string, delim string) string {
-	log.Trace("getArgValue type checking",
+	log.Trace("GetArgValue type checking",
 		"search_arg", searchArg,
 		"delim", delim,
 		"arg_type", fmt.Sprintf("%T", arg))
 	switch arg := arg.(type) {
 	case []interface{}:
-		log.Trace("encountered interface slice",
+		log.Trace("Encountered interface slice",
 			"search_arg", searchArg,
 			"delim", delim)
 		return getArgValue(convertInterfaceSliceToStringSlice(arg), searchArg, delim)
 	case []string:
-		log.Trace("found string array",
+		log.Trace("Found string array",
 			"search_arg", searchArg,
 			"delim", delim)
 		for _, v := range arg {
@@ -711,7 +711,7 @@ func getArgValue(arg interface{}, searchArg string, delim string) string {
 			}
 		}
 	case string:
-		log.Trace("found string value",
+		log.Trace("Found string value",
 			"search_arg", searchArg,
 			"delim", delim)
 		argKey, argVal := splitArgKeyVal(arg, delim)
@@ -719,7 +719,7 @@ func getArgValue(arg interface{}, searchArg string, delim string) string {
 			return argVal
 		}
 	}
-	log.Trace("did not find searchArg",
+	log.Trace("Did not find searchArg",
 		"search_arg", searchArg,
 		"delim", delim)
 	return ""
@@ -806,18 +806,18 @@ func renderArgAndMount(existingArg interface{}, existingMount interface{}, contr
 		}
 	}
 	if certDirArg != "" {
-		log.Debug("adding to component arguments",
+		log.Debug("Adding to component arguments",
 			"argument", certDirArg)
 		retArg = appendToInterface(existingArg, certDirArg)
 	}
 	if securePortArg != "" {
-		log.Debug("adding to component arguments",
+		log.Debug("Adding to component arguments",
 			"argument", securePortArg)
 		retArg = appendToInterface(retArg, securePortArg)
 	}
 	if capr.GetRuntime(controlPlane.Spec.KubernetesVersion) == capr.RuntimeRKE2 {
 		// todo: make sure the certDirMount is not already set by the user to some custom value before we set it for the static pod extraMount
-		log.Debug("adding to component mounts",
+		log.Debug("Adding to component mounts",
 			"mount", certDirMount)
 		retMount = appendToInterface(existingMount, certDirMount)
 	}
@@ -903,7 +903,7 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 			return err
 		}
 
-		log.Debug("reconcile tier - rendering desired plan for machine",
+		log.Debug("Reconcile tier - rendering desired plan for machine",
 			"namespace", controlPlane.Namespace,
 			"cluster_name", controlPlane.Name,
 			"tier", tierName,
@@ -934,7 +934,7 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 	}
 
 	for _, r := range reconcilables {
-		log.Trace("reconcile tier - processing machine entry",
+		log.Trace("Reconcile tier - processing machine entry",
 			"namespace", controlPlane.Namespace,
 			"cluster_name", controlPlane.Name,
 			"tier", tierName,
@@ -942,7 +942,7 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 			"machine_name", r.entry.Machine.Name)
 		// we exclude here and not in collect to ensure that include matched at least one node
 		if exclude(r.entry) {
-			log.Trace("reconcile tier - excluding machine entry",
+			log.Trace("Reconcile tier - excluding machine entry",
 				"namespace", controlPlane.Namespace,
 				"cluster_name", controlPlane.Name,
 				"tier", tierName,
@@ -971,13 +971,13 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 		messages[r.entry.Machine.Name] = summary.Message
 
 		if r.entry.Plan == nil {
-			log.Debug("reconcile tier - setting initial plan for machine",
+			log.Debug("Reconcile tier - setting initial plan for machine",
 				"namespace", controlPlane.Namespace,
 				"cluster_name", controlPlane.Name,
 				"tier", tierName,
 				"machine_namespace", r.entry.Machine.Namespace,
 				"machine_name", r.entry.Machine.Name)
-			log.Trace("reconcile tier - initial plan for machine",
+			log.Trace("Reconcile tier - initial plan for machine",
 				"namespace", controlPlane.Namespace,
 				"cluster_name", controlPlane.Name,
 				"tier", tierName,
@@ -989,13 +989,13 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 				return err
 			}
 		} else if r.minorChange {
-			log.Debug("reconcile tier - minor plan change detected for machine, updating plan immediately",
+			log.Debug("Reconcile tier - minor plan change detected for machine, updating plan immediately",
 				"namespace", controlPlane.Namespace,
 				"cluster_name", controlPlane.Name,
 				"tier", tierName,
 				"machine_namespace", r.entry.Machine.Namespace,
 				"machine_name", r.entry.Machine.Name)
-			log.Trace("reconcile tier - minor plan change for machine",
+			log.Trace("Reconcile tier - minor plan change for machine",
 				"namespace", controlPlane.Namespace,
 				"cluster_name", controlPlane.Name,
 				"tier", tierName,
@@ -1008,7 +1008,7 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 				return err
 			}
 		} else if r.change {
-			log.Debug("reconcile tier - plan for machine did not match, appending to outOfSync",
+			log.Debug("Reconcile tier - plan for machine did not match, appending to outOfSync",
 				"namespace", controlPlane.Namespace,
 				"cluster_name", controlPlane.Name,
 				"tier", tierName,
@@ -1022,7 +1022,7 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 			// 3. concurrency == 0 which means infinite concurrency.
 			// 4. unavailable < concurrency meaning we have capacity to make something unavailable
 			// 5. If the plan was successful in application but the probes never went healthy
-			log.Debug("reconcile tier - concurrency and availability status",
+			log.Debug("Reconcile tier - concurrency and availability status",
 				"namespace", controlPlane.Namespace,
 				"cluster_name", controlPlane.Name,
 				"tier", tierName,
@@ -1036,13 +1036,13 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 					return err
 				} else if ok && err == nil {
 					// Drain is done (or didn't need to be done) and there are no errors, so the plan should be updated to enact the reason the node was drained.
-					log.Debug("reconcile tier - major plan change for machine",
+					log.Debug("Reconcile tier - major plan change for machine",
 						"namespace", controlPlane.Namespace,
 						"cluster_name", controlPlane.Name,
 						"tier", tierName,
 						"machine_namespace", r.entry.Machine.Namespace,
 						"machine_name", r.entry.Machine.Name)
-					log.Trace("reconcile tier - major plan change for machine",
+					log.Trace("Reconcile tier - major plan change for machine",
 						"namespace", controlPlane.Namespace,
 						"cluster_name", controlPlane.Name,
 						"tier", tierName,

@@ -528,7 +528,7 @@ func (s Setting) GetDuration() time.Duration {
 	if err == nil {
 		return dur
 	}
-	log.Error("failed to parse setting as time.duration", "operation", "get_duration", "setting", s.Name, "value", v, "error", err)
+	log.Error("Failed to parse setting as time.duration", "operation", "get_duration", "setting", s.Name, "value", v, "error", err)
 	dur, err = time.ParseDuration(s.Default)
 	if err != nil {
 		return 0
@@ -545,7 +545,7 @@ func (s Setting) GetInt() int {
 	if err == nil {
 		return i
 	}
-	log.Error("failed to parse setting as int", "operation", "get_int", "setting", s.Name, "value", v, "error", err)
+	log.Error("Failed to parse setting as int", "operation", "get_int", "setting", s.Name, "value", v, "error", err)
 	i, err = strconv.Atoi(s.Default)
 	if err != nil {
 		return 0
@@ -614,7 +614,7 @@ func getMetadataConfig() string {
 	}
 	ans, err := json.Marshal(data)
 	if err != nil {
-		log.Error("error getting metadata config", "operation", "get_metadata_config", "error", err)
+		log.Error("Error getting metadata config", "operation", "get_metadata_config", "error", err)
 		return ""
 	}
 	return string(ans)
@@ -708,7 +708,7 @@ func GetMachineProvisionImagePullPolicy() v1.PullPolicy {
 	case v1.PullNever:
 		return v1.PullNever
 	default:
-		log.Warn("failed to parse setting machine-provision-image-pull-policy, using default", "operation", "get_machine_provision_image_pull_policy", "value", machineProvisionImagePullPolicy, "default", v1.PullAlways)
+		log.Warn("Failed to parse setting machine-provision-image-pull-policy, using default", "operation", "get_machine_provision_image_pull_policy", "value", machineProvisionImagePullPolicy, "default", v1.PullAlways)
 		return v1.PullAlways
 	}
 }

@@ -127,7 +127,7 @@ func getServiceWorkloadIDs(obj *corev1.Service) []string {
 	err := json.Unmarshal([]byte(value), &workloadIDs)
 	if err != nil {
 		// just log the error, can't really do anything here.
-		log.Debug("failed to unmarshal targetWorkloadIds", "operation", "extract_workload_ids", "error", err)
+		log.Debug("Failed to unmarshal targetWorkloadIds", "operation", "extract_workload_ids", "error", err)
 	}
 	return workloadIDs
 }
@@ -135,7 +135,7 @@ func getServiceWorkloadIDs(obj *corev1.Service) []string {
 func (c *Controller) fetchWorkload(workloadID string) (*util.Workload, error) {
 	workload, err := c.workloadLister.GetByWorkloadIDRetryAPIIfNotFound(workloadID)
 	if err != nil && apierrors.IsNotFound(err) {
-		log.Warn("failed to fetch workload", "operation", "fetch_workload", "workload_id", workloadID, "error", err)
+		log.Warn("Failed to fetch workload", "operation", "fetch_workload", "workload_id", workloadID, "error", err)
 		return nil, nil
 	}
 
@@ -283,7 +283,7 @@ func (c *PodController) sync(key string, obj *corev1.Pod) (runtime.Object, error
 			return nil, err
 		}
 		if workloadService == nil {
-			log.Warn("failed to fetch service", "operation", "reconcile_services", "service_uuid", workloadServiceUUID, "error", err)
+			log.Warn("Failed to fetch service", "operation", "reconcile_services", "service_uuid", workloadServiceUUID, "error", err)
 			workloadServiceUUIDToWorkloadIDs.Delete(workloadServiceUUID)
 			continue
 		}

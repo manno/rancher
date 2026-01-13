@@ -37,7 +37,7 @@ func NewCAPIInitializer(clients *Context) *DeferredCAPIInitializer {
 func (d *DeferredCAPIInitializer) WaitForClient(ctx context.Context) (*CAPIContext, error) {
 	var done atomic.Bool
 	ready := make(chan struct{})
-	log.Info("waiting for CAPI CRDs to be established", "operation", "deferred_capi_wait_for_client")
+	log.Info("Waiting for CAPI CRDs to be established", "operation", "deferred_capi_wait_for_client")
 	d.context.CRD.CustomResourceDefinition().OnChange(ctx, "capi-deferred-registration", func(key string, crd *apiextv1.CustomResourceDefinition) (*apiextv1.CustomResourceDefinition, error) {
 		if done.Load() {
 			return crd, nil
@@ -67,7 +67,7 @@ func (d *DeferredCAPIInitializer) WaitForClient(ctx context.Context) (*CAPIConte
 
 	capi, err := capi.NewFactoryFromConfigWithOptions(d.context.RESTConfig, opts)
 	if err != nil {
-		log.Fatal("encountered unexpected error while creating capi factory", "operation", "deferred_capi_wait_for_client", "error", err)
+		log.Fatal("Encountered unexpected error while creating capi factory", "operation", "deferred_capi_wait_for_client", "error", err)
 	}
 
 	return &CAPIContext{
@@ -86,7 +86,7 @@ func capiCRDsReady(crdCache wapiextv1.CustomResourceDefinitionCache) bool {
 		"machinehealthchecks.cluster.x-k8s.io",
 	}
 
-	log.Trace("checking CAPI CRDs availability and establishment status", "operation", "capi_crds_ready")
+	log.Trace("Checking CAPI CRDs availability and establishment status", "operation", "capi_crds_ready")
 	allCRDsReady := true
 	for _, crdName := range requiredCRDs {
 		crd, err := crdCache.Get(crdName)
@@ -96,7 +96,7 @@ func capiCRDsReady(crdCache wapiextv1.CustomResourceDefinitionCache) bool {
 				allCRDsReady = false
 				break
 			}
-			log.Error("error checking for CAPI CRD", "operation", "capi_crds_ready", "crd", crdName, "error", err)
+			log.Error("Error checking for CAPI CRD", "operation", "capi_crds_ready", "crd", crdName, "error", err)
 			allCRDsReady = false
 			break
 		}

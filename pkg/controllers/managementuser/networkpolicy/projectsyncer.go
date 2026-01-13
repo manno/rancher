@@ -65,7 +65,7 @@ func (ps *projectSyncer) createDefaultNetworkPolicy(p *v3.Project) (*v3.Project,
 		defaultPolicyName := "pnp-" + projectName
 		existingPolicies, err := ps.pnpLister.List(defaultPolicyName, labels.Everything())
 		if err != nil {
-			log.Error("projectsyncer: createdefaultnetworkpolicy: error fetching existing project network policy", "operation", "create_default_network_policy", "error", err)
+			log.Error("Projectsyncer: createdefaultnetworkpolicy: error fetching existing project network policy", "operation", "create_default_network_policy", "error", err)
 			return p, err
 		}
 		if len(existingPolicies) == 0 {
@@ -81,7 +81,7 @@ func (ps *projectSyncer) createDefaultNetworkPolicy(p *v3.Project) (*v3.Project,
 				},
 			})
 			if err == nil {
-				log.Info("projectsyncer: createdefaultnetworkpolicy: successfully created default network policy for project", "operation", "create_default_network_policy", "project", projectName)
+				log.Info("Projectsyncer: createdefaultnetworkpolicy: successfully created default network policy for project", "operation", "create_default_network_policy", "project", projectName)
 			}
 		}
 

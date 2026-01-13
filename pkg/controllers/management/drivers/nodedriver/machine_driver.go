@@ -52,7 +52,7 @@ func Register(ctx context.Context, management *config.ManagementContext) {
 
 	version, err := getRancherMachineVersion()
 	if err != nil {
-		log.Warn("error getting rancher-machine version", "operation", "Register", "error", err)
+		log.Warn("Error getting rancher-machine version", "operation", "Register", "error", err)
 	}
 	nodeDriverLifecycle.dockerMachineVersion = version
 
@@ -70,12 +70,12 @@ type Lifecycle struct {
 }
 
 func (m *Lifecycle) Create(obj *v32.NodeDriver) (runtime.Object, error) {
-	log.Debug("handling creation of node driver", "operation", "Create", "driver_name", obj.Name)
+	log.Debug("Handling creation of node driver", "operation", "Create", "driver_name", obj.Name)
 	return m.download(obj)
 }
 
 func (m *Lifecycle) download(obj *v32.NodeDriver) (*v32.NodeDriver, error) {
-	log.Debug("downloading node driver", "operation", "download", "driver_name", obj.Name)
+	log.Debug("Downloading node driver", "operation", "download", "driver_name", obj.Name)
 	driverLock.Lock()
 	defer driverLock.Unlock()
 	if !obj.Spec.Active && !obj.Spec.AddCloudCredential {
@@ -378,11 +378,11 @@ func (m *Lifecycle) Remove(obj *v32.NodeDriver) (runtime.Object, error) {
 		return obj, err
 	}
 	for _, schema := range schemas.Items {
-		log.Info("deleting schema", "operation", "Remove", "schema_name", schema.Name)
+		log.Info("Deleting schema", "operation", "Remove", "schema_name", schema.Name)
 		if err := m.schemaClient.Delete(schema.Name, &metav1.DeleteOptions{}); err != nil {
 			return obj, err
 		}
-		log.Info("deleting schema done", "operation", "Remove", "schema_name", schema.Name)
+		log.Info("Deleting schema done", "operation", "Remove", "schema_name", schema.Name)
 	}
 	if err := m.createOrUpdateNodeForEmbeddedType(obj.Spec.DisplayName+"config", obj.Spec.DisplayName+"Config", false); err != nil {
 		return obj, err
@@ -443,7 +443,7 @@ func (m *Lifecycle) createOrUpdateNodeForEmbeddedTypeWithParents(embeddedType, f
 		}
 		if _, ok := nodeSchema.Spec.ResourceFields[fieldName]; !ok {
 			// if embedded we add the type to schema
-			log.Info("uploading field to schema", "operation", "createOrUpdateNodeForEmbeddedTypeWithParents", "field_name", fieldName, "schema_id", schemaID)
+			log.Info("Uploading field to schema", "operation", "createOrUpdateNodeForEmbeddedTypeWithParents", "field_name", fieldName, "schema_id", schemaID)
 			nodeSchema.Spec.ResourceFields[fieldName] = v32.Field{
 				Create:   true,
 				Nullable: true,
@@ -455,7 +455,7 @@ func (m *Lifecycle) createOrUpdateNodeForEmbeddedTypeWithParents(embeddedType, f
 	} else {
 		// if not we delete it from schema
 		if _, ok := nodeSchema.Spec.ResourceFields[fieldName]; ok {
-			log.Info("deleting field from schema", "operation", "createOrUpdateNodeForEmbeddedTypeWithParents", "field_name", fieldName, "schema_id", schemaID)
+			log.Info("Deleting field from schema", "operation", "createOrUpdateNodeForEmbeddedTypeWithParents", "field_name", fieldName, "schema_id", schemaID)
 			delete(nodeSchema.Spec.ResourceFields, fieldName)
 			shouldUpdate = true
 		}
@@ -497,7 +497,7 @@ func updateDefault(credField v32.Field, val, kind string) v32.Field {
 		if err == nil {
 			credField.Default = v32.Values{IntValue: i}
 		} else {
-			log.Error("error converting value to int", "operation", "updateDefault", "value", val, "error", err)
+			log.Error("Error converting value to int", "operation", "updateDefault", "value", val, "error", err)
 		}
 	case "boolean":
 		credField.Default = v32.Values{BoolValue: convert.ToBool(val)}
@@ -506,7 +506,7 @@ func updateDefault(credField v32.Field, val, kind string) v32.Field {
 	case "password", "string":
 		credField.Default = v32.Values{StringValue: val}
 	default:
-		log.Error("unsupported kind for default value", "operation", "updateDefault", "value", val, "kind", kind)
+		log.Error("Unsupported kind for default value", "operation", "updateDefault", "value", val, "kind", kind)
 	}
 	return credField
 }

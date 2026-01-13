@@ -433,7 +433,7 @@ func describeKubernetesMetadata(capabilities *Capabilities, req *http.Request) (
 
 	bytes, err := json.Marshal(resp.Body)
 	if err != nil {
-		log.Debug("alibaba-handler: error parsing describe kubernetes version metadata", "operation", "describe_kubernetes_metadata", "error", err)
+		log.Debug("Alibaba-handler: error parsing describe kubernetes version metadata", "operation", "describe_kubernetes_metadata", "error", err)
 		return nil, httperror.ServerError.Status, errors.New("error parsing response")
 	}
 

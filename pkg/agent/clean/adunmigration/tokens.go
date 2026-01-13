@@ -23,7 +23,7 @@ func identifyTokens(workunits *[]migrateUserWorkUnit, tokenList *v3.TokenList) {
 			if workUnitContainsName(&(*workunits)[index], token.UserID) {
 				(*workunits)[index].activeDirectoryTokens = append((*workunits)[index].activeDirectoryTokens, token)
 			} else {
-				log.Warn("found token for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+				log.Warn("Found token for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
 					"operation", identifyAdUserOperation,
 					"principal", token.UserPrincipal.Name,
 					"user", token.UserID)
@@ -32,7 +32,7 @@ func identifyTokens(workunits *[]migrateUserWorkUnit, tokenList *v3.TokenList) {
 			if workUnitContainsName(&(*workunits)[index], token.UserID) {
 				(*workunits)[index].duplicateLocalTokens = append((*workunits)[index].duplicateLocalTokens, token)
 			} else {
-				log.Warn("found token for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+				log.Warn("Found token for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
 					"operation", identifyAdUserOperation,
 					"principal", token.UserPrincipal.Name,
 					"user", token.UserID)
@@ -44,7 +44,7 @@ func identifyTokens(workunits *[]migrateUserWorkUnit, tokenList *v3.TokenList) {
 func updateToken(tokenInterface v3norman.TokenInterface, userToken v3.Token, newPrincipalID string, guid string, targetUser *v3.User, targetPrincipal *v3.Principal) error {
 	latestToken, err := tokenInterface.Get(userToken.Name, metav1.GetOptions{})
 	if err != nil {
-		log.Error("token no longer exists",
+		log.Error("Token no longer exists",
 			"operation", migrateTokensOperation,
 			"token_name", userToken.Name,
 			"error", err)
@@ -80,7 +80,7 @@ func updateToken(tokenInterface v3norman.TokenInterface, userToken v3.Token, new
 		_, err = tokenInterface.Update(latestToken)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				log.Error("internal error while updating token, will backoff and retry",
+				log.Error("Internal error while updating token, will backoff and retry",
 					"operation", migrateTokensOperation,
 					"error", err)
 				return false, err
@@ -109,7 +109,7 @@ func migrateTokens(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryR
 		} else {
 			err := updateToken(tokenInterface, userToken, dnPrincipalID, workunit.guid, workunit.originalUser, workunit.principal)
 			if err != nil {
-				log.Error("error while migrating tokens for user",
+				log.Error("Error while migrating tokens for user",
 					"operation", migrateTokensOperation,
 					"user", workunit.originalUser.Name,
 					"error", err)
@@ -128,7 +128,7 @@ func migrateTokens(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryR
 		} else {
 			err := updateToken(tokenInterface, userToken, localPrincipalID, workunit.guid, workunit.originalUser, workunit.principal)
 			if err != nil {
-				log.Error("error while migrating tokens for user",
+				log.Error("Error while migrating tokens for user",
 					"operation", migrateTokensOperation,
 					"user", workunit.originalUser.Name,
 					"error", err)

@@ -128,7 +128,7 @@ func (p *Planner) createEtcdSnapshot(controlPlane *rkev1.RKEControlPlane, status
 
 	// Don't create an etcd snapshot if the cluster is not initialized or bootstrapped.
 	if !status.Initialized || !capr.Bootstrapped.IsTrue(&status) {
-		log.Warn("skipping etcd snapshot creation",
+		log.Warn("Skipping etcd snapshot creation",
 			"namespace", controlPlane.Namespace,
 			"cluster_name", controlPlane.Name,
 			"operation", "etcd_snapshot_create",
@@ -148,7 +148,7 @@ func (p *Planner) createEtcdSnapshot(controlPlane *rkev1.RKEControlPlane, status
 		var finErrs []error
 		found, joinServer, _, err := p.findInitNode(controlPlane, clusterPlan)
 		if err != nil {
-			log.Error("error searching for init node during etcd snapshot creation",
+			log.Error("Error searching for init node during etcd snapshot creation",
 				"namespace", controlPlane.Namespace,
 				"cluster_name", controlPlane.Name,
 				"operation", "etcd_snapshot_create",
@@ -156,7 +156,7 @@ func (p *Planner) createEtcdSnapshot(controlPlane *rkev1.RKEControlPlane, status
 			return status, err
 		}
 		if !found || joinServer == "" {
-			log.Warn("skipping etcd snapshot creation",
+			log.Warn("Skipping etcd snapshot creation",
 				"namespace", controlPlane.Namespace,
 				"cluster_name", controlPlane.Name,
 				"operation", "etcd_snapshot_create",

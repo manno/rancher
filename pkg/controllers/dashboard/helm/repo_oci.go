@@ -179,7 +179,7 @@ func (o *OCIRepohandler) onClusterRepoChange(key string, clusterRepo *catalog.Cl
 			index.SortEntries()
 			_, err := createOrUpdateMap(clusterRepo.Namespace, index, owner, o.apply)
 			if err != nil {
-				log.Debug("failed to create/update the configmap incase of 4xx statuscode", "operation", "helm.onClusterRepoChange", "clusterRepo", clusterRepo.Name)
+				log.Debug("Failed to create/update the configmap incase of 4xx statuscode", "operation", "helm.onClusterRepoChange", "clusterRepo", clusterRepo.Name)
 			}
 		}
 
@@ -301,17 +301,17 @@ func getIndexfile(clusterRepoStatus catalog.RepoStatus,
 	}
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
 	if err != nil {
-		log.Error("failed to create reader for index file", "operation", "helm.getIndexfile", "url", clusterRepoSpec.URL, "error", err)
+		log.Error("Failed to create reader for index file", "operation", "helm.getIndexfile", "url", clusterRepoSpec.URL, "error", err)
 		return indexFile, fmt.Errorf("failed to read indexfile for cluster repo")
 	}
 	defer gz.Close()
 	data, err = io.ReadAll(gz)
 	if err != nil {
-		log.Error("failed to read index file", "operation", "helm.getIndexfile", "url", clusterRepoSpec.URL, "error", err)
+		log.Error("Failed to read index file", "operation", "helm.getIndexfile", "url", clusterRepoSpec.URL, "error", err)
 		return indexFile, fmt.Errorf("failed to read indexfile for cluster repo")
 	}
 	if err := json.Unmarshal(data, indexFile); err != nil {
-		log.Error("failed to unmarshal index file", "operation", "helm.getIndexfile", "url", clusterRepoSpec.URL, "error", err)
+		log.Error("Failed to unmarshal index file", "operation", "helm.getIndexfile", "url", clusterRepoSpec.URL, "error", err)
 		return indexFile, fmt.Errorf("failed to unmarshal indexfile for cluster repo")
 	}
 

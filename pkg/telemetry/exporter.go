@@ -137,11 +137,11 @@ func (s *simpleManager) startIfNotStarted(ctx context.Context) error {
 				for {
 					select {
 					case <-t.C:
-						log.Trace("gathering telemetry...")
+						log.Trace("Gathering telemetry")
 						if err := exporter.exp.CollectAndExport(); err != nil {
-							log.Error("failed to collect and export telemetry data", "error", err)
+							log.Error("Failed to collect and export telemetry data", "error", err)
 						}
-						log.Trace("gathered telemetry")
+						log.Trace("Gathered telemetry")
 					case <-s.done:
 						return
 					case <-ctx.Done():
@@ -168,7 +168,7 @@ func (s *simpleManager) runAll(ctx context.Context) {
 			return
 		case <-poller.C:
 			if err := s.startIfNotStarted(ctx); err != nil {
-				log.Error("failed to start pending telemetry exporters", "operation", "start_exporters", "error", err)
+				log.Error("Failed to start pending telemetry exporters", "operation", "start_exporters", "error", err)
 			}
 		}
 	}
@@ -176,7 +176,7 @@ func (s *simpleManager) runAll(ctx context.Context) {
 
 func (s *simpleManager) Start(ctx context.Context, info initcond.InitInfo) error {
 	s.telG.visitWithInitInfo(info)
-	log.Info("starting telemetry gathering", "operation", "start_telemetry", "exporter_count", len(s.exporters))
+	log.Info("Starting telemetry gathering", "operation", "start_telemetry", "exporter_count", len(s.exporters))
 
 	if !s.started.CompareAndSwap(0, 1) {
 		return fmt.Errorf("already started")

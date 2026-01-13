@@ -30,19 +30,19 @@ func deleteDuplicateUsers(workunit migrateUserWorkUnit, sc *config.ScaledContext
 	for _, duplicateUser := range workunit.duplicateUsers {
 		err := sc.Management.Users("").Delete(duplicateUser.Name, &metav1.DeleteOptions{})
 		if err != nil {
-			log.Error("failed to delete duplicate user",
+			log.Error("Failed to delete duplicate user",
 				"operation", migrateAdUserOperation,
 				"user", duplicateUser.Name,
 				"error", err)
 			// If the duplicate deletion has failed for some reason, it is NOT safe to save the modified user, as
 			// this may result in a duplicate AD principal ID. Notify and skip.
 
-			log.Error("cannot safely save modifications to user, skipping",
+			log.Error("Cannot safely save modifications to user, skipping",
 				"operation", migrateAdUserOperation,
 				"user", workunit.originalUser.Name)
 			return errors.Errorf("failed to delete duplicate users")
 		}
-		log.Info("deleted duplicate user",
+		log.Info("Deleted duplicate user",
 			"operation", migrateAdUserOperation,
 			"user", duplicateUser.Name)
 	}
@@ -54,12 +54,12 @@ func updateModifiedUser(workunit migrateUserWorkUnit, sc *config.ScaledContext) 
 	workunit.originalUser.Labels[adGUIDMigrationLabel] = migratedLabelValue
 	_, err := sc.Management.Users("").Update(workunit.originalUser)
 	if err != nil {
-		log.Error("failed to save modified user",
+		log.Error("Failed to save modified user",
 			"operation", migrateAdUserOperation,
 			"user", workunit.originalUser.Name,
 			"error", err)
 	}
-	log.Info("user was successfully migrated",
+	log.Info("User was successfully migrated",
 		"operation", migrateAdUserOperation,
 		"user", workunit.originalUser.Name)
 }
@@ -89,12 +89,12 @@ func replaceGUIDPrincipalWithDn(user *v3.User, dn string, guid string, dryRun bo
 		}
 	} else {
 		user.PrincipalIDs = principalIDs
-		log.Debug("user with GUID will have new principals",
+		log.Debug("User with GUID will have new principals",
 			"operation", migrateAdUserOperation,
 			"user", user.Name,
 			"guid", guid)
 		for _, principalID := range user.PrincipalIDs {
-			log.Debug("principal",
+			log.Debug("Principal",
 				"operation", migrateAdUserOperation,
 				"principal_id", principalID)
 		}

@@ -51,7 +51,7 @@ func New(wContext *wrangler.Context) *Retention {
 // Run the user retention process.
 func (r *Retention) Run(ctx context.Context) error {
 	if ctx.Err() != nil {
-		log.Info("userretention: context canceled, quitting", "operation", "run")
+		log.Info("Userretention: context canceled, quitting", "operation", "run")
 		return nil
 	}
 
@@ -63,11 +63,11 @@ func (r *Retention) Run(ctx context.Context) error {
 	}
 
 	if !settings.ShouldDisable() && !settings.ShouldDelete() {
-		log.Info("userretention: nothing to do, neither DisableInactiveUserAfter nor DeleteInactiveUserAfter is set", "operation", "run")
+		log.Info("Userretention: nothing to do, neither DisableInactiveUserAfter nor DeleteInactiveUserAfter is set", "operation", "run")
 		return nil
 	}
 
-	log.Info("userretention: started", "operation", "run", "disable_after", settings.disableAfter, "delete_after", settings.deleteAfter, "default_last_login", settings.FormatDefaultLastLogin(), "dry_run", settings.dryRun)
+	log.Info("Userretention: started", "operation", "run", "disable_after", settings.disableAfter, "delete_after", settings.deleteAfter, "default_last_login", settings.FormatDefaultLastLogin(), "dry_run", settings.dryRun)
 
 	users, err := r.userCache.List(labels.Everything())
 	if err != nil {
@@ -78,12 +78,12 @@ func (r *Retention) Run(ctx context.Context) error {
 	now := time.Now()
 
 	defer func() {
-		log.Info("userretention: finished", "operation", "run", "duration_seconds", time.Since(startedAt).Seconds(), "processed", processed, "skipped", skipped, "disabled", disabled, "deleted", deleted, "errors", errCount)
+		log.Info("Userretention: finished", "operation", "run", "duration_seconds", time.Since(startedAt).Seconds(), "processed", processed, "skipped", skipped, "disabled", disabled, "deleted", deleted, "errors", errCount)
 	}()
 
 	for _, user := range users {
 		if ctx.Err() != nil {
-			log.Info("userretention: context canceled, quitting", "operation", "run")
+			log.Info("Userretention: context canceled, quitting", "operation", "run")
 			break
 		}
 
@@ -93,11 +93,11 @@ func (r *Retention) Run(ctx context.Context) error {
 
 		processed++
 
-		log.Debug("userretention: processing user", "operation", "run", "user_name", user.Name)
+		log.Debug("Userretention: processing user", "operation", "run", "user_name", user.Name)
 
 		attribs, err := r.userAttributeCache.Get(user.Name)
 		if err != nil && !apierrors.IsNotFound(err) {
-			log.Error("userretention: error getting user attributes", "operation", "run", "user_name", user.Name, "error", err)
+			log.Error("Userretention: error getting user attributes", "operation", "run", "user_name", user.Name, "error", err)
 			errCount++
 			skipped++
 			continue
@@ -105,7 +105,7 @@ func (r *Retention) Run(ctx context.Context) error {
 
 		if attribs == nil {
 			// This is possible if the user was created but haven't logged in yet.
-			log.Debug("userretention: no user attributes found, skipping", "operation", "run", "user_name", user.Name)
+			log.Debug("Userretention: no user attributes found, skipping", "operation", "run", "user_name", user.Name)
 			skipped++
 			continue
 		}
@@ -144,12 +144,12 @@ func (r *Retention) Run(ctx context.Context) error {
 
 			if settings.ShouldDelete() && !deleteAfterTime.IsZero() &&
 				now.After(deleteAfterTime) {
-				log.Info("userretention: deleting user", "operation", "run", "user_name", user.Name)
+				log.Info("Userretention: deleting user", "operation", "run", "user_name", user.Name)
 
 				if !settings.dryRun {
 					err := r.users.Delete(user.Name, &metav1.DeleteOptions{})
 					if err != nil && !apierrors.IsNotFound(err) && !apierrors.IsGone(err) {
-						log.Error("userretention: error deleting user", "operation", "run", "user_name", user.Name, "error", err)
+						log.Error("Userretention: error deleting user", "operation", "run", "user_name", user.Name, "error", err)
 						errCount++
 						continue
 					}
@@ -162,7 +162,7 @@ func (r *Retention) Run(ctx context.Context) error {
 
 			if settings.ShouldDisable() && !disableAfterTime.IsZero() &&
 				now.After(disableAfterTime) && pointer.BoolDeref(user.Enabled, true) {
-				log.Info("userretention: disabling user", "operation", "run", "user_name", user.Name)
+				log.Info("Userretention: disabling user", "operation", "run", "user_name", user.Name)
 				// Flag the needed update but don't apply it as we may need to update retention labels too.
 				disableUser = true
 				disabled++
@@ -182,7 +182,7 @@ func (r *Retention) Run(ctx context.Context) error {
 						return nil
 					}
 
-					log.Error("userretention: error getting user", "operation", "run", "user_name", user.Name, "error", err)
+					log.Error("Userretention: error getting user", "operation", "run", "user_name", user.Name, "error", err)
 					return err
 				}
 			}
@@ -205,7 +205,7 @@ func (r *Retention) Run(ctx context.Context) error {
 
 			if _, err = r.users.Update(user); err != nil {
 				if apierrors.IsNotFound(err) {
-					log.Error("userretention: error updating user: user not found", "operation", "run", "user_name", user.Name)
+					log.Error("Userretention: error updating user: user not found", "operation", "run", "user_name", user.Name)
 					return nil
 				}
 
@@ -216,7 +216,7 @@ func (r *Retention) Run(ctx context.Context) error {
 		})
 		if err != nil {
 			// Log the error and move on.
-			log.Error("userretention: error updating user", "operation", "run", "user_name", user.Name, "error", err)
+			log.Error("Userretention: error updating user", "operation", "run", "user_name", user.Name, "error", err)
 			errCount++
 		}
 	}

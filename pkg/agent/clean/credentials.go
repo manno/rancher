@@ -18,7 +18,7 @@ func UnusedCattleCredentials() {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 		err := removeUnusedCattleCredentials(ctx)
 		if err != nil {
-			log.Error("error removing unused cattle credentials", "error", err)
+			log.Error("Error removing unused cattle credentials", "error", err)
 		}
 		cancel()
 	}
@@ -56,7 +56,7 @@ func removeUnusedCattleCredentials(ctx context.Context) error {
 			continue
 		}
 
-		log.Info("deleting unused cattle-credentials secret", "secret_name", sec.Name)
+		log.Info("Deleting unused cattle-credentials secret", "secret_name", sec.Name)
 		err = s.Delete(ctx, sec.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return err

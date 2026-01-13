@@ -19,7 +19,7 @@ const rancherUserID = "rancherUserID"
 func (s *Provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	serviceProvider := s.serviceProvider
 
-	log.Debug("saml received request", "method", r.Method, "url", r.URL)
+	log.Debug("Saml received request", "method", r.Method, "url", r.URL)
 
 	r.ParseForm()
 
@@ -28,24 +28,24 @@ func (s *Provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/samlmetadata+xml")
 		w.Write(buf)
 
-		log.Debug("saml returned metadata")
+		log.Debug("Saml returned metadata")
 		return
 	}
 
 	if r.URL.Path == serviceProvider.AcsURL.Path {
-		log.Debug("saml assertion processing started")
+		log.Debug("Saml assertion processing started")
 
 		r.ParseForm()
 		assertion, err := serviceProvider.ParseResponse(r, s.getPossibleRequestIDs(r))
 
 		if err != nil {
-			log.Debug("saml assertion validation failed", "error", err)
+			log.Debug("Saml assertion validation failed", "error", err)
 
 			if parseErr, ok := err.(*saml.InvalidResponseError); ok {
 				// Note: If access to the response itself is needed (debugging)
 				// just add `parseErr.Response` to the log statement.
 
-				log.Debug("saml assertion validation details",
+				log.Debug("Saml assertion validation details",
 					"now", parseErr.Now, "private_error", parseErr.PrivateErr)
 			}
 
@@ -54,24 +54,24 @@ func (s *Provider) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Debug("saml assertions validated")
+		log.Debug("Saml assertions validated")
 
 		s.HandleSamlAssertion(w, r, assertion)
 
-		log.Debug("saml assertion processing completed")
+		log.Debug("Saml assertion processing completed")
 		return
 	}
 
 	if r.URL.Path == serviceProvider.SloURL.Path {
-		log.Debug("saml logout response processing started")
+		log.Debug("Saml logout response processing started")
 
 		s.FinalizeSamlLogout(w, r)
 
-		log.Debug("saml logout response processing completed")
+		log.Debug("Saml logout response processing completed")
 		return
 	}
 
-	log.Debug("saml failed to handle request", "method", r.Method, "url", r.URL)
+	log.Debug("Saml failed to handle request", "method", r.Method, "url", r.URL)
 
 	http.NotFoundHandler().ServeHTTP(w, r)
 }
@@ -90,7 +90,7 @@ func (s *Provider) getPossibleRequestIDs(r *http.Request) []string {
 			return secretBlock, nil
 		})
 		if err != nil || !token.Valid {
-			log.Debug("saml invalid token", "error", err)
+			log.Debug("Saml invalid token", "error", err)
 			continue
 		}
 		claims := token.Claims.(jwt.MapClaims)

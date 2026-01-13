@@ -128,17 +128,17 @@ func (ac *authConfigController) sync(key string, obj *v3.AuthConfig) (runtime.Ob
 			}
 
 			// Third, lock the config after cleanup and commit any updates to it.
-			log.Info("resources of auth provider cleaned up successfully, locking down cleanup", "operation", "cleanup_auth", "auth_provider", obj.Name)
+			log.Info("Resources of auth provider cleaned up successfully, locking down cleanup", "operation", "cleanup_auth", "auth_provider", obj.Name)
 			ac.setCleanupAnnotation(unstructuredObj, CleanupRancherLocked)
 			return ac.updateAuthConfig(unstructuredObj, obj)
 		case CleanupRancherLocked:
-			log.Info("refusing to clean up auth provider, rancher locked", "operation", "cleanup_auth", "auth_provider", obj.Name, "annotation", CleanupAnnotation)
+			log.Info("Refusing to clean up auth provider, rancher locked", "operation", "cleanup_auth", "auth_provider", obj.Name, "annotation", CleanupAnnotation)
 			return obj, nil
 		case CleanupUserLocked:
-			log.Info("refusing to clean up auth provider, user locked", "operation", "cleanup_auth", "auth_provider", obj.Name, "annotation", CleanupAnnotation)
+			log.Info("Refusing to clean up auth provider, user locked", "operation", "cleanup_auth", "auth_provider", obj.Name, "annotation", CleanupAnnotation)
 			return obj, nil
 		default:
-			log.Info("refusing to clean up auth provider, invalid annotation", "operation", "cleanup_auth", "auth_provider", obj.Name, "annotation", CleanupAnnotation)
+			log.Info("Refusing to clean up auth provider, invalid annotation", "operation", "cleanup_auth", "auth_provider", obj.Name, "annotation", CleanupAnnotation)
 			return obj, nil
 		}
 	}

@@ -190,7 +190,7 @@ func adConfiguration(sc *config.ScaledContext) (*v3.ActiveDirectoryConfig, error
 
 	authConfigObj, err := authConfigs.ObjectClient().UnstructuredClient().Get("activedirectory", metav1.GetOptions{})
 	if err != nil {
-		log.Error("failed to obtain activedirectory authConfigObj",
+		log.Error("Failed to obtain activedirectory authConfigObj",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return nil, err
@@ -198,7 +198,7 @@ func adConfiguration(sc *config.ScaledContext) (*v3.ActiveDirectoryConfig, error
 
 	u, ok := authConfigObj.(runtime.Unstructured)
 	if !ok {
-		log.Error("failed to retrieve ActiveDirectoryConfig, cannot read k8s Unstructured data",
+		log.Error("Failed to retrieve ActiveDirectoryConfig, cannot read k8s Unstructured data",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return nil, err
@@ -208,7 +208,7 @@ func adConfiguration(sc *config.ScaledContext) (*v3.ActiveDirectoryConfig, error
 	storedADConfig := &v3.ActiveDirectoryConfig{}
 	err = common.Decode(storedADConfigMap, storedADConfig)
 	if err != nil {
-		log.Error("errors while decoding stored AD config",
+		log.Error("Errors while decoding stored AD config",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return nil, err
@@ -216,7 +216,7 @@ func adConfiguration(sc *config.ScaledContext) (*v3.ActiveDirectoryConfig, error
 
 	metadataMap, ok := storedADConfigMap["metadata"].(map[string]interface{})
 	if !ok {
-		log.Error("failed to retrieve ActiveDirectoryConfig, cannot read k8s Unstructured data",
+		log.Error("Failed to retrieve ActiveDirectoryConfig, cannot read k8s Unstructured data",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return nil, err
@@ -225,7 +225,7 @@ func adConfiguration(sc *config.ScaledContext) (*v3.ActiveDirectoryConfig, error
 	typemeta := &metav1.ObjectMeta{}
 	err = common.Decode(metadataMap, typemeta)
 	if err != nil {
-		log.Error("errors while decoding typemeta",
+		log.Error("Errors while decoding typemeta",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return nil, err
@@ -263,7 +263,7 @@ func prepareClientContexts(clientConfig *restclient.Config) (*config.ScaledConte
 	} else {
 		restConfig, err = clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 		if err != nil {
-			log.Error("failed to build the cluster config",
+			log.Error("Failed to build the cluster config",
 				"operation", migrateAdUserOperation,
 				"error", err)
 			return nil, nil, err
@@ -272,21 +272,21 @@ func prepareClientContexts(clientConfig *restclient.Config) (*config.ScaledConte
 
 	sc, err := scaledContext(restConfig)
 	if err != nil {
-		log.Error("failed to create scaled context",
+		log.Error("Failed to create scaled context",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return nil, nil, err
 	}
 	wc, err := wrangler.NewContext(context.Background(), nil, clientConfig)
 	if err != nil {
-		log.Error("failed to create wrangler context",
+		log.Error("Failed to create wrangler context",
 			"operation", migrateAdUserOperation,
 			"error", err)
 	}
 	sc.Wrangler = wc
 	adConfig, err := adConfiguration(sc)
 	if err != nil {
-		log.Error("failed to acquire ad configuration",
+		log.Error("Failed to acquire ad configuration",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return nil, nil, err
@@ -298,7 +298,7 @@ func prepareClientContexts(clientConfig *restclient.Config) (*config.ScaledConte
 func isGUID(principalID string) bool {
 	parts := strings.Split(principalID, "://")
 	if len(parts) != 2 {
-		log.Error("failed to parse invalid PrincipalID",
+		log.Error("Failed to parse invalid PrincipalID",
 			"operation", identifyAdUserOperation,
 			"principal_id", principalID)
 		return false
@@ -309,7 +309,7 @@ func isGUID(principalID string) bool {
 func updateADConfigMigrationStatus(status map[string]string, sc *config.ScaledContext) error {
 	authConfigObj, err := sc.Management.AuthConfigs("").ObjectClient().UnstructuredClient().Get("activedirectory", metav1.GetOptions{})
 	if err != nil {
-		log.Error("failed to obtain activedirectory authConfigObj",
+		log.Error("Failed to obtain activedirectory authConfigObj",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return err
@@ -394,7 +394,7 @@ func migrateAllowedUserPrincipals(workunits *[]migrateUserWorkUnit, missingUsers
 
 		scope, err := getScope(principalID)
 		if err != nil {
-			log.Error("found invalid principal ID in allowed user list, refusing to process",
+			log.Error("Found invalid principal ID in allowed user list, refusing to process",
 				"operation", migrateAdUserOperation,
 				"error", err)
 			newPrincipalIDs = append(newPrincipalIDs, principalID)
@@ -422,7 +422,7 @@ func migrateAllowedUserPrincipals(workunits *[]migrateUserWorkUnit, missingUsers
 					guid, err := getExternalID(principalID)
 					if err != nil {
 						// this shouldn't be reachable, as getScope will fail first, but just for consistency...
-						log.Error("found invalid principal ID in allowed user list, refusing to process",
+						log.Error("Found invalid principal ID in allowed user list, refusing to process",
 							"operation", migrateAdUserOperation,
 							"error", err)
 						newPrincipalIDs = append(newPrincipalIDs, principalID)
@@ -434,7 +434,7 @@ func migrateAllowedUserPrincipals(workunits *[]migrateUserWorkUnit, missingUsers
 							}
 						} else if err != nil {
 							// Whelp; keep this one as-is and yell about it
-							log.Error("ldap error when checking distinguished name for guid-based principal, skipping",
+							log.Error("Ldap error when checking distinguished name for guid-based principal, skipping",
 								"operation", migrateAdUserOperation,
 								"principal_id", principalID,
 								"error", err)

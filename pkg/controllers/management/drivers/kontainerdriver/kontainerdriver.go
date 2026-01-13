@@ -53,7 +53,7 @@ type Lifecycle struct {
 }
 
 func (l *Lifecycle) Create(obj *v3.KontainerDriver) (runtime.Object, error) {
-	log.Info("create kontainerdriver", "operation", "Create", "driver_name", obj.Name)
+	log.Info("Create kontainerdriver", "operation", "Create", "driver_name", obj.Name)
 
 	// return early if driver is not active
 	// set driver to a non-transitioning state
@@ -108,7 +108,7 @@ func (l *Lifecycle) download(obj *v3.KontainerDriver) (*v3.KontainerDriver, erro
 	obj.Status.DisplayName = matches[1]
 	obj.Status.ActualURL = obj.Spec.URL
 
-	log.Info("kontainerdriver downloaded and registered", "operation", "download", "driver_name", obj.Name, "path", path)
+	log.Info("Kontainerdriver downloaded and registered", "operation", "download", "driver_name", obj.Name, "path", path)
 
 	return obj, nil
 }
@@ -173,7 +173,7 @@ func (l *Lifecycle) updateDynamicSchema(dynamicSchema *v3.DynamicSchema, obj *v3
 
 	dynamicSchema.Spec.ResourceFields = fields
 
-	log.Info("dynamic schema for kontainerdriver updating", "operation", "createDynamicSchema", "driver_name", obj.Name)
+	log.Info("Dynamic schema for kontainerdriver updating", "operation", "createDynamicSchema", "driver_name", obj.Name)
 
 	if _, err = l.dynamicSchemas.Update(dynamicSchema); err != nil {
 		return err
@@ -338,7 +338,7 @@ func toLowerCamelCase(nodeFlagName string) (string, error) {
 }
 
 func (l *Lifecycle) Updated(obj *v3.KontainerDriver) (runtime.Object, error) {
-	log.Info("update kontainerdriver", "operation", "Updated", "driver_name", obj.Name)
+	log.Info("Update kontainerdriver", "operation", "Updated", "driver_name", obj.Name)
 	if hasStaticSchema(obj) {
 		return obj, nil
 	}
@@ -441,7 +441,7 @@ func getDynamicFieldName(obj *v3.KontainerDriver) string {
 
 // Remove the Kontainer Cluster driver, see also the Schema.Store for kontainer driver
 func (l *Lifecycle) Remove(obj *v3.KontainerDriver) (runtime.Object, error) {
-	log.Info("remove kontainerdriver", "operation", "Remove", "driver_name", obj.Name)
+	log.Info("Remove kontainerdriver", "operation", "Remove", "driver_name", obj.Name)
 
 	driver := drivers.NewKontainerDriver(obj.Spec.BuiltIn, obj.Name, obj.Spec.URL, obj.Spec.Checksum)
 	err := driver.Remove()

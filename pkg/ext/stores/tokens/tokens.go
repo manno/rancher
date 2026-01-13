@@ -1101,7 +1101,7 @@ func (t *Store) watch(ctx context.Context, options *metav1.ListOptions) (watch.I
 
 	producer, err := t.secretClient.Watch(TokenNamespace, localOptions)
 	if err != nil {
-		log.Error("tokens watch error starting watch", "operation", "watch_tokens", "error", err)
+		log.Error("Tokens watch error starting watch", "operation", "watch_tokens", "error", err)
 		return nil, apierrors.NewInternalError(fmt.Errorf("tokens: watch: error starting watch: %w", err))
 	}
 
@@ -1134,7 +1134,7 @@ func (t *Store) watch(ctx context.Context, options *metav1.ListOptions) (watch.I
 				case watch.Bookmark:
 					secret, ok := event.Object.(*corev1.Secret)
 					if !ok {
-						log.Warn("tokens watch expected secret", "operation", "watch_tokens", "object_type", "unknown")
+						log.Warn("Tokens watch expected secret", "operation", "watch_tokens", "object_type", "unknown")
 						continue
 					}
 
@@ -1146,13 +1146,13 @@ func (t *Store) watch(ctx context.Context, options *metav1.ListOptions) (watch.I
 				case watch.Added, watch.Modified, watch.Deleted:
 					secret, ok := event.Object.(*corev1.Secret)
 					if !ok {
-						log.Warn("tokens watch expected secret", "operation", "watch_tokens", "object_type", "unknown")
+						log.Warn("Tokens watch expected secret", "operation", "watch_tokens", "object_type", "unknown")
 						continue
 					}
 
 					token, err := fromSecret(secret)
 					if err != nil {
-						log.Error("tokens watch error converting secret to token", "operation", "watch_tokens", "secret", secret.Name, "error", err)
+						log.Error("Tokens watch error converting secret to token", "operation", "watch_tokens", "secret", secret.Name, "error", err)
 						continue
 					}
 
@@ -1362,7 +1362,7 @@ func (tp *tokenHasher) MakeAndHashSecret() (string, string, error) {
 func (tp *tokenAuth) UserName(ctx context.Context, store *SystemStore, verb string) (user.Info, bool, bool, error) {
 	userInfo, ok := request.UserFrom(ctx)
 	if !ok {
-		log.Error("ext token store no user information in request context", "operation", "access_token", "request_type", verb)
+		log.Error("Ext token store no user information in request context", "operation", "access_token", "request_type", verb)
 		return nil, false, false, apierrors.NewInternalError(fmt.Errorf("context has no user info"))
 	}
 
@@ -1373,7 +1373,7 @@ func (tp *tokenAuth) UserName(ctx context.Context, store *SystemStore, verb stri
 		ResourceRequest: true,
 	})
 	if err != nil {
-		log.Error("ext token store auth error", "operation", "access_token", "request_type", verb, "user", userInfo.GetName(), "error", err)
+		log.Error("Ext token store auth error", "operation", "access_token", "request_type", verb, "user", userInfo.GetName(), "error", err)
 		return nil, false, false, err
 	}
 
@@ -1390,13 +1390,13 @@ func (tp *tokenAuth) UserName(ctx context.Context, store *SystemStore, verb stri
 			isRancherUser = true
 		} else if !apierrors.IsNotFound(err) {
 			// some general error
-			log.Error("ext token store general error", "operation", "access_token", "request_type", verb, "user", userName, "error", err)
+			log.Error("Ext token store general error", "operation", "access_token", "request_type", verb, "user", userName, "error", err)
 			return nil, false, false,
 				apierrors.NewInternalError(fmt.Errorf("error getting user %s: %w", userName, err))
 		} // else: not a rancher user, may still be an admin
 	} // else: some system user, not a rancher user, may still be an admin
 
-	log.Debug("ext token store access", "operation", "access_token", "request_type", verb, "user", userName, "full_access", fullAccess, "rancher_user", isRancherUser)
+	log.Debug("Ext token store access", "operation", "access_token", "request_type", verb, "user", userName, "full_access", fullAccess, "rancher_user", isRancherUser)
 	return userInfo, fullAccess, isRancherUser, nil
 }
 
@@ -1430,7 +1430,7 @@ func SessionID(ctx context.Context) (string, error) {
 	tokenIDs := extras[common.ExtraRequestTokenID]
 	if len(tokenIDs) != 1 {
 		// log only because we get internal requests (watch setup) without token id
-		log.Debug("context principal extras has no unique request token id", "operation", "get_token_id", "token_id_count", len(tokenIDs))
+		log.Debug("Context principal extras has no unique request token id", "operation", "get_token_id", "token_id_count", len(tokenIDs))
 		return "", nil
 	}
 

@@ -101,7 +101,7 @@ func (h *handler) OnRemove(_ string, cp *rkev1.RKEControlPlane) (*rkev1.RKEContr
 
 func (h *handler) doRemove(cp *rkev1.RKEControlPlane) func() (string, error) {
 	return func() (string, error) {
-		log.Debug("performing removal of rkecontrolplane", "operation", "on_remove", "rkecontrolplane", fmt.Sprintf("%s/%s", cp.Namespace, cp.Name))
+		log.Debug("Performing removal of rkecontrolplane", "operation", "on_remove", "rkecontrolplane", fmt.Sprintf("%s/%s", cp.Namespace, cp.Name))
 		// Control plane nodes are managed by the control plane object. Therefore, the control plane object shouldn't be cleaned up before the control plane nodes are removed.
 		machines, err := h.machineCache.List(cp.Namespace, labels.SelectorFromSet(labels.Set{capi.ClusterNameLabel: cp.Name, capr.ControlPlaneRoleLabel: "true"}))
 		if err != nil {
@@ -116,8 +116,8 @@ func (h *handler) doRemove(cp *rkev1.RKEControlPlane) func() (string, error) {
 			return "", err
 		}
 
-		log.Debug("listed machines during removal", "operation", "on_remove", "rkecontrolplane", fmt.Sprintf("%s/%s", cp.Namespace, cp.Name), "count", len(machines))
-		log.Trace("machine list", "operation", "on_remove", "rkecontrolplane", fmt.Sprintf("%s/%s", cp.Namespace, cp.Name), "machines", fmt.Sprintf("%+v", machines))
+		log.Debug("Listed machines during removal", "operation", "on_remove", "rkecontrolplane", fmt.Sprintf("%s/%s", cp.Namespace, cp.Name), "count", len(machines))
+		log.Trace("Machine list", "operation", "on_remove", "rkecontrolplane", fmt.Sprintf("%s/%s", cp.Namespace, cp.Name), "machines", fmt.Sprintf("%+v", machines))
 		allMachines := append(machines, otherMachines...)
 
 		for _, machine := range allMachines {

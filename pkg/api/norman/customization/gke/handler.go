@@ -83,42 +83,42 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch resourceType {
 	case "gkeMachineTypes":
 		if serialized, errCode, err = listMachineTypes(req.Context(), capa); err != nil {
-			log.Error("gke-handler: error getting machine types", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting machine types", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "gkeNetworks":
 		if serialized, errCode, err = listNetworks(req.Context(), capa); err != nil {
-			log.Error("gke-handler: error getting networks", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting networks", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "gkeServiceAccounts":
 		if serialized, errCode, err = listServiceAccounts(req.Context(), capa); err != nil {
-			log.Error("gke-handler: error getting serviceaccounts", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting serviceaccounts", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "gkeSubnetworks":
 		if serialized, errCode, err = listSubnetworks(req.Context(), capa); err != nil {
-			log.Error("gke-handler: error getting subnetworks", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting subnetworks", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "gkeVersions":
 		if serialized, errCode, err = listVersions(req.Context(), capa); err != nil {
-			log.Error("gke-handler: error getting versions", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting versions", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "gkeZones":
 		if serialized, errCode, err = listZones(req.Context(), capa); err != nil {
-			log.Error("gke-handler: error getting zones", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting zones", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 
@@ -126,14 +126,14 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 		writer.Write(serialized)
 	case "gkeClusters":
 		if serialized, errCode, err = listClusters(req.Context(), capa); err != nil {
-			log.Error("gke-handler: error getting clusters", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting clusters", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "gkeSharedSubnets":
 		if serialized, errCode, err = listSharedSubnets(req.Context(), capa); err != nil {
-			log.Error("gke-handler: error getting shared subnets", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting shared subnets", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
@@ -148,7 +148,7 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 		showDeprecated := strings.ToLower(req.URL.Query().Get("showDeprecated")) == "true"
 
 		if serialized, errCode, err = listFamiliesFromProject(req.Context(), capa, project, showDeprecated); err != nil {
-			log.Error("gke-handler: error getting families from project", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting families from project", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
@@ -169,14 +169,14 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 		showDeprecated := strings.ToLower(req.URL.Query().Get("showDeprecated")) == "true"
 
 		if serialized, errCode, err = listImageFamilyForProject(req.Context(), capa, imageProject, imageFamily, showDeprecated); err != nil {
-			log.Error("gke-handler: error getting images from image family", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting images from image family", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "gkeDiskTypes":
 		if serialized, errCode, err = listDiskTypes(req.Context(), capa); err != nil {
-			log.Error("gke-handler: error getting disk types", "operation", "handle", "error", err)
+			log.Error("Gke-handler: error getting disk types", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
@@ -189,7 +189,7 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 func (h *handler) getCloudCredential(req *http.Request, cap *Capabilities, credID string, projectIDRequired bool) (int, error) {
 	ns, name := ref.Parse(credID)
 	if ns == "" || name == "" {
-		log.Error("gke: invalid cloud credential ID", "operation", "get_cloud_credential", "cred_id", credID)
+		log.Error("Gke: invalid cloud credential ID", "operation", "get_cloud_credential", "cred_id", credID)
 		return http.StatusBadRequest, fmt.Errorf("invalid cloud credential ID %s", credID)
 	}
 
@@ -212,14 +212,14 @@ func (h *handler) getCloudCredential(req *http.Request, cap *Capabilities, credI
 
 	cc, err := h.secretsLister.Get(ns, name)
 	if err != nil {
-		log.Error("gke: error accessing cloud credential", "operation", "get_cloud_credential", "cred_id", credID)
+		log.Error("Gke: error accessing cloud credential", "operation", "get_cloud_credential", "cred_id", credID)
 		return httperror.InvalidBodyContent.Status, fmt.Errorf("error accessing cloud credential %s", credID)
 	}
 	cap.Credentials = string(cc.Data["googlecredentialConfig-authEncodedJson"])
 
 	cap.ProjectID = req.URL.Query().Get("projectId")
 	if cap.ProjectID == "" && projectIDRequired {
-		log.Error("gke: error getting projectid", "operation", "get_cloud_credential")
+		log.Error("Gke: error getting projectid", "operation", "get_cloud_credential")
 		return http.StatusBadRequest, fmt.Errorf("error getting projectId")
 	}
 

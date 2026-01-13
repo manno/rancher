@@ -27,7 +27,7 @@ func ClusterScopedList(ctx context.Context, watchFunc WatchClusterScopedFunc, cb
 func doWatch(ctx context.Context, watchFunc watchFunc, cb func(obj runtime.Object) (bool, error)) (bool, error) {
 	result, err := watchFunc()
 	if err != nil {
-		log.Error("watch failed", err)
+		log.Error("Watch failed", err)
 		time.Sleep(2 * time.Second)
 		return false, nil
 	}

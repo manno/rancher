@@ -9,10 +9,10 @@ import (
 )
 
 func (m *manager) ensureServiceAccountImpersonator(username string) error {
-	log.Debug("ensuring service account impersonator", "operation", "ensure_impersonator", "user", username)
+	log.Debug("Ensuring service account impersonator", "operation", "ensure_impersonator", "user", username)
 	err := m.impersonator.SetUpImpersonation(&user.DefaultInfo{UID: username})
 	if apierrors.IsNotFound(err) {
-		log.Warn("could not find user, will not create impersonation account on cluster", "operation", "ensure_impersonator", "user", username)
+		log.Warn("Could not find user, will not create impersonation account on cluster", "operation", "ensure_impersonator", "user", username)
 		return nil
 	}
 	return err
@@ -31,7 +31,7 @@ func (m *manager) deleteServiceAccountImpersonator(username string) error {
 		return nil
 	}
 	roleName := impersonation.ImpersonationPrefix + username
-	log.Debug("deleting service account impersonator", "operation", "delete_impersonator", "user", username)
+	log.Debug("Deleting service account impersonator", "operation", "delete_impersonator", "user", username)
 	err = m.workload.RBACw.ClusterRole().Delete(roleName, &metav1.DeleteOptions{})
 	if apierrors.IsNotFound(err) {
 		return nil

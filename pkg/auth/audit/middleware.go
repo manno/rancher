@@ -45,7 +45,7 @@ func GetAuditLoggerMiddleware(auditLog *LoggingHandler) func(next http.Handler) 
 				// This is to prevent the rancher logs from being flooded with error messages
 				// when the log path is invalid or any other error that will always cause a write to fail.
 				if lastSeen, ok := auditLog.errMap[err.Error()]; !ok || time.Since(lastSeen) > errorDebounceTime {
-					rlog.Warn("failed to write audit log", "operation", "get_audit_logger_middleware", "error", err)
+					rlog.Warn("Failed to write audit log", "operation", "get_audit_logger_middleware", "error", err)
 					auditLog.errMap[err.Error()] = time.Now()
 				}
 			}

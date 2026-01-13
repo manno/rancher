@@ -20,7 +20,7 @@ func HandleCommonAction(actionName string, action *types.Action, request *types.
 		config := u.UnstructuredContent()
 		if e, ok := config[client.AuthConfigFieldEnabled].(bool); ok && e {
 			config[client.AuthConfigFieldEnabled] = false
-			log.Info("disabling auth provider from the action", "auth_config", authConfigName, "operation", "handle_common_action")
+			log.Info("Disabling auth provider from the action", "auth_config", authConfigName, "operation", "handle_common_action")
 			_, err = authConfigs.ObjectClient().Update(authConfigName, o)
 			return true, err
 		}

@@ -50,7 +50,7 @@ func indexByMembershipBindingOwner(obj interface{}) ([]string, error) {
 
 	accessor, err := meta.Accessor(ro)
 	if err != nil {
-		log.Warn("unexpected object type in indexByMembershipBindingOwner", "operation", "index_membership", "error", err.Error())
+		log.Warn("Unexpected object type in indexByMembershipBindingOwner", "operation", "index_membership", "error", err.Error())
 		return []string{}, nil
 	}
 

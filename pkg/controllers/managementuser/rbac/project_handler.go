@@ -105,7 +105,7 @@ func (p *pLifecycle) Remove(project *v3.Project) (runtime.Object, error) {
 		for _, secret := range secrets.Items {
 			err := p.secretClient.Delete(namespace.Name, secret.Name, &metav1.DeleteOptions{})
 			if err != nil && !apierrors.IsNotFound(err) {
-				log.Error("failed to delete project scoped secret", "operation", "remove_project", "namespace", namespace.Name, "secret", secret.Name, "error", err)
+				log.Error("Failed to delete project scoped secret", "operation", "remove_project", "namespace", namespace.Name, "secret", secret.Name, "error", err)
 				returnErrors = errors.Join(returnErrors, err)
 			}
 		}

@@ -86,7 +86,7 @@ func router(ctx context.Context, localClusterEnabled bool, scaledContext *config
 	if err != nil {
 		return nil, fmt.Errorf("parsing the public API body limit: %w", err)
 	}
-	log.Info("configuring public API body limit", "operation", "router", "limit_bytes", publicLimit)
+	log.Info("Configuring public API body limit", "operation", "router", "limit_bytes", publicLimit)
 	limitingHandler := utils.APIBodyLimitingHandler(publicLimit)
 
 	unauthed.Path("/").MatcherFunc(parse.MatchNotBrowser).Handler(managementAPI)

@@ -215,7 +215,7 @@ func (p *prtbLifecycle) removeMGMTProjectScopedPrivilegesInClusterNamespace(bind
 			removeBinding = true
 		}
 		if removeBinding {
-			log.Info("deleting rolebinding in namespace for prtb", "operation", "sync_prtb", "controller", ptrbMGMTController, "rolebinding", rb.Name, "cluster", clusterName, "prtb", binding.Name)
+			log.Info("Deleting rolebinding in namespace for prtb", "operation", "sync_prtb", "controller", ptrbMGMTController, "rolebinding", rb.Name, "cluster", clusterName, "prtb", binding.Name)
 			if err := p.rbClient.DeleteNamespaced(clusterName, rb.Name, &v1.DeleteOptions{}); err != nil {
 				return err
 			}

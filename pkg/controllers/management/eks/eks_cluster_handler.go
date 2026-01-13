@@ -141,7 +141,7 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 
 	// check for changes between EKS spec on cluster and the EKS spec on the EKSClusterConfig object
 	if !reflect.DeepEqual(eksClusterConfigMap, eksClusterConfigDynamic.Object["spec"]) {
-		log.Info("change detected for cluster, updating EKSClusterConfig", "operation", "onClusterChange", "cluster_name", cluster.Name)
+		log.Info("Change detected for cluster, updating EKSClusterConfig", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		return e.updateEKSClusterConfig(cluster, eksClusterConfigDynamic, eksClusterConfigMap)
 	}
 
@@ -166,10 +166,10 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			log.Info("waiting for cluster to finish creating", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
+			log.Info("Waiting for cluster to finish creating", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		log.Info("waiting for cluster create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
+		log.Info("Waiting for cluster create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	case "active":
 
@@ -269,7 +269,7 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 						return cluster, err
 					}
 					if secret == nil {
-						log.Debug("empty service account token secret returned for cluster", "operation", "onClusterChange", "cluster_name", cluster.Name)
+						log.Debug("Empty service account token secret returned for cluster", "operation", "onClusterChange", "cluster_name", cluster.Name)
 						return cluster, fmt.Errorf("failed to create or update service account token secret, secret can't be empty")
 					}
 					cluster.Status.ServiceAccountTokenSecret = secret.Name
@@ -351,10 +351,10 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			log.Info("waiting for cluster to update", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
+			log.Info("Waiting for cluster to update", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionUpdated, "")
 		}
-		log.Info("waiting for cluster update failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
+		log.Info("Waiting for cluster update failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionUpdated, failureMessage)
 	default:
 		if cluster.Spec.EKSConfig.Imported {
@@ -362,9 +362,9 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 			if err != nil {
 				return cluster, err
 			}
-			log.Info("waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
+			log.Info("Waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		} else {
-			log.Info("waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
+			log.Info("Waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		}
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
@@ -374,23 +374,23 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 				if err != nil {
 					return cluster, err
 				}
-				log.Info("waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
+				log.Info("Waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 			} else {
-				log.Info("waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
+				log.Info("Waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 			}
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		log.Info("waiting for cluster pre-create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name)
+		log.Info("Waiting for cluster pre-create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	}
 }
 
 func (e *eksOperatorController) setInitialUpstreamSpec(cluster *mgmtv3.Cluster) (*mgmtv3.Cluster, error) {
-	log.Info("setting initial upstreamSpec on cluster", "operation", "setInitialUpstreamSpec", "cluster_name", cluster.Name)
+	log.Info("Setting initial upstreamSpec on cluster", "operation", "setInitialUpstreamSpec", "cluster_name", cluster.Name)
 	cluster = cluster.DeepCopy()
 	upstreamSpec, err := clusterupstreamrefresher.BuildEKSUpstreamSpec(e.secretClient, cluster)
 	if err != nil {
-		log.Warn("failed to set initial upstreamSpec on cluster", "operation", "setInitialUpstreamSpec", "cluster_name", cluster.Name, "error", err)
+		log.Warn("Failed to set initial upstreamSpec on cluster", "operation", "setInitialUpstreamSpec", "cluster_name", cluster.Name, "error", err)
 		return cluster, err
 	}
 	cluster.Status.EKSStatus.UpstreamSpec = upstreamSpec

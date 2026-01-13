@@ -281,7 +281,7 @@ func (m *nodesSyncer) reconcileAll() error {
 			return err
 		}
 		if node == nil {
-			log.Debug("failed to get node for machine, preparing to delete", "operation", "delete_node", "machine", machine.Name)
+			log.Debug("Failed to get node for machine, preparing to delete", "operation", "delete_node", "machine", machine.Name)
 			toDelete[machine.Name] = machine
 			continue
 		}
@@ -338,7 +338,7 @@ func (m *nodesSyncer) removeNode(machine *apimgmtv3.Node) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete machine [%s]", machine.Name)
 	}
-	log.Info("deleted cluster node", "operation", "delete_node", "machine", machine.Name, "node_name", machine.Status.NodeName)
+	log.Info("Deleted cluster node", "operation", "delete_node", "machine", machine.Name, "node_name", machine.Status.NodeName)
 	return nil
 }
 
@@ -351,19 +351,19 @@ func (m *nodesSyncer) updateNode(existing *apimgmtv3.Node, node *corev1.Node) er
 	if objectsAreEqual(existing, toUpdate) {
 		return nil
 	}
-	log.Debug("updating machine for node", "operation", "update_node", "node", node.Name)
+	log.Debug("Updating machine for node", "operation", "update_node", "node", node.Name)
 	_, err = m.machines.Update(toUpdate)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to update machine for node [%s]", node.Name)
 	}
-	log.Debug("updated machine for node", "operation", "update_node", "node", node.Name)
+	log.Debug("Updated machine for node", "operation", "update_node", "node", node.Name)
 	return nil
 }
 
 func (m *nodesSyncer) createNode(node *corev1.Node, nodeCache *NodeCache) error {
 	// respect user defined name or label
 	if nodehelper.IgnoreNode(node.Name, node.Labels) {
-		log.Debug("skipping apimgmtv3.Node creation for node", "operation", "create_node", "node", node.Name)
+		log.Debug("Skipping apimgmtv3.Node creation for node", "operation", "create_node", "node", node.Name)
 		return nil
 	}
 
@@ -389,7 +389,7 @@ func (m *nodesSyncer) createNode(node *corev1.Node, nodeCache *NodeCache) error 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create machine for node [%s]", node.Name)
 	}
-	log.Info("created machine for node", "operation", "create_node", "node", node.Name)
+	log.Info("Created machine for node", "operation", "create_node", "node", node.Name)
 	return nil
 }
 
@@ -500,37 +500,37 @@ func statusEqualTest(proposed, existing corev1.NodeStatus) bool {
 
 	// Capacity
 	if !reflect.DeepEqual(proposed.Capacity, existing.Capacity) {
-		log.Debug("changes in Capacity", "operation", "compare_nodes", "proposed_capacity", proposed.Capacity, "existing_capacity", existing.Capacity)
+		log.Debug("Changes in Capacity", "operation", "compare_nodes", "proposed_capacity", proposed.Capacity, "existing_capacity", existing.Capacity)
 		return false
 	}
 
 	// Allocatable
 	if !reflect.DeepEqual(proposed.Allocatable, existing.Allocatable) {
-		log.Debug("changes in Allocatable", "operation", "compare_nodes", "proposed_allocatable", proposed.Allocatable, "existing_allocatable", existing.Allocatable)
+		log.Debug("Changes in Allocatable", "operation", "compare_nodes", "proposed_allocatable", proposed.Allocatable, "existing_allocatable", existing.Allocatable)
 		return false
 	}
 
 	// Conditions
 	if !reflect.DeepEqual(proposed.Conditions, existing.Conditions) {
-		log.Debug("changes in Conditions", "operation", "compare_nodes", "proposed_conditions", proposed.Conditions, "existing_conditions", existing.Conditions)
+		log.Debug("Changes in Conditions", "operation", "compare_nodes", "proposed_conditions", proposed.Conditions, "existing_conditions", existing.Conditions)
 		return false
 	}
 
 	// Addresses
 	if !reflect.DeepEqual(proposed.Addresses, existing.Addresses) {
-		log.Debug("changes in Addresses", "operation", "compare_nodes", "proposed_addresses", proposed.Addresses, "existing_addresses", existing.Addresses)
+		log.Debug("Changes in Addresses", "operation", "compare_nodes", "proposed_addresses", proposed.Addresses, "existing_addresses", existing.Addresses)
 		return false
 	}
 
 	// Volumes in use (This test might prove to be an issue if order is not returned consistently.)
 	if !reflect.DeepEqual(proposed.VolumesInUse, existing.VolumesInUse) {
-		log.Debug("changes in VolumesInUse", "operation", "compare_nodes", "proposed_volumes_in_use", proposed.VolumesInUse, "existing_volumes_in_use", existing.VolumesInUse)
+		log.Debug("Changes in VolumesInUse", "operation", "compare_nodes", "proposed_volumes_in_use", proposed.VolumesInUse, "existing_volumes_in_use", existing.VolumesInUse)
 		return false
 	}
 
 	// VolumesAttached (This test might prove to cause excessive updates if order is not returned consistently.)
 	if !reflect.DeepEqual(proposed.VolumesAttached, existing.VolumesAttached) {
-		log.Debug("changes in VolumesAttached", "operation", "compare_nodes", "proposed_volumes_attached", proposed.VolumesAttached, "existing_volumes_attached", existing.VolumesAttached)
+		log.Debug("Changes in VolumesAttached", "operation", "compare_nodes", "proposed_volumes_attached", proposed.VolumesAttached, "existing_volumes_attached", existing.VolumesAttached)
 		return false
 	}
 

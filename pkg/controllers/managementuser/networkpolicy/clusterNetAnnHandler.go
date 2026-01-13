@@ -34,7 +34,7 @@ func (cn *clusterNetAnnHandler) Sync(key string, cluster *v3.Cluster) (runtime.O
 		return nil, nil
 	}
 
-	log.Info("clusternetannhandler: updating enablenetworkpolicy", "operation", "sync", "cluster", cluster.Name,
+	log.Info("Clusternetannhandler: updating enablenetworkpolicy", "operation", "sync", "cluster", cluster.Name,
 		"enable_network_policy", *cluster.Spec.EnableNetworkPolicy)
 
 	cluster.Annotations[netPolAnnotation] = convert.ToString(*cluster.Spec.EnableNetworkPolicy)

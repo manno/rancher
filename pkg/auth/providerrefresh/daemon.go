@@ -46,7 +46,7 @@ func UpdateRefreshCronTime(refreshCronTime string) {
 
 	parsed, err := ParseCron(refreshCronTime)
 	if err != nil {
-		log.Error("error parsing cron", "operation", "update_refresh_cron_time", "error", err)
+		log.Error("Error parsing cron", "operation", "update_refresh_cron_time", "error", err)
 		return
 	}
 
@@ -73,7 +73,7 @@ func RefreshAllForCron() {
 		return
 	}
 
-	log.Debug("triggering auth refresh cron", "operation", "refresh_all_for_cron")
+	log.Debug("Triggering auth refresh cron", "operation", "refresh_all_for_cron")
 	ref.refreshAll(false)
 }
 
@@ -82,12 +82,12 @@ func RefreshAttributes(attribs *apiv3.UserAttribute) (*apiv3.UserAttribute, erro
 		return nil, errors.Errorf("refresh daemon not yet initialized")
 	}
 
-	log.Debug("starting refresh process", "operation", "refresh_attributes", "user_attribute", attribs.Name)
+	log.Debug("Starting refresh process", "operation", "refresh_attributes", "user_attribute", attribs.Name)
 	modified, err := ref.refreshAttributes(attribs)
 	if err != nil {
 		return nil, fmt.Errorf("error refreshing userattribute %s: %w", attribs.Name, err)
 	}
-	log.Debug("finished refresh process", "operation", "refresh_attributes", "user_attribute", attribs.Name)
+	log.Debug("Finished refresh process", "operation", "refresh_attributes", "user_attribute", attribs.Name)
 	modified.LastRefresh = time.Now().UTC().Format(time.RFC3339)
 	modified.NeedsRefresh = false
 	return modified, nil

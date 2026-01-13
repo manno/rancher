@@ -69,7 +69,7 @@ func (g *globalRBACEnqueuer) enqueueGRBs(_, _ string, obj runtime.Object) ([]rel
 	}
 	globalRole, ok := obj.(*v3.GlobalRole)
 	if !ok {
-		log.Error("unable to convert object to a global role", "operation", "enqueue_global_role", "object_type", "unknown")
+		log.Error("Unable to convert object to a global role", "operation", "enqueue_global_role", "object_type", "unknown")
 		return nil, nil
 	}
 	bindings, err := g.grbCache.GetByIndex(grbGrIndex, globalRole.Name)
@@ -91,7 +91,7 @@ func (g *globalRBACEnqueuer) clusterEnqueueGRs(_, _ string, obj runtime.Object) 
 	}
 	cluster, ok := obj.(*v3.Cluster)
 	if !ok {
-		log.Error("unable to convert object to a cluster", "operation", "enqueue_cluster", "object_type", "unknown")
+		log.Error("Unable to convert object to a cluster", "operation", "enqueue_cluster", "object_type", "unknown")
 		return nil, nil
 	}
 	// we only want to perform the initial sync once. Future changes will be picked up by other handlers
@@ -116,7 +116,7 @@ func (g *globalRBACEnqueuer) clusterEnqueueGRs(_, _ string, obj runtime.Object) 
 	// want to try and sync the permissions.
 	newCluster, err := g.clusterClient.Get(cluster.Name, metav1.GetOptions{})
 	if err != nil {
-		log.Error("unable to get cluster to add sync annotation, grs will re-enqueue on change", "operation", "enqueue_cluster", "cluster", cluster.Name, "error", err.Error())
+		log.Error("Unable to get cluster to add sync annotation, grs will re-enqueue on change", "operation", "enqueue_cluster", "cluster", cluster.Name, "error", err.Error())
 		return rolesToSync, nil
 	}
 	if newCluster.Annotations == nil {
@@ -125,7 +125,7 @@ func (g *globalRBACEnqueuer) clusterEnqueueGRs(_, _ string, obj runtime.Object) 
 	newCluster.Annotations[initialSyncAnnotation] = "true"
 	_, err = g.clusterClient.Update(newCluster)
 	if err != nil {
-		log.Error("unable to update cluster with sync annotation, grs will re-enqueue on change", "operation", "enqueue_cluster", "cluster", cluster.Name, "error", err.Error())
+		log.Error("Unable to update cluster with sync annotation, grs will re-enqueue on change", "operation", "enqueue_cluster", "cluster", cluster.Name, "error", err.Error())
 	}
 	return rolesToSync, nil
 }
@@ -138,7 +138,7 @@ func (g *globalRBACEnqueuer) crtbEnqueueGRB(_, _ string, obj runtime.Object) ([]
 	}
 	crtb, ok := obj.(*v3.ClusterRoleTemplateBinding)
 	if !ok {
-		log.Error("unable to convert object to a crtb", "operation", "enqueue_crtb", "object_type", "unknown")
+		log.Error("Unable to convert object to a crtb", "operation", "enqueue_crtb", "object_type", "unknown")
 		return nil, nil
 	}
 	grbOwner, ok := crtb.Labels[grbOwnerLabel]
@@ -168,7 +168,7 @@ func (g *globalRBACEnqueuer) roleEnqueueGR(_, _ string, obj runtime.Object) ([]r
 	}
 	role, ok := obj.(*v1.Role)
 	if !ok {
-		log.Error("unable to convert object to a Role", "operation", "enqueue_role", "object_type", "unknown")
+		log.Error("Unable to convert object to a Role", "operation", "enqueue_role", "object_type", "unknown")
 		return nil, nil
 	}
 	grOwner, ok := role.Labels[grOwnerLabel]
@@ -198,7 +198,7 @@ func (g *globalRBACEnqueuer) roleBindingEnqueueGRB(_, _ string, obj runtime.Obje
 	}
 	roleBinding, ok := obj.(*v1.RoleBinding)
 	if !ok {
-		log.Error("unable to convert object to a RoleBinding", "operation", "enqueue_role_binding", "object_type", "unknown")
+		log.Error("Unable to convert object to a RoleBinding", "operation", "enqueue_role_binding", "object_type", "unknown")
 		return nil, nil
 	}
 	grbOwner, ok := roleBinding.Labels[grbOwnerLabel]
@@ -226,7 +226,7 @@ func (g *globalRBACEnqueuer) namespaceEnqueueGR(_, _ string, obj runtime.Object)
 	}
 	namespace, ok := obj.(*corev1.Namespace)
 	if !ok {
-		log.Error("unable to convert object to a Namespace", "operation", "enqueue_namespace", "object_type", "unknown")
+		log.Error("Unable to convert object to a Namespace", "operation", "enqueue_namespace", "object_type", "unknown")
 		return nil, nil
 	}
 
@@ -274,13 +274,13 @@ func (g *globalRBACEnqueuer) clusterRoleEnqueueGR(_, _ string, obj runtime.Objec
 	}
 	clusterRole, ok := obj.(*v1.ClusterRole)
 	if !ok {
-		log.Error("unable to convert object to a ClusterRole", "operation", "enqueue_cluster_role", "object_type", "unknown")
+		log.Error("Unable to convert object to a ClusterRole", "operation", "enqueue_cluster_role", "object_type", "unknown")
 		return nil, nil
 	}
 	grOwner, ok := clusterRole.Labels[grOwnerLabel]
 	if !ok {
 		// this clusterRole isn't owned by a GRB, no need to enqueue a GRB
-		log.Debug("clusterRole has no associated globalRole label, skipping enqueue", "operation", "enqueue_cluster_role", "cluster_role", clusterRole.Name)
+		log.Debug("ClusterRole has no associated globalRole label, skipping enqueue", "operation", "enqueue_cluster_role", "cluster_role", clusterRole.Name)
 		return nil, nil
 	}
 	grs, err := g.grCache.GetByIndex(grSafeConcatIndex, grOwner)
@@ -304,7 +304,7 @@ func (g *globalRBACEnqueuer) clusterRoleBindingEnqueueGRB(_, _ string, obj runti
 	}
 	clusterRoleBinding, ok := obj.(*v1.ClusterRoleBinding)
 	if !ok {
-		log.Error("unable to convert object to a ClusterRole", "operation", "enqueue_cluster_role", "object_type", "unknown")
+		log.Error("Unable to convert object to a ClusterRole", "operation", "enqueue_cluster_role", "object_type", "unknown")
 		return nil, nil
 	}
 	grbOwner, ok := clusterRoleBinding.Labels[grbOwnerLabel]

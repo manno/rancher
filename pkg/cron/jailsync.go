@@ -47,7 +47,7 @@ func (j *jailSync) syncJails() {
 	// Get the clusters from the api to ensure we are up to date
 	clusters, err := j.clusters.List(metav1.ListOptions{})
 	if err != nil {
-		log.Warn("error listing clusters for jail cleanup", "operation", "jail_cleanup", "error", err)
+		log.Warn("Error listing clusters for jail cleanup", "operation", "jail_cleanup", "error", err)
 	}
 
 	clusterMap := make(map[string]v3.Cluster)
@@ -58,7 +58,7 @@ func (j *jailSync) syncJails() {
 	files, err := ioutil.ReadDir(jailPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			log.Warn("error attempting to get files for jail cleanup", "operation", "jail_cleanup", "error", err)
+			log.Warn("Error attempting to get files for jail cleanup", "operation", "jail_cleanup", "error", err)
 		}
 		// The dir doesn't exist, nothing to do
 		return
@@ -77,7 +77,7 @@ func (j *jailSync) syncJails() {
 				clusterPath := path.Join(jailPath, dirName)
 				err = os.RemoveAll(clusterPath)
 				if err != nil {
-					log.Warn("error attempting to delete jail", "operation", "jail_cleanup", "cluster_path", clusterPath, "error", err)
+					log.Warn("Error attempting to delete jail", "operation", "jail_cleanup", "cluster_path", clusterPath, "error", err)
 				}
 			}
 		}

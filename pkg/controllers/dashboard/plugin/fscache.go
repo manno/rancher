@@ -54,7 +54,7 @@ type PackageJSON struct {
 func (c FSCache) SyncWithControllersCache(p *v1.UIPlugin, forceUpdate bool) error {
 	plugin := p.Spec.Plugin
 	if plugin.NoCache {
-		log.Debug("skipped caching plugin, cache is disabled", "operation", "sync_with_controllers_cache", "plugin_name", plugin.Name, "plugin_version", plugin.Version, "no_cache", plugin.NoCache)
+		log.Debug("Skipped caching plugin, cache is disabled", "operation", "sync_with_controllers_cache", "plugin_name", plugin.Name, "plugin_version", plugin.Version, "no_cache", plugin.NoCache)
 		return nil
 	}
 	if forceUpdate {
@@ -66,7 +66,7 @@ func (c FSCache) SyncWithControllersCache(p *v1.UIPlugin, forceUpdate bool) erro
 		if isCached, err := c.isCached(plugin.Name, plugin.Version); err != nil {
 			return fmt.Errorf("failed to check if plugin is cached. Error: %w", err)
 		} else if isCached {
-			log.Debug("skipped caching plugin, already cached", "operation", "sync_with_controllers_cache", "plugin_name", plugin.Name, "plugin_version", plugin.Version)
+			log.Debug("Skipped caching plugin, already cached", "operation", "sync_with_controllers_cache", "plugin_name", plugin.Name, "plugin_version", plugin.Version)
 			return nil
 		}
 	}
@@ -117,7 +117,7 @@ func (c FSCache) SyncWithControllersCache(p *v1.UIPlugin, forceUpdate bool) erro
 				return fmt.Errorf("failed to build file [%s] path for caching. Error: %w", file, err)
 			}
 			if err := c.Save(data, path); err != nil {
-				log.Debug("failed to cache plugin in filesystem", "operation", "sync_with_controllers_cache", "plugin_name", plugin.Name, "plugin_version", plugin.Version, "path", path, "error", err)
+				log.Debug("Failed to cache plugin in filesystem", "operation", "sync_with_controllers_cache", "plugin_name", plugin.Name, "plugin_version", plugin.Version, "path", path, "error", err)
 			}
 		}
 	}
@@ -130,7 +130,7 @@ func (c FSCache) SyncWithControllersCache(p *v1.UIPlugin, forceUpdate bool) erro
 func (c FSCache) SyncWithIndex(index *SafeIndex, fsCacheFiles []string) error {
 	var errs error
 	for _, file := range fsCacheFiles {
-		log.Debug("syncing index with filesystem cache", "operation", "sync_with_index", "file", file)
+		log.Debug("Syncing index with filesystem cache", "operation", "sync_with_index", "file", file)
 		chartName, chartVersion, err := getChartNameAndVersion(file)
 		if err != nil {
 			errs = errors.Join(errs, fmt.Errorf("failed to get chart name and version for file [%s]. Error: %w", file, err))
@@ -206,7 +206,7 @@ func Untar(dst string, r io.Reader) error {
 
 // Save takes in data and a path to save it in the filesystem cache
 func (c FSCache) Save(data []byte, path string) error {
-	log.Debug("creating file", "operation", "save", "path", path)
+	log.Debug("Creating file", "operation", "save", "path", path)
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 		return fmt.Errorf("failed to create cache directory with path [%s]. Error: %w", filepath.Dir(path), err)
 	}
@@ -231,7 +231,7 @@ func (c FSCache) Delete(name, version string) error {
 		err = fmt.Errorf("failed to delete entry [Name: %s Version: %s] from filesystem cache: %w", name, version, err)
 		return err
 	}
-	log.Debug("deleted plugin entry from cache", "operation", "delete", "plugin_name", name, "plugin_version", version)
+	log.Debug("Deleted plugin entry from cache", "operation", "delete", "plugin_name", name, "plugin_version", version)
 
 	return nil
 }
@@ -295,7 +295,7 @@ func fsCacheFilepathGlob(pattern string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("malformed pattern [%s]. Error: %w", pattern, err)
 	}
-	log.Debug("files matching glob pattern found in filesystem cache", "operation", "fs_cache_filepath_glob", "pattern", pattern, "files_count", len(files))
+	log.Debug("Files matching glob pattern found in filesystem cache", "operation", "fs_cache_filepath_glob", "pattern", pattern, "files_count", len(files))
 
 	return files, nil
 }
@@ -337,7 +337,7 @@ func fetchFilesTxt(filesTxtURL string) ([]string, error) {
 
 // fetchFile reads the file from the given URL and returns the data
 func fetchFile(URL string) ([]byte, error) {
-	log.Debug("fetching file", "operation", "fetch_file", "url", URL)
+	log.Debug("Fetching file", "operation", "fetch_file", "url", URL)
 	resp, err := http.Get(URL)
 	if err != nil {
 		return nil, fmt.Errorf("get request failed for URL [%s]. Error: %w", URL, err)
@@ -345,7 +345,7 @@ func fetchFile(URL string) ([]byte, error) {
 	defer resp.Body.Close()
 	maxFileSize, err := strconv.ParseInt(settings.MaxUIPluginFileByteSize.Get(), 10, 64)
 	if err != nil {
-		log.Error("failed to convert setting MaxUIPluginFileByteSize to int64, using fallback", "operation", "fetch_file", "error", err)
+		log.Error("Failed to convert setting MaxUIPluginFileByteSize to int64, using fallback", "operation", "fetch_file", "error", err)
 		maxFileSize = settings.DefaultMaxUIPluginFileSizeInBytes
 	}
 	if resp.ContentLength > maxFileSize {

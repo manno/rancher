@@ -51,7 +51,7 @@ type dupeBindingsCleanup struct {
 }
 
 func DuplicateBindings(clientConfig *restclient.Config) error {
-	log.Info("starting bindings cleanup", "operation", dupeBindingsOperation)
+	log.Info("Starting bindings cleanup", "operation", dupeBindingsOperation)
 	if os.Getenv("DRY_RUN") == "true" {
 		log.Info("DRY_RUN is true, no objects will be deleted/modified", "operation", dupeBindingsOperation)
 		dryRun = true
@@ -63,7 +63,7 @@ func DuplicateBindings(clientConfig *restclient.Config) error {
 	} else {
 		config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 		if err != nil {
-			log.Error("error in building the cluster config", "operation", dupeBindingsOperation, "error", err)
+			log.Error("Error in building the cluster config", "operation", dupeBindingsOperation, "error", err)
 			return err
 		}
 	}
@@ -121,7 +121,7 @@ func (bc *dupeBindingsCleanup) clean() error {
 			rancher25 = true
 		}
 	} else {
-		log.Info("no clusterRoleTemplateBindings or projectRoleTemplateBindings found, exiting", "operation", dupeBindingsOperation)
+		log.Info("No clusterRoleTemplateBindings or projectRoleTemplateBindings found, exiting", "operation", dupeBindingsOperation)
 		return nil
 	}
 
@@ -130,14 +130,14 @@ func (bc *dupeBindingsCleanup) clean() error {
 	waitGroup.Add(2)
 	go func() {
 		if err := bc.cleanCRTB(rancher25, crtbs.Items); err != nil {
-			log.Error("error cleaning up CRTB", "operation", dupeBindingsOperation, "error", err)
+			log.Error("Error cleaning up CRTB", "operation", dupeBindingsOperation, "error", err)
 		}
 		waitGroup.Done()
 	}()
 
 	go func() {
 		if err := bc.cleanPRTB(rancher25, prtbs.Items); err != nil {
-			log.Error("error cleaning up projectRoleTemplateBindings", "operation", dupeBindingsOperation, "error", err)
+			log.Error("Error cleaning up projectRoleTemplateBindings", "operation", dupeBindingsOperation, "error", err)
 		}
 		waitGroup.Done()
 	}()
@@ -146,7 +146,7 @@ func (bc *dupeBindingsCleanup) clean() error {
 }
 
 func (bc *dupeBindingsCleanup) cleanCRTB(newLabel bool, crtbs []apiv3.ClusterRoleTemplateBinding) error {
-	log.Debug("cleaning up duplicates for CRTBs", "operation", dupeBindingsOperation, "count", len(crtbs))
+	log.Debug("Cleaning up duplicates for CRTBs", "operation", dupeBindingsOperation, "count", len(crtbs))
 	var objectMetas []metav1.ObjectMeta
 	for _, crtb := range crtbs {
 		objectMetas = append(objectMetas, crtb.ObjectMeta)
@@ -156,7 +156,7 @@ func (bc *dupeBindingsCleanup) cleanCRTB(newLabel bool, crtbs []apiv3.ClusterRol
 }
 
 func (bc *dupeBindingsCleanup) cleanPRTB(newLabel bool, prtbs []apiv3.ProjectRoleTemplateBinding) error {
-	log.Debug("cleaning up duplicates for PRTBs", "operation", dupeBindingsOperation, "count", len(prtbs))
+	log.Debug("Cleaning up duplicates for PRTBs", "operation", dupeBindingsOperation, "count", len(prtbs))
 	var objectMetas []metav1.ObjectMeta
 	for _, prtb := range prtbs {
 		objectMetas = append(objectMetas, prtb.ObjectMeta)
@@ -175,7 +175,7 @@ func (bc *dupeBindingsCleanup) cleanObjectDuplicates(bindingType string, newLabe
 	for _, meta := range objMetas {
 		labels := createLabelSelectors(newLabel, meta, bindingType)
 		for _, label := range labels {
-			log.Debug("checking CRB/RB duplicates",
+			log.Debug("Checking CRB/RB duplicates",
 				"operation", dupeBindingsOperation,
 				"binding_type", bindingUpper,
 				"name", meta.Name,
@@ -202,13 +202,13 @@ func (bc *dupeBindingsCleanup) cleanObjectDuplicates(bindingType string, newLabe
 			if CRBduplicates > 0 || RBDupes > 0 {
 				totalCRBDupes += CRBduplicates
 				totalRoleDupes += RBDupes
-				log.Info("found duplicates", "operation", dupeBindingsOperation, "crb_count", CRBduplicates, "rb_count", RBDupes, "binding_type", bindingUpper, "name", meta.Name, "label", label)
+				log.Info("Found duplicates", "operation", dupeBindingsOperation, "crb_count", CRBduplicates, "rb_count", RBDupes, "binding_type", bindingUpper, "name", meta.Name, "label", label)
 			} else {
-				log.Debug("no CRB/RB duplicates found", "operation", dupeBindingsOperation, "binding_type", bindingUpper, "name", meta.Name, "label", label)
+				log.Debug("No CRB/RB duplicates found", "operation", dupeBindingsOperation, "binding_type", bindingUpper, "name", meta.Name, "label", label)
 			}
 		}
 	}
-	log.Info("total duplicates summary",
+	log.Info("Total duplicates summary",
 		"operation", dupeBindingsOperation,
 		"binding_type", bindingUpper,
 		"total_crb_duplicates", totalCRBDupes,
@@ -221,9 +221,9 @@ func (bc *dupeBindingsCleanup) dedupeCRB(bindings []k8srbacv1.ClusterRoleBinding
 	deterministicFound, crbName, err := bc.checkIfDeterministicCRBExists(bindings[0])
 	if err != nil {
 		if !k8sErrors.IsNotFound(err) {
-			log.Error("error attempting to lookup deterministic CRB", "operation", dupeBindingsOperation, "error", err)
+			log.Error("Error attempting to lookup deterministic CRB", "operation", dupeBindingsOperation, "error", err)
 		}
-		log.Info("binding with deterministic name not found, will delete all except the oldest binding", "operation", dupeBindingsOperation)
+		log.Info("Binding with deterministic name not found, will delete all except the oldest binding", "operation", dupeBindingsOperation)
 	}
 
 	duplicates := bindings
@@ -236,15 +236,15 @@ func (bc *dupeBindingsCleanup) dedupeCRB(bindings []k8srbacv1.ClusterRoleBinding
 
 	for _, binding := range duplicates {
 		if deterministicFound && strings.EqualFold(binding.Name, crbName) {
-			log.Info("found the CRB with the deterministic name, will not delete", "operation", dupeBindingsOperation, "binding_name", binding.Name)
+			log.Info("Found the CRB with the deterministic name, will not delete", "operation", dupeBindingsOperation, "binding_name", binding.Name)
 			continue
 		}
 		if !dryRun {
 			if err := bc.clusterRoleBindings.Delete(binding.Name, &metav1.DeleteOptions{}); err != nil {
-				log.Error("error attempting to delete CRB", "operation", dupeBindingsOperation, "binding_name", binding.Name, "error", err)
+				log.Error("Error attempting to delete CRB", "operation", dupeBindingsOperation, "binding_name", binding.Name, "error", err)
 			}
 		} else {
-			log.Info("dryRun enabled, clusterRoleBinding would be deleted", "operation", dupeBindingsOperation, "binding_name", binding.Name)
+			log.Info("DryRun enabled, clusterRoleBinding would be deleted", "operation", dupeBindingsOperation, "binding_name", binding.Name)
 		}
 	}
 	return nil
@@ -267,9 +267,9 @@ func (bc *dupeBindingsCleanup) dedupeRB(roleBindings []k8srbacv1.RoleBinding) (i
 		deterministicFound, rbName, err := bc.checkIfDeterministicRBExists(bindings[0])
 		if err != nil {
 			if !k8sErrors.IsNotFound(err) {
-				log.Error("error attempting to lookup deterministic RB", "operation", dupeBindingsOperation, "error", err)
+				log.Error("Error attempting to lookup deterministic RB", "operation", dupeBindingsOperation, "error", err)
 			}
-			log.Info("binding with deterministic name not found, will delete all except the oldest binding", "operation", dupeBindingsOperation)
+			log.Info("Binding with deterministic name not found, will delete all except the oldest binding", "operation", dupeBindingsOperation)
 		}
 		duplicates := bindings
 		if !deterministicFound {
@@ -280,16 +280,16 @@ func (bc *dupeBindingsCleanup) dedupeRB(roleBindings []k8srbacv1.RoleBinding) (i
 		}
 		for _, binding := range duplicates {
 			if deterministicFound && strings.EqualFold(binding.Name, rbName) {
-				log.Info("found the RB with the deterministic name in namespace, will not delete", "operation", dupeBindingsOperation, "binding_name", binding.Name, "namespace", binding.Namespace)
+				log.Info("Found the RB with the deterministic name in namespace, will not delete", "operation", dupeBindingsOperation, "binding_name", binding.Name, "namespace", binding.Namespace)
 				continue
 			}
 			duplicatesFound++
 			if !dryRun {
 				if err := bc.roleBindings.Delete(binding.Namespace, binding.Name, &metav1.DeleteOptions{}); err != nil {
-					log.Error("error attempting to delete RB", "operation", dupeBindingsOperation, "binding_name", binding.Name, "error", err)
+					log.Error("Error attempting to delete RB", "operation", dupeBindingsOperation, "binding_name", binding.Name, "error", err)
 				}
 			} else {
-				log.Info("dryRun enabled, roleBinding in namespace would be deleted", "operation", dupeBindingsOperation, "binding_name", binding.Name, "namespace", binding.Namespace)
+				log.Info("DryRun enabled, roleBinding in namespace would be deleted", "operation", dupeBindingsOperation, "binding_name", binding.Name, "namespace", binding.Namespace)
 			}
 		}
 	}
@@ -329,7 +329,7 @@ func getDeterministicBindingName(object interface{}) (string, error) {
 		}
 		subject := crb.Subjects[0]
 		crbName := pkgrbac.NameForClusterRoleBinding(crb.RoleRef, subject)
-		log.Debug("deterministic crb name",
+		log.Debug("Deterministic crb name",
 			"operation", dupeBindingsOperation,
 			"binding_name", crb.Name,
 			"deterministic_name", crbName)
@@ -340,7 +340,7 @@ func getDeterministicBindingName(object interface{}) (string, error) {
 		}
 		subject := rb.Subjects[0]
 		rbName := pkgrbac.NameForRoleBinding(rb.Namespace, rb.RoleRef, subject)
-		log.Debug("deterministic rb name",
+		log.Debug("Deterministic rb name",
 			"operation", dupeBindingsOperation,
 			"binding_name", rb.Name,
 			"namespace", rb.Namespace,

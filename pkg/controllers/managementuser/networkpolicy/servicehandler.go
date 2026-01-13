@@ -36,7 +36,7 @@ func (sh *serviceHandler) Sync(_ string, service *corev1.Service) (*corev1.Servi
 	if moved {
 		return nil, nil
 	}
-	log.Debug("servicehandler: sync", "operation", "sync", "service", service.Name, "namespace", service.Namespace)
+	log.Debug("Servicehandler: sync", "operation", "sync", "service", service.Name, "namespace", service.Namespace)
 	return nil, sh.npmgr.nodePortsUpdateHandler(service, sh.clusterNamespace)
 }
 
@@ -70,7 +70,7 @@ func (npmgr *netpolMgr) nodePortsUpdateHandler(service *corev1.Service, clusterN
 		return portToString(np.Spec.Ingress[0].Ports[i]) < portToString(np.Spec.Ingress[0].Ports[j])
 	})
 	if hasNodePorts {
-		log.Debug("netpolmgr: nodeportsupdatehandler: service has node ports, programming network policy", "operation", "node_ports_update_handler", "service", service.Name, "namespace", service.Namespace, "network_policy", np.Name)
+		log.Debug("Netpolmgr: nodeportsupdatehandler: service has node ports, programming network policy", "operation", "node_ports_update_handler", "service", service.Name, "namespace", service.Namespace, "network_policy", np.Name)
 		return npmgr.program(np)
 	}
 

@@ -107,56 +107,56 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch resourceType {
 	case "aksUpgrades":
 		if serialized, errCode, err = listKubernetesUpgradeVersions(req.Context(), h.clusterCache, capa); err != nil {
-			log.Error("aks-handler: error getting kubernetes upgrade versions", "operation", "handle", "error", err)
+			log.Error("Aks-handler: error getting kubernetes upgrade versions", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksVersions":
 		if serialized, errCode, err = listKubernetesVersions(req.Context(), capa); err != nil {
-			log.Error("aks-handler: error getting kubernetes versions", "operation", "handle", "error", err)
+			log.Error("Aks-handler: error getting kubernetes versions", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksVirtualNetworks":
 		if serialized, errCode, err = listVirtualNetworks(req.Context(), capa); err != nil {
-			log.Error("aks-handler: error getting networks", "operation", "handle", "error", err)
+			log.Error("Aks-handler: error getting networks", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksClusters":
 		if serialized, errCode, err = listClusters(req.Context(), capa); err != nil {
-			log.Error("aks-handler: error getting clusters", "operation", "handle", "error", err)
+			log.Error("Aks-handler: error getting clusters", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksVMSizes":
 		if serialized, errCode, err = listVMSizesV1(req.Context(), capa); err != nil {
-			log.Error("aks-handler: error getting VM sizes", "operation", "handle", "error", err)
+			log.Error("Aks-handler: error getting VM sizes", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksVMSizesV2":
 		if serialized, errCode, err = listVMSizesV2(req.Context(), capa); err != nil {
-			log.Error("aks-handler: error getting VM sizes (v2)", "operation", "handle", "error", err)
+			log.Error("Aks-handler: error getting VM sizes (v2)", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksLocations":
 		if serialized, errCode, err = listLocations(req.Context(), capa); err != nil {
-			log.Error("aks-handler: error getting locations", "operation", "handle", "error", err)
+			log.Error("Aks-handler: error getting locations", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksRegions":
 		if serialized, errCode, err = listRegions(req.Context(), capa); err != nil {
-			log.Error("aks-handler: error getting regions", "operation", "handle", "error", err)
+			log.Error("Aks-handler: error getting regions", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}

@@ -157,7 +157,7 @@ func NewExtensionAPIServer(ctx context.Context, wranglerContext *wrangler.Contex
 	var additionalSniProviders []dynamiccertificates.SNICertKeyContentProvider
 	var ln net.Listener
 
-	log.Info("creating imperative extension apiserver resources", "operation", "start_extension_apiserver")
+	log.Info("Creating imperative extension apiserver resources", "operation", "start_extension_apiserver")
 
 	sniProvider, err := NewSNIProviderForCname(
 		"imperative-api-sni-provider",
@@ -174,7 +174,7 @@ func NewExtensionAPIServer(ctx context.Context, wranglerContext *wrangler.Contex
 		// sniProvider.Run uses a Watch that could be aborted due to external reasons, make sure we retry unless the context was already canceled
 		for {
 			if err := sniProvider.Run(ctx.Done()); err != nil {
-				log.Error("sni provider failed", "operation", "start_extension_apiserver", "error", err)
+				log.Error("Sni provider failed", "operation", "start_extension_apiserver", "error", err)
 				if ctx.Err() != nil {
 					return
 				}
@@ -261,10 +261,10 @@ func NewExtensionAPIServer(ctx context.Context, wranglerContext *wrangler.Contex
 	}
 
 	// deferred ext controller setup ...
-	log.Debug("deferred ext controller setup, registering ext token indexers", "operation", "start_extension_apiserver")
+	log.Debug("Deferred ext controller setup, registering ext token indexers", "operation", "start_extension_apiserver")
 	wranglerContext.DeferredEXTAPIRegistration.DeferFunc(func(extContext *wrangler.EXTAPIContext) {
 		if err := clusterauthtoken.RegisterExtIndexers(extContext.Client); err != nil {
-			log.Fatal("unexpected error while adding ext indexers", "operation", "deferred_ext_registration", "error", err)
+			log.Fatal("Unexpected error while adding ext indexers", "operation", "deferred_ext_registration", "error", err)
 		}
 	})
 
@@ -284,7 +284,7 @@ func AggregationPreCheck(client wranglerapiregistrationv1.APIServiceClient) bool
 func SetAggregationCheck(client wranglerapiregistrationv1.APIServiceClient, value bool) error {
 	return retry.OnError(retry.DefaultBackoff, func(err error) bool {
 		if err != nil {
-			log.Warn("failed to update APIService annotation", "operation", "set_aggregation_check", "error", err)
+			log.Warn("Failed to update APIService annotation", "operation", "set_aggregation_check", "error", err)
 			return true
 		}
 

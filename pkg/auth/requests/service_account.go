@@ -72,20 +72,20 @@ func (t *ServiceAccountAuth) Authenticate(req *http.Request) (user.Info, bool, e
 	// Check the cluster setting value to determine whether we will continue the auth process
 	settings, err := t.clusterProxyConfigsGetter.List(clusterID, labels.NewSelector())
 	if err != nil {
-		log.Debug("rejecting downstream proxy request, unable to fetch ClusterProxySettings object for cluster", "operation", "authenticate", "path", req.URL.Path, "cluster_id", clusterID, "error", err)
+		log.Debug("Rejecting downstream proxy request, unable to fetch ClusterProxySettings object for cluster", "operation", "authenticate", "path", req.URL.Path, "cluster_id", clusterID, "error", err)
 		return info, false, nil
 	}
 	if settings == nil {
-		log.Debug("rejecting downstream proxy request, no ClusterProxySettings object exists for cluster", "operation", "authenticate", "path", req.URL.Path, "cluster_id", clusterID)
+		log.Debug("Rejecting downstream proxy request, no ClusterProxySettings object exists for cluster", "operation", "authenticate", "path", req.URL.Path, "cluster_id", clusterID)
 		return info, false, nil
 	}
 	if len(settings) > 1 {
-		log.Error("multiple clusterproxyconfigs found for cluster, which is a misconfiguration, feature is disabled", "operation", "authenticate", "cluster_id", clusterID)
+		log.Error("Multiple clusterproxyconfigs found for cluster, which is a misconfiguration, feature is disabled", "operation", "authenticate", "cluster_id", clusterID)
 		return info, false, nil
 	}
 
 	if !settings[0].Enabled {
-		log.Debug("rejecting downstream proxy request, current setting is enabled", "operation", "authenticate", "path", req.URL.Path, "cluster_id", clusterID, "enabled", settings[0].Enabled)
+		log.Debug("Rejecting downstream proxy request, current setting is enabled", "operation", "authenticate", "path", req.URL.Path, "cluster_id", clusterID, "enabled", settings[0].Enabled)
 		return info, false, nil
 	}
 
@@ -98,24 +98,24 @@ func (t *ServiceAccountAuth) Authenticate(req *http.Request) (user.Info, bool, e
 	// Later on, we do a real TokenReview against the downstream cluster to actually verify the JWT.
 	_, _, err = jwtParser.ParseUnverified(rawToken, &claims)
 	if err != nil {
-		log.Debug("saauth: error parsing JWT", "operation", "authenticate", "error", err)
+		log.Debug("Saauth: error parsing JWT", "operation", "authenticate", "error", err)
 		return info, false, err
 	}
 
 	if !strings.HasPrefix(claims.Subject, serviceaccount.ServiceAccountUsernamePrefix) {
-		log.Debug("saauth: JWT sub is not a service account", "operation", "authenticate", "subject", claims.Subject)
+		log.Debug("Saauth: JWT sub is not a service account", "operation", "authenticate", "subject", claims.Subject)
 		return info, false, nil
 	}
 
 	if isTokenExpired(claims) {
-		log.Debug("saauth: service account JWT is expired", "operation", "authenticate", "expires_at", claims.ExpiresAt)
+		log.Debug("Saauth: service account JWT is expired", "operation", "authenticate", "expires_at", claims.ExpiresAt)
 		return info, false, nil
 	}
 
 	// Get a client for the downstream cluster.
 	downstreamAuthClient, err := t.authClientCreator(clusterID)
 	if err != nil {
-		log.Error("saauth: failed to fetch downstream kubeconfig", "operation", "authenticate", "cluster_id", clusterID, "error", err)
+		log.Error("Saauth: failed to fetch downstream kubeconfig", "operation", "authenticate", "cluster_id", clusterID, "error", err)
 		return info, false, nil
 	}
 
@@ -128,7 +128,7 @@ func (t *ServiceAccountAuth) Authenticate(req *http.Request) (user.Info, bool, e
 	// Make the token review request to the downstream cluster.
 	tokenReview, err = downstreamAuthClient.AuthenticationV1().TokenReviews().Create(req.Context(), tokenReview, metav1.CreateOptions{})
 	if err != nil {
-		log.Debug("saauth: error creating a tokenreview request", "operation", "authenticate", "cluster_id", clusterID, "error", err)
+		log.Debug("Saauth: error creating a tokenreview request", "operation", "authenticate", "cluster_id", clusterID, "error", err)
 		return info, false, nil
 	}
 

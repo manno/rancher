@@ -32,7 +32,7 @@ func RunSnapshotCreateTest(t *testing.T, clients *clients.Clients, c *v1.Cluster
 		if t.Failed() {
 			data, newErr := cluster.GatherDebugData(clients, c)
 			if newErr != nil {
-				log.Error("error gathering debug data", "error", newErr)
+				log.Error("Error gathering debug data", "error", newErr)
 			}
 			fmt.Printf("cluster %s etcd snapshot creation operation failed\ncluster %s test data bundle: \n%s\n", c.Name, c.Name, data)
 		}
@@ -248,7 +248,7 @@ func RunSnapshotRestoreTest(t *testing.T, clients *clients.Clients, c *v1.Cluste
 		if t.Failed() {
 			data, newErr := cluster.GatherDebugData(clients, c)
 			if newErr != nil {
-				log.Error("error gathering debug data", "error", newErr)
+				log.Error("Error gathering debug data", "error", newErr)
 			}
 			fmt.Printf("cluster %s etcd snapshot restore operation failed\ncluster %s test data bundle: \n%s\n", c.Name, c.Name, data)
 		}

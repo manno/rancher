@@ -255,7 +255,7 @@ func getPaths(data map[string]interface{}) (map[hostPath]map[string]interface{},
 func setState(data map[string]interface{}, stateMap map[string]string) {
 	content, err := json.Marshal(stateMap)
 	if err != nil {
-		log.Error("failed to save state on ingress", "operation", "set_state", "ingress_id", data["id"], "error", err)
+		log.Error("Failed to save state on ingress", "operation", "set_state", "ingress_id", data["id"], "error", err)
 		return
 	}
 

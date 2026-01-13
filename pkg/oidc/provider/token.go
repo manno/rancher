@@ -112,7 +112,7 @@ func newTokenHandler(tokenCache wrangmgmtv3.TokenCache,
 func (h *tokenHandler) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		log.Debug("error parsing request form values")
+		log.Debug("Error parsing request form values")
 		oidcerror.WriteError(oidcerror.InvalidRequest, fmt.Sprintf("error parsing parameters from request %v", err), http.StatusBadRequest, w)
 		return
 	}
@@ -121,7 +121,7 @@ func (h *tokenHandler) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	case "authorization_code":
 		tokenResponse, oidcErr := h.createTokenFromCode(r)
 		if oidcErr != nil {
-			log.Debug("error creating token response", "error", oidcErr.ToString())
+			log.Debug("Error creating token response", "error", oidcErr.ToString())
 			oidcErr.Write(http.StatusBadRequest, w)
 			return
 		}
@@ -134,7 +134,7 @@ func (h *tokenHandler) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	case "refresh_token":
 		tokenResponse, oidcErr := h.createRefreshToken(r)
 		if oidcErr != nil {
-			log.Debug("error creating refresh token response", "error", oidcErr.ToString())
+			log.Debug("Error creating refresh token response", "error", oidcErr.ToString())
 			oidcErr.Write(http.StatusBadRequest, w)
 			return
 		}
@@ -184,7 +184,7 @@ func (h *tokenHandler) createTokenFromCode(r *http.Request) (TokenResponse, *oid
 		if clientSecret == string(cs) {
 			clientSecretFound = true
 			if err := h.updateClientSecretUsedTimeStamp(oidcClient, key); err != nil {
-				log.Error("failed to update client secret's used timestamp", "error", err)
+				log.Error("Failed to update client secret's used timestamp", "error", err)
 			}
 			break
 		}
@@ -210,7 +210,7 @@ func (h *tokenHandler) createTokenFromCode(r *http.Request) (TokenResponse, *oid
 	if oidcErr == nil {
 		err := h.sessionClient.Remove(code)
 		if err != nil && !errors.IsNotFound(err) {
-			log.Warn("error removing session", "error", err)
+			log.Warn("Error removing session", "error", err)
 		}
 	}
 
@@ -344,7 +344,7 @@ func (h *tokenHandler) createTokenResponse(rancherToken *v3.Token, oidcClient *v
 	idToken.Header["kid"] = kid
 	idTokenString, err := idToken.SignedString(key)
 	if err != nil {
-		log.Error("failed to sign id token", "error", err)
+		log.Error("Failed to sign id token", "error", err)
 		return TokenResponse{}, oidcerror.New(oidcerror.ServerError, fmt.Sprintf("failed to sign id token: %v", err))
 	}
 
@@ -365,7 +365,7 @@ func (h *tokenHandler) createTokenResponse(rancherToken *v3.Token, oidcClient *v
 
 	accessTokenString, err := accessToken.SignedString(key)
 	if err != nil {
-		log.Error("failed to sign access token", "error", err)
+		log.Error("Failed to sign access token", "error", err)
 		return TokenResponse{}, oidcerror.New(oidcerror.ServerError, fmt.Sprintf("failed to sign access token: %v", err))
 	}
 	resp := TokenResponse{
@@ -393,7 +393,7 @@ func (h *tokenHandler) createTokenResponse(rancherToken *v3.Token, oidcClient *v
 		refreshToken.Header["kid"] = kid
 		refreshTokenString, err := refreshToken.SignedString(key)
 		if err != nil {
-			log.Error("failed to sign refresh token", "error", err)
+			log.Error("Failed to sign refresh token", "error", err)
 			return TokenResponse{}, oidcerror.New(oidcerror.ServerError, fmt.Sprintf("failed to sign refresh token: %v", err))
 		}
 		resp.RefreshToken = refreshTokenString

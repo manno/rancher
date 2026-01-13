@@ -169,7 +169,7 @@ func NewScaledContext(config rest.Config, opts *ScaleContextOptions) (*ScaledCon
 }
 
 func (c *ScaledContext) Start(ctx context.Context) error {
-	log.Info("starting API controllers", "operation", "start_scaled_context")
+	log.Info("Starting API controllers", "operation", "start_scaled_context")
 	ctx = metrics.WithContextID(ctx, "scaledcontext")
 	return c.ControllerFactory.Start(ctx, 50)
 }
@@ -467,7 +467,7 @@ func (w *UserContext) Start(pctx context.Context) error {
 	w.extraControllerFactoriesMutex.Lock()
 	defer w.extraControllerFactoriesMutex.Unlock()
 
-	log.Info("starting cluster controllers", "operation", "start_user_context", "cluster", w.ClusterName)
+	log.Info("Starting cluster controllers", "operation", "start_user_context", "cluster", w.ClusterName)
 	if err := w.Management.ControllerFactory.Start(w.runContext, 50); err != nil {
 		return err
 	}
@@ -551,7 +551,7 @@ func NewUserOnlyContext(config *wrangler.Context) (*UserOnlyContext, error) {
 }
 
 func (w *UserOnlyContext) Start(ctx context.Context) error {
-	log.Info("starting workload controllers", "operation", "start_user_only_context", "cluster", w.ClusterName)
+	log.Info("Starting workload controllers", "operation", "start_user_only_context", "cluster", w.ClusterName)
 	ctx = metrics.WithContextID(ctx, fmt.Sprintf("useronlycontext_%s", w.ClusterName))
 	return w.ControllerFactory.Start(ctx, 5)
 }

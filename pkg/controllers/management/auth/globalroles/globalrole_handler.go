@@ -164,13 +164,13 @@ func (gr *globalRoleLifecycle) reconcileGlobalRole(globalRole *v3.GlobalRole) er
 		clusterRole = clusterRole.DeepCopy()
 		if !reflect.DeepEqual(globalRole.Rules, clusterRole.Rules) {
 			clusterRole.Rules = globalRole.Rules
-			log.Info("updating clusterRole, GlobalRole rules have changed", "operation", "sync_global_role", "controller", grController, "cluster_role", clusterRole.Name)
+			log.Info("Updating clusterRole, GlobalRole rules have changed", "operation", "sync_global_role", "controller", grController, "cluster_role", clusterRole.Name)
 			updated = true
 		}
 		// Ensure existing ClusterRoles have the correct grOwnerLabel pointing to the owning GlobalRole.
 		if grName := clusterRole.Labels[grOwnerLabel]; grName != globalRole.Name {
 			clusterRole.Labels[grOwnerLabel] = globalRole.Name
-			log.Info("updating clusterRole owner", "operation", "sync_global_role", "controller", grController, "cluster_role", clusterRole.Name, "from", grName, "to", globalRole.Name)
+			log.Info("Updating clusterRole owner", "operation", "sync_global_role", "controller", grController, "cluster_role", clusterRole.Name, "from", grName, "to", globalRole.Name)
 			updated = true
 		}
 
@@ -184,7 +184,7 @@ func (gr *globalRoleLifecycle) reconcileGlobalRole(globalRole *v3.GlobalRole) er
 		return nil
 	}
 
-	log.Info("creating clusterRole for corresponding GlobalRole", "operation", "sync_global_role", "controller", grController, "cluster_role", crName)
+	log.Info("Creating clusterRole for corresponding GlobalRole", "operation", "sync_global_role", "controller", grController, "cluster_role", crName)
 	_, err := gr.crClient.Create(&v1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crName,
@@ -233,7 +233,7 @@ func (gr *globalRoleLifecycle) reconcileNamespacedRoles(globalRole *v3.GlobalRol
 		namespace, err := gr.nsCache.Get(ns)
 		if apierrors.IsNotFound(err) || namespace == nil {
 			// When a namespace is not found, don't re-enqueue GlobalRole
-			log.Warn("namespace not found, not re-enqueueing GlobalRole", "operation", "sync_global_role", "controller", grController, "namespace", ns, "global_role", globalRole.Name)
+			log.Warn("Namespace not found, not re-enqueueing GlobalRole", "operation", "sync_global_role", "controller", grController, "namespace", ns, "global_role", globalRole.Name)
 			addCondition(globalRole, condition, NamespaceNotFound, roleName, fmt.Errorf("namespace %s not found", ns))
 			continue
 		} else if err != nil {
@@ -253,7 +253,7 @@ func (gr *globalRoleLifecycle) reconcileNamespacedRoles(globalRole *v3.GlobalRol
 
 			// If the namespace is terminating, don't create a Role
 			if namespace.Status.Phase == corev1.NamespaceTerminating {
-				log.Warn("namespace is terminating, not creating role", "operation", "sync_global_role", "controller", grController, "namespace", ns, "role", roleName, "global_role", globalRole.Name)
+				log.Warn("Namespace is terminating, not creating role", "operation", "sync_global_role", "controller", grController, "namespace", ns, "role", roleName, "global_role", globalRole.Name)
 				addCondition(globalRole, condition, NamespaceTerminating, roleName, fmt.Errorf("namespace %s is terminating", ns))
 				continue
 			}

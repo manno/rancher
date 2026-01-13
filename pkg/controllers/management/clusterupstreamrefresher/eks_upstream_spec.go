@@ -118,7 +118,7 @@ func MigrateEksRefreshCronSetting(wContext *wrangler.Context) {
 	if errors.IsNotFound(err) {
 		return
 	} else if err != nil {
-		log.Error("unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "setting", eksRefreshCronDeprecated, "error", err)
+		log.Error("Unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "setting", eksRefreshCronDeprecated, "error", err)
 		return
 	}
 	if eksCronSetting.Annotations != nil && eksCronSetting.Annotations[eksRefreshCronAnnotation] == "true" {
@@ -136,21 +136,21 @@ func MigrateEksRefreshCronSetting(wContext *wrangler.Context) {
 	if errors.IsNotFound(err) {
 		return
 	} else if err != nil {
-		log.Error("unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "setting", eksUpstreamRefresh, "error", err)
+		log.Error("Unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "setting", eksUpstreamRefresh, "error", err)
 		return
 	}
 
 	if eksRefreshSetting.Value != "" || eksCronSetting.Value == "" {
 		eksCronSetting.SetAnnotations(eksCronAnnotate)
 		if _, err = settingsClient.Update(eksCronSetting); err != nil {
-			log.Error("unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "error_type", "annotating eks-refresh-cron setting", "error", err)
+			log.Error("Unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "error_type", "annotating eks-refresh-cron setting", "error", err)
 		}
 		return
 	}
 
 	eksSchedule, err := cron.ParseStandard(eksCronSetting.Value)
 	if err != nil {
-		log.Error("unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "error_type", "parsing cron schedule", "setting", eksRefreshCronDeprecated, "error", err)
+		log.Error("Unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "error_type", "parsing cron schedule", "setting", eksRefreshCronDeprecated, "error", err)
 		return
 	}
 
@@ -159,10 +159,10 @@ func MigrateEksRefreshCronSetting(wContext *wrangler.Context) {
 
 	err = settings.EKSUpstreamRefresh.Set(fmt.Sprint(refreshTime))
 	if err != nil {
-		log.Error("unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "error_type", "updating eks-refresh setting", "error", err)
+		log.Error("Unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "error_type", "updating eks-refresh setting", "error", err)
 	}
 	eksCronSetting.SetAnnotations(eksCronAnnotate)
 	if _, err = settingsClient.Update(eksCronSetting); err != nil {
-		log.Error("unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "error_type", "annotating eks-refresh-cron setting", "error", err)
+		log.Error("Unable to complete EKS cron migration, will attempt at next rancher startup", "operation", "migrate_eks_cron", "error_type", "annotating eks-refresh-cron setting", "error", err)
 	}
 }

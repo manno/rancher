@@ -373,12 +373,12 @@ func (c *Manager) filterReleases(index *repo.IndexFile, k8sVersion *semver.Versi
 	// get instance of rancher version and try to parse it
 	rancherVersion, err := semver.NewVersion(settings.ServerVersion.Get())
 	if err != nil {
-		log.Error("failed to parse server version", "operation", "filter_releases", "version", settings.ServerVersion.Get(), "error", err)
+		log.Error("Failed to parse server version", "operation", "filter_releases", "version", settings.ServerVersion.Get(), "error", err)
 		return index
 	}
 	rancherVersionWithoutPrerelease, err := rancherVersion.SetPrerelease("")
 	if err != nil {
-		log.Error("failed to remove prerelease from version", "operation", "filter_releases", "version", settings.ServerVersion.Get(), "error", err)
+		log.Error("Failed to remove prerelease from version", "operation", "filter_releases", "version", settings.ServerVersion.Get(), "error", err)
 		return index
 	}
 
@@ -404,7 +404,7 @@ func (c *Manager) filterReleases(index *repo.IndexFile, k8sVersion *semver.Versi
 						continue
 					}
 				} else {
-					log.Error("failed to parse constraint version", "operation", "filter_releases", "constraint", constraintStr, "error", err)
+					log.Error("Failed to parse constraint version", "operation", "filter_releases", "constraint", constraintStr, "error", err)
 				}
 			}
 			if constraintStr, ok := version.Annotations["catalog.cattle.io/kube-version"]; ok {
@@ -413,7 +413,7 @@ func (c *Manager) filterReleases(index *repo.IndexFile, k8sVersion *semver.Versi
 						continue
 					}
 				} else {
-					log.Error("failed to parse constraint kube-version from annotation", "operation", "filter_releases", "constraint", constraintStr, "error", err)
+					log.Error("Failed to parse constraint kube-version from annotation", "operation", "filter_releases", "constraint", constraintStr, "error", err)
 				}
 			}
 			if version.KubeVersion != "" {
@@ -422,7 +422,7 @@ func (c *Manager) filterReleases(index *repo.IndexFile, k8sVersion *semver.Versi
 						continue
 					}
 				} else {
-					log.Error("failed to parse constraint for kubeversion", "operation", "filter_releases", "kube_version", version.KubeVersion, "error", err)
+					log.Error("Failed to parse constraint for kubeversion", "operation", "filter_releases", "kube_version", version.KubeVersion, "error", err)
 				}
 
 			}

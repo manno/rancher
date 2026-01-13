@@ -107,7 +107,7 @@ func (c *grbHandler) sync(_ string, obj *apiv3.GlobalRoleBinding) (runtime.Objec
 		return obj, nil
 	}
 
-	log.Debug("global role is an admin role", "operation", "sync_grb", "role", obj.GlobalRoleName)
+	log.Debug("Global role is an admin role", "operation", "sync_grb", "role", obj.GlobalRoleName)
 	if err := c.ensureClusterAdminBinding(obj, &remoteConditions); err != nil {
 		return nil, err
 	}

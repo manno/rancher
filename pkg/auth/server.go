@@ -89,7 +89,7 @@ func newAPIManagement(ctx context.Context, scaledContext *config.ScaledContext, 
 	if err != nil {
 		return nil, err
 	}
-	log.Info("configuring auth server API body limit", "operation", "new_api_management", "limit_bytes", apiLimit)
+	log.Info("Configuring auth server API body limit", "operation", "new_api_management", "limit_bytes", apiLimit)
 
 	limitingHandler := utils.APIBodyLimitingHandler(apiLimit)
 	root.PathPrefix("/v1-saml").Handler(limitingHandler(saml))
@@ -147,7 +147,7 @@ func (s *Server) OnLeader(ctx context.Context) error {
 
 	tokens.StartPurgeDaemon(ctx, management)
 	providerrefresh.StartRefreshDaemon(s.scaledContext, management)
-	log.Info("steve auth startup complete", "operation", "on_leader")
+	log.Info("Steve auth startup complete", "operation", "on_leader")
 	return nil
 }
 

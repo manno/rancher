@@ -87,7 +87,7 @@ func (d *BaseDriver) getError() error {
 	errFile := d.cacheFile() + ".error"
 
 	if content, err := os.ReadFile(errFile); err == nil {
-		log.Error("returning previous error", "operation", "get_error", "error", string(content))
+		log.Error("Returning previous error", "operation", "get_error", "error", string(content))
 		d.ClearError()
 		return errors.New(string(content))
 	}
@@ -272,7 +272,7 @@ func (d *BaseDriver) copyBinary(cacheFile, input string) (string, error) {
 		return "", err
 	}
 
-	log.Info("found driver", "operation", "install", "driver", driverName)
+	log.Info("Found driver", "operation", "install", "driver", driverName)
 	return driverName, os.WriteFile(cacheFile, []byte(driverName), 0644)
 }
 
@@ -312,7 +312,7 @@ func (d *BaseDriver) getHasher() (hash.Hash, error) {
 	case 0:
 		return nil, nil
 	case 32:
-		log.Warn("md5 is unsupported and will be removed in a future version", "operation", "get_hasher", "driver", d.Name())
+		log.Warn("Md5 is unsupported and will be removed in a future version", "operation", "get_hasher", "driver", d.Name())
 		return md5.New(), nil
 	case 40:
 		return sha1.New(), nil
@@ -326,7 +326,7 @@ func (d *BaseDriver) getHasher() (hash.Hash, error) {
 }
 
 func (d *BaseDriver) download(dest io.Writer) error {
-	log.Info("downloading driver", "operation", "download", "url", d.URL)
+	log.Info("Downloading driver", "operation", "download", "url", d.URL)
 	resp, err := http.Get(d.URL)
 	if err != nil {
 		return err

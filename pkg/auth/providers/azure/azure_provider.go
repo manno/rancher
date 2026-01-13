@@ -51,7 +51,7 @@ func Configure(mgmtCtx *config.ScaledContext, userMGR user.Manager, tokenMGR *to
 	var err error
 	clients.GroupCache, err = lru.New(settings.AzureGroupCacheSize.GetInt())
 	if err != nil {
-		log.Warn("invalid azure-group-cache-size, setting to 10000", "provider", "azure", "error", err)
+		log.Warn("Invalid azure-group-cache-size, setting to 10000", "provider", "azure", "error", err)
 		clients.GroupCache, _ = lru.New(10000)
 	}
 
@@ -98,7 +98,7 @@ func (ap *Provider) RefetchGroupPrincipals(principalID, secret string) ([]apiv3.
 		return nil, err
 	}
 
-	log.Debug("started getting user info from AzureAD", "provider", "azure", "operation", "login_user")
+	log.Debug("Started getting user info from AzureAD", "provider", "azure", "operation", "login_user")
 
 	parsed, err := clients.ParsePrincipalID(principalID)
 	if err != nil {
@@ -109,7 +109,7 @@ func (ap *Provider) RefetchGroupPrincipals(principalID, secret string) ([]apiv3.
 		return nil, err
 	}
 
-	log.Debug("completed getting user info from AzureAD", "provider", "azure", "operation", "login_user")
+	log.Debug("Completed getting user info from AzureAD", "provider", "azure", "operation", "login_user")
 
 	userGroups, err := azureClient.ListGroupMemberships(clients.GetPrincipalID(userPrincipal), cfg.GroupMembershipFilter)
 	if err != nil {
@@ -362,7 +362,7 @@ func (ap *Provider) saveAzureConfigK8s(config *apiv3.AzureADConfig) error {
 
 	config.ApplicationSecret = name
 
-	log.Debug("updating AzureADConfig", "provider", "azure", "operation", "update_config")
+	log.Debug("Updating AzureADConfig", "provider", "azure", "operation", "update_config")
 	_, err = ap.authConfigs.ObjectClient().Update(config.Name, config)
 	if err != nil {
 		return err
@@ -404,7 +404,7 @@ func formAzureRedirectURL(config map[string]interface{}) string {
 	var ac apiv3.AzureADConfig
 	err := common.Decode(config, &ac)
 	if err != nil {
-		log.Warn("error decoding AzureAD configuration", "provider", "azure", "error", err)
+		log.Warn("Error decoding AzureAD configuration", "provider", "azure", "error", err)
 	}
 
 	// Return the redirect URL for Microsoft Graph.
@@ -419,7 +419,7 @@ func formAzureRedirectURL(config map[string]interface{}) string {
 func (ap *Provider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []apiv3.Principal) (bool, error) {
 	cfg, err := ap.GetAzureConfigK8s()
 	if err != nil {
-		log.Error("error fetching azure config", "provider", "azure", "error", err)
+		log.Error("Error fetching azure config", "provider", "azure", "error", err)
 		return false, err
 	}
 	allowed, err := ap.userMGR.CheckAccess(cfg.AccessMode, cfg.AllowedPrincipalIDs, userPrincipalID, groupPrincipals)
@@ -437,11 +437,11 @@ func UpdateGroupCacheSize(size string) {
 
 	i, err := strconv.Atoi(size)
 	if err != nil {
-		log.Error("error parsing azure-group-cache-size, skipping update", "provider", "azure", "error", err)
+		log.Error("Error parsing azure-group-cache-size, skipping update", "provider", "azure", "error", err)
 		return
 	}
 	if i < 0 {
-		log.Error("azure-group-cache-size must be >= 0, skipping update", "provider", "azure")
+		log.Error("Azure-group-cache-size must be >= 0, skipping update", "provider", "azure")
 		return
 	}
 	clients.GroupCache.Resize(i)

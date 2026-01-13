@@ -73,7 +73,7 @@ type handler struct {
 
 func (h *handler) startRancher() {
 	if features.ProvisioningPreBootstrap.Enabled() {
-		log.Debug("not starting embedded rancher due to pre-bootstrap")
+		log.Debug("Not starting embedded rancher due to pre-bootstrap")
 		return
 	}
 
@@ -95,7 +95,7 @@ func (h *handler) startRancher() {
 				// context cancellation would happen when cancel() corresponding to h.ctx gets called;
 				// since h.ctx is a signal context registered for SIGINT and SIGTERM, cancel() would be called upon
 				// receiving one of these signals
-				log.Info("embedded rancher exited due to context cancellation", "error", err)
+				log.Info("Embedded rancher exited due to context cancellation", "error", err)
 			} else {
 				log.Fatal(fmt.Sprintf("Embedded rancher failed to start or exited abnormally: %v", err))
 			}

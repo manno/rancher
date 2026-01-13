@@ -70,10 +70,10 @@ func (g *GenericEncryptedStore) Set(name string, data map[string]string, owner *
 }
 
 func (g *GenericEncryptedStore) set(name string, data map[string]string, owner *metav1.OwnerReference) error {
-	log.Debug("genericencryptedstore: set secret called", "operation", "set", "key", g.getKey(name))
+	log.Debug("Genericencryptedstore: set secret called", "operation", "set", "key", g.getKey(name))
 	sec, err := g.secretLister.Get(g.namespace, g.getKey(name))
 	if errors.IsNotFound(err) {
-		log.Debug("genericencryptedstore: creating secret", "operation", "set", "key", g.getKey(name))
+		log.Debug("Genericencryptedstore: creating secret", "operation", "set", "key", g.getKey(name))
 		sec = &corev1.Secret{}
 		sec.Name = g.getKey(name)
 		sec.StringData = data
@@ -84,7 +84,7 @@ func (g *GenericEncryptedStore) set(name string, data map[string]string, owner *
 			if !errors.IsAlreadyExists(err) {
 				return err
 			}
-			log.Debug("genericencryptedstore: secret already exists, updating", "operation", "set", "secret", sec.Name)
+			log.Debug("Genericencryptedstore: secret already exists, updating", "operation", "set", "secret", sec.Name)
 			// if secret already exists, update it with the current cluster status
 			return g.updateSecretWithBackoff(name, data)
 		}
@@ -95,7 +95,7 @@ func (g *GenericEncryptedStore) set(name string, data map[string]string, owner *
 
 	secToUpdate := prepareSecretForUpdate(sec, data)
 	if !reflect.DeepEqual(secToUpdate.Data, sec.Data) {
-		log.Debug("genericencryptedstore: updating secret", "operation", "set", "key", g.getKey(name))
+		log.Debug("Genericencryptedstore: updating secret", "operation", "set", "key", g.getKey(name))
 
 		if owner != nil {
 			ownerFound := false
@@ -132,7 +132,7 @@ func (g *GenericEncryptedStore) updateSecretWithBackoff(name string, data map[st
 		// fetch secret from the db when retrying due to IsConflict/IsAlreadyExists error
 		secret, err := g.secrets.GetNamespaced(g.namespace, g.getKey(name), metav1.GetOptions{})
 		if err != nil {
-			log.Error("genericencryptedstore: error getting secret from db", "operation", "update_secret_with_backoff", "key", g.getKey(name), "error", err)
+			log.Error("Genericencryptedstore: error getting secret from db", "operation", "update_secret_with_backoff", "key", g.getKey(name), "error", err)
 			return false, err
 		}
 		secToUpdate := prepareSecretForUpdate(secret, data)
@@ -140,13 +140,13 @@ func (g *GenericEncryptedStore) updateSecretWithBackoff(name string, data map[st
 			_, err = g.secrets.Update(secToUpdate)
 			if err != nil {
 				if errors.IsConflict(err) {
-					log.Error("genericencryptedstore: conflict error updating secret, retrying", "operation", "update_secret_with_backoff", "key", g.getKey(name), "error", err)
+					log.Error("Genericencryptedstore: conflict error updating secret, retrying", "operation", "update_secret_with_backoff", "key", g.getKey(name), "error", err)
 					return false, nil
 				}
-				log.Error("genericencryptedstore: error updating secret", "operation", "update_secret_with_backoff", "key", g.getKey(name), "error", err)
+				log.Error("Genericencryptedstore: error updating secret", "operation", "update_secret_with_backoff", "key", g.getKey(name), "error", err)
 				return false, err
 			}
-			log.Debug("genericencryptedstore: successfully updated secret", "operation", "update_secret_with_backoff", "key", g.getKey(name))
+			log.Debug("Genericencryptedstore: successfully updated secret", "operation", "update_secret_with_backoff", "key", g.getKey(name))
 		}
 		return true, nil
 	})

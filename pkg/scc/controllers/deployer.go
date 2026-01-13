@@ -85,11 +85,11 @@ func (h *deployersHandler) OnChanged(name string, incoming *appsv1.Deployment) (
 		return incoming, nil
 	}
 
-	h.log.Debug("received deployment update", "deployment", name)
+	h.log.Debug("Received deployment update", "deployment", name)
 
 	desiredSCCParams, paramsErr := params.ExtractSccOperatorParams()
 	if paramsErr != nil {
-		h.log.Error("failed to extract SCC operator params", "error", paramsErr)
+		h.log.Error("Failed to extract SCC operator params", "error", paramsErr)
 		return nil, paramsErr
 	}
 
@@ -103,7 +103,7 @@ func (h *deployersHandler) OnChanged(name string, incoming *appsv1.Deployment) (
 		return nil, err
 	}
 
-	h.log.Debug("finished reconciling deployment", "deployment", name)
+	h.log.Debug("Finished reconciling deployment", "deployment", name)
 
 	return incoming, nil
 }
@@ -111,7 +111,7 @@ func (h *deployersHandler) OnChanged(name string, incoming *appsv1.Deployment) (
 func (h *deployersHandler) ensureDependencies(desiredSCCParams *params.SCCOperatorParams) error {
 	hasDeps, depsErr := h.sccDeployer.HasAllDependencies()
 	if depsErr != nil {
-		h.log.Error("error checking dependencies", "error", depsErr)
+		h.log.Error("Error checking dependencies", "error", depsErr)
 	}
 	if !hasDeps {
 		if err := h.sccDeployer.EnsureDependenciesConfigured(h.ctx, desiredSCCParams); err != nil {
@@ -127,7 +127,7 @@ func (h *deployersHandler) OnRemoved(name string, incoming *appsv1.Deployment) (
 		return incoming, nil
 	}
 
-	h.log.Debug("checking if deployment is ready to be removed", "name", incoming.Name)
+	h.log.Debug("Checking if deployment is ready to be removed", "name", incoming.Name)
 
 	// TODO: we should wait to remove finalizer until after SCC CRs are cleaned up
 

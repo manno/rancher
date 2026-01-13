@@ -51,7 +51,7 @@ func addDefaultPodSecurityAdmissionConfigurationTemplates(management *config.Man
 			if !errors.IsAlreadyExists(err) {
 				return fmt.Errorf("failed to create default '%s' pod security admission configuration: %w", t.Name, err)
 			}
-			log.Trace("updating default pod security admission configuration", "name", t.Name)
+			log.Trace("Updating default pod security admission configuration", "name", t.Name)
 			err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 				// get the latest version of the object from the k8s API directly
 				existing, err := psactClient.Get(t.Name, metav1.GetOptions{})

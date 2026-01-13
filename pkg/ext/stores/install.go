@@ -33,7 +33,7 @@ func InstallStores(
 	if err != nil {
 		return fmt.Errorf("unable to install useractivity store: %w", err)
 	}
-	log.Info("successfully installed useractivity store")
+	log.Info("Successfully installed useractivity store")
 
 	if err := server.Install(
 		tokens.PluralName,
@@ -42,7 +42,7 @@ func InstallStores(
 	); err != nil {
 		return fmt.Errorf("unable to install %s store: %w", tokens.SingularName, err)
 	}
-	log.Info("successfully installed store", "store", tokens.SingularName)
+	log.Info("Successfully installed store", "store", tokens.SingularName)
 
 	if err := server.Install(
 		extv1.KubeconfigResourceName,
@@ -51,7 +51,7 @@ func InstallStores(
 	); err != nil {
 		return fmt.Errorf("unable to install %s store: %w", kubeconfig.Singular, err)
 	}
-	log.Info("successfully installed store", "store", kubeconfig.Singular)
+	log.Info("Successfully installed store", "store", kubeconfig.Singular)
 
 	if err = server.Install(
 		extv1.PasswordChangeRequestResourceName,
@@ -60,7 +60,7 @@ func InstallStores(
 	); err != nil {
 		return fmt.Errorf("unable to install %s store: %w", passwordchangerequest.SingularName, err)
 	}
-	log.Info("successfully installed store", "store", passwordchangerequest.SingularName)
+	log.Info("Successfully installed store", "store", passwordchangerequest.SingularName)
 
 	groupMembershipRefreshStore, err := groupmembershiprefreshrequest.New(wranglerContext, server.GetAuthorizer())
 	if err != nil {
@@ -74,7 +74,7 @@ func InstallStores(
 	); err != nil {
 		return fmt.Errorf("unable to install %s store: %w", groupmembershiprefreshrequest.SingularName, err)
 	}
-	log.Info("successfully installed store", "store", groupmembershiprefreshrequest.SingularName)
+	log.Info("Successfully installed store", "store", groupmembershiprefreshrequest.SingularName)
 
 	if err = server.Install(
 		extv1.SelfUserResourceName,
@@ -83,7 +83,7 @@ func InstallStores(
 	); err != nil {
 		return fmt.Errorf("unable to install %s store: %w", selfuser.SingularName, err)
 	}
-	log.Info("successfully installed store", "store", selfuser.SingularName)
+	log.Info("Successfully installed store", "store", selfuser.SingularName)
 
 	return nil
 }

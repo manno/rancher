@@ -21,7 +21,7 @@ func CleanupUnusedSecretTokens(secretsInterface wcorev1.SecretController, authCo
 	for _, name := range cleanupProviders {
 		authConfig, err := authConfigs.Cache().Get(name)
 		if err != nil {
-			log.Error("getting AuthConfig", "operation", "cleanup_unused_secret_tokens", "auth_config", name, "error", err)
+			log.Error("Getting AuthConfig", "operation", "cleanup_unused_secret_tokens", "auth_config", name, "error", err)
 			cleanupErr = errors.Join(cleanupErr, err)
 			continue
 		}
@@ -30,7 +30,7 @@ func CleanupUnusedSecretTokens(secretsInterface wcorev1.SecretController, authCo
 			continue
 		}
 
-		log.Info("cleaning unused tokens from provider", "operation", "cleanup_unused_secret_tokens", "provider", name)
+		log.Info("Cleaning unused tokens from provider", "operation", "cleanup_unused_secret_tokens", "provider", name)
 		if err := secrets.CleanupOAuthTokens(secretsInterface, name); err != nil {
 			cleanupErr = errors.Join(cleanupErr, err)
 			continue

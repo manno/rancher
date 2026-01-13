@@ -104,7 +104,7 @@ func (l *clusterLifecycle) Sync(key string, orig *apisv3.Cluster) (runtime.Objec
 
 	// update if it has changed
 	if obj != nil && !reflect.DeepEqual(orig, obj) {
-		log.Info("updating cluster", "operation", "sync_cluster", "controller", ClusterCreateController, "cluster", orig.Name)
+		log.Info("Updating cluster", "operation", "sync_cluster", "controller", ClusterCreateController, "cluster", orig.Name)
 		cluster := obj.(*apisv3.Cluster)
 		_, err = l.clusterClient.Update(cluster)
 		if err != nil {
@@ -125,7 +125,7 @@ func (l *clusterLifecycle) Sync(key string, orig *apisv3.Cluster) (runtime.Objec
 
 	// update if it has changed
 	if obj != nil && !reflect.DeepEqual(orig, obj) {
-		log.Info("updating cluster", "operation", "sync_cluster", "controller", ClusterCreateController, "cluster", orig.Name)
+		log.Info("Updating cluster", "operation", "sync_cluster", "controller", ClusterCreateController, "cluster", orig.Name)
 		cluster := obj.(*apisv3.Cluster)
 		_, err = l.clusterClient.Update(cluster)
 		if err != nil {
@@ -149,7 +149,7 @@ func (l *clusterLifecycle) Updated(obj *apisv3.Cluster) (runtime.Object, error) 
 // Remove deletes all backing resources created by the cluster
 func (l *clusterLifecycle) Remove(obj *apisv3.Cluster) (runtime.Object, error) {
 	if len(obj.Finalizers) > 1 {
-		log.Debug("skipping rbac cleanup for cluster until all other finalizers are removed", "operation", "remove_cluster", "cluster", obj.Name)
+		log.Debug("Skipping rbac cleanup for cluster until all other finalizers are removed", "operation", "remove_cluster", "cluster", obj.Name)
 		return obj, generic.ErrSkip
 	}
 
@@ -225,7 +225,7 @@ func (l *clusterLifecycle) createProject(name string, cond condition.Cond, obj r
 
 		project = updated.(*apisv3.Project)
 
-		log.Info("creating project for cluster", "operation", "create_project", "controller", ClusterCreateController, "project_name", name, "cluster", clusterName)
+		log.Info("Creating project for cluster", "operation", "create_project", "controller", ClusterCreateController, "project_name", name, "cluster", clusterName)
 		_, err = l.projects.Create(project)
 
 		return obj, err
@@ -246,7 +246,7 @@ func (l *clusterLifecycle) deleteSystemProject(cluster *apisv3.Cluster, controll
 	}
 	var deleteError error
 	for _, p := range projects {
-		log.Info("deleting project", "operation", "delete_system_project", "controller", controller, "project", p.Name)
+		log.Info("Deleting project", "operation", "delete_system_project", "controller", controller, "project", p.Name)
 		err = bypassClient.Delete(p.Namespace, p.Name, nil)
 		if err != nil {
 			deleteError = errors.Join(deleteError, fmt.Errorf("[%s] failed to delete project '%s/%s': %w", controller, p.Namespace, p.Name, err))
@@ -312,13 +312,13 @@ func (l *clusterLifecycle) reconcileClusterCreatorRTB(obj runtime.Object) (runti
 	}
 
 	if _, ok := cluster.Annotations[NoCreatorRBACAnnotation]; ok {
-		log.Info("skipping adding creator as owner", "operation", "reconcile_cluster_creator_rtb", "controller", ClusterCreateController, "annotation", NoCreatorRBACAnnotation)
+		log.Info("Skipping adding creator as owner", "operation", "reconcile_cluster_creator_rtb", "controller", ClusterCreateController, "annotation", NoCreatorRBACAnnotation)
 		return obj, nil
 	}
 	return apisv3.CreatorMadeOwner.DoUntilTrue(obj, func() (runtime.Object, error) {
 		creatorID := cluster.Annotations[CreatorIDAnnotation]
 		if creatorID == "" {
-			log.Warn("cluster has no creatorId annotation, cannot add creator as owner", "operation", "reconcile_cluster_creator_rtb", "controller", ClusterCreateController, "cluster", cluster.Name)
+			log.Warn("Cluster has no creatorId annotation, cannot add creator as owner", "operation", "reconcile_cluster_creator_rtb", "controller", ClusterCreateController, "cluster", cluster.Name)
 			return obj, nil
 		}
 
@@ -368,7 +368,7 @@ func (l *clusterLifecycle) reconcileClusterCreatorRTB(obj runtime.Object) (runti
 				}
 			}
 
-			log.Info("creating creator clusterRoleTemplateBinding for user", "operation", "reconcile_cluster_creator_rtb", "controller", ClusterCreateController, "user", creatorID, "cluster", cluster.Name)
+			log.Info("Creating creator clusterRoleTemplateBinding for user", "operation", "reconcile_cluster_creator_rtb", "controller", ClusterCreateController, "user", creatorID, "cluster", cluster.Name)
 			_, err := l.crtbClient.Create(crtb)
 			if err != nil && !apierrors.IsAlreadyExists(err) {
 				return obj, err
@@ -410,7 +410,7 @@ func (l *clusterLifecycle) updateClusterAnnotationandCondition(cluster *apisv3.C
 		}
 		// Only log if we successfully updated the cluster
 		if updateCondition {
-			log.Info("setting InitialRolesPopulated condition on cluster", "operation", "update_cluster_annotation_and_condition", "controller", ClusterCreateController, "cluster", cluster.Name)
+			log.Info("Setting InitialRolesPopulated condition on cluster", "operation", "update_cluster_annotation_and_condition", "controller", ClusterCreateController, "cluster", cluster.Name)
 		}
 
 		return nil

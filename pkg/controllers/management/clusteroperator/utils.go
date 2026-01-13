@@ -109,7 +109,7 @@ func (e *OperatorController) RecordCAAndAPIEndpoint(cluster *mgmtv3.Cluster) (*m
 			if !errors.IsNotFound(err) {
 				return false, err
 			}
-			log.Info("waiting for cluster data needed to generate service account token", "operation", "sync_ca_secret", "cluster", cluster.Name)
+			log.Info("Waiting for cluster data needed to generate service account token", "operation", "sync_ca_secret", "cluster", cluster.Name)
 			return false, nil
 		}
 		return true, nil

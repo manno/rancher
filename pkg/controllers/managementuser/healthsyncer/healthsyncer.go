@@ -73,7 +73,7 @@ func (h *HealthSyncer) syncHealth(ctx context.Context, syncHealth time.Duration)
 	for range ticker.Context(ctx, syncHealth) {
 		err := h.updateClusterHealth()
 		if err != nil && !apierrors.IsConflict(err) {
-			log.Error("error updating cluster health", "operation", "syncHealth", "error", err)
+			log.Error("Error updating cluster health", "operation", "syncHealth", "error", err)
 		}
 	}
 }
@@ -147,13 +147,13 @@ func (h *HealthSyncer) updateClusterHealth() error {
 	}
 	cluster := oldCluster.DeepCopy()
 	if !v32.ClusterConditionProvisioned.IsTrue(cluster) {
-		log.Debug("skip updating cluster health - cluster not provisioned yet", "operation", "updateClusterHealth", "cluster_name", h.clusterName)
+		log.Debug("Skip updating cluster health - cluster not provisioned yet", "operation", "updateClusterHealth", "cluster_name", h.clusterName)
 		return nil
 	}
 
 	// cluster condition ready is set to false if connected is false, return to avoid setting it to true incorrectly
 	if clusterconnected.Connected.IsFalse(cluster) {
-		log.Debug("skip updating cluster condition ready - cluster agent isn't connected yet", "operation", "updateClusterHealth", "cluster_name", h.clusterName)
+		log.Debug("Skip updating cluster condition ready - cluster agent isn't connected yet", "operation", "updateClusterHealth", "cluster_name", h.clusterName)
 		return nil
 	}
 
@@ -177,7 +177,7 @@ func (h *HealthSyncer) updateClusterHealth() error {
 	}
 
 	if !reflect.DeepEqual(oldCluster, newObj) {
-		log.Trace("healthSyncer update cluster", "operation", "updateClusterHealth", "cluster_name", cluster.Name)
+		log.Trace("HealthSyncer update cluster", "operation", "updateClusterHealth", "cluster_name", cluster.Name)
 		if _, err := h.clusters.Update(newObj.(*v3.Cluster)); err != nil {
 			return errors.Wrapf(err, "[updateClusterHealth] Failed to update cluster [%s]", cluster.Name)
 		}

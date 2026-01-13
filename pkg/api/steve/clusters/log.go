@@ -43,7 +43,7 @@ type logHandler struct {
 func (l *logHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	err := l.printLog(resp, req)
 	if err != nil {
-		log.Info("error while handling cluster log", "error", err)
+		log.Info("Error while handling cluster log", "error", err)
 	}
 }
 

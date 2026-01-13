@@ -92,7 +92,7 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 	err := json.Unmarshal([]byte(value), &records)
 	if err != nil {
 		// just log the error, can't really do anything here.
-		log.Debug("failed to unmarshal targetDnsRecordIds", "operation", "ensure_service_dns_record", "error", err)
+		log.Debug("Failed to unmarshal targetDnsRecordIds", "operation", "ensure_service_dns_record", "error", err)
 		return nil
 	}
 	if records == nil {
@@ -120,7 +120,7 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 			}
 			aliasExtType := obj.Spec.Type == SvcTypeExternalName
 			if aliasExtType && beingDeleted {
-				log.Debug("cannot fetch dns hostName service, it is being deleted", "operation", "ensure_service_dns_record", "service", service, "namespace", namespace)
+				log.Debug("Cannot fetch dns hostName service, it is being deleted", "operation", "ensure_service_dns_record", "service", service, "namespace", namespace)
 			}
 			if exists || aliasExtType {
 				toHandleExternalName = true
@@ -129,11 +129,11 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 				serviceUUIDToHostNameAlias.Store(svcKey, key)
 				continue
 			}
-			log.Warn("failed to fetch endpoints for dns record", "operation", "ensure_service_dns_record", "record", groomed, "error", err)
+			log.Warn("Failed to fetch endpoints for dns record", "operation", "ensure_service_dns_record", "record", groomed, "error", err)
 			continue
 		}
 		if targetEndpoint.DeletionTimestamp != nil {
-			log.Warn("failed to fetch endpoints for dns record, endpoint is being removed", "operation", "ensure_service_dns_record", "record", groomed)
+			log.Warn("Failed to fetch endpoints for dns record, endpoint is being removed", "operation", "ensure_service_dns_record", "record", groomed)
 			continue
 		}
 		for _, subset := range targetEndpoint.Subsets {
@@ -163,7 +163,7 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 
 	if toHandleExternalName {
 		if externalName == "" {
-			log.Info("deleting dns record HostName, externalName empty", "operation", "ensure_service_dns_record", "record", obj.Name)
+			log.Info("Deleting dns record HostName, externalName empty", "operation", "ensure_service_dns_record", "record", obj.Name)
 			if err := c.services.DeleteNamespaced(obj.Namespace, obj.Name, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 				return errors.Wrapf(err, "Error deleting dns record [%s]", obj.Name)
 			}
@@ -209,16 +209,16 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 			},
 			Subsets: newEndpointSubsets,
 		}
-		log.Info("creating endpoints for targetDnsRecordIds service", "operation", "ensure_service_dns_record", "service", key, "subsets_count", len(ep.Subsets))
+		log.Info("Creating endpoints for targetDnsRecordIds service", "operation", "ensure_service_dns_record", "service", key, "subsets_count", len(ep.Subsets))
 		if _, err := c.endpoints.Create(ep); err != nil {
 			return err
 		}
 	} else {
 		if reflect.DeepEqual(ep.Subsets, newEndpointSubsets) {
-			log.Debug("endpoints are up to date for DNSRecord service", "operation", "ensure_service_dns_record", "service", obj.Name)
+			log.Debug("Endpoints are up to date for DNSRecord service", "operation", "ensure_service_dns_record", "service", obj.Name)
 			return nil
 		}
-		log.Info("updating endpoints for DNSRecord service", "operation", "ensure_service_dns_record", "service", obj.Name, "old_subsets_count", len(ep.Subsets), "new_subsets_count", len(newEndpointSubsets))
+		log.Info("Updating endpoints for DNSRecord service", "operation", "ensure_service_dns_record", "service", obj.Name, "old_subsets_count", len(ep.Subsets), "new_subsets_count", len(newEndpointSubsets))
 		toUpdate := ep.DeepCopy()
 		toUpdate.Subsets = newEndpointSubsets
 		_, err = c.endpoints.Update(toUpdate)

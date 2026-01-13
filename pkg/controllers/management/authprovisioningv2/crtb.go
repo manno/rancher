@@ -32,7 +32,7 @@ func (h *handler) OnCRTB(key string, crtb *v3.ClusterRoleTemplateBinding) (*v3.C
 		// the provisioning cluster to be created. If we don't try again
 		// permissions for the provisioning objects won't be created until an
 		// update to the CRTB happens again.
-		log.Debug("no provisioning cluster found, enqueuing CRTB", "operation", "on_crtb", "cluster", crtb.ClusterName, "crtb", crtb.Name)
+		log.Debug("No provisioning cluster found, enqueuing CRTB", "operation", "on_crtb", "cluster", crtb.ClusterName, "crtb", crtb.Name)
 		h.clusterRoleTemplateBindingController.EnqueueAfter(crtb.Namespace, crtb.Name, 10*time.Second)
 		return crtb, nil
 	}

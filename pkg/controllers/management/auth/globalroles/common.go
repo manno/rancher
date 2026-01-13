@@ -44,7 +44,7 @@ func DeleteAdminClusterRoleBindings(
 			continue
 		}
 
-		log.Info("deleting ClusterRoleBinding for admin GlobalRoleBinding", "operation", "delete_admin_grb", "cluster_role_binding", crbName, "global_role_binding", grb.Name, "cluster", cluster.Name)
+		log.Info("Deleting ClusterRoleBinding for admin GlobalRoleBinding", "operation", "delete_admin_grb", "cluster_role_binding", crbName, "global_role_binding", grb.Name, "cluster", cluster.Name)
 
 		err = userContext.RBACw.ClusterRoleBinding().Delete(crb.Name, &metav1.DeleteOptions{})
 		if err != nil {

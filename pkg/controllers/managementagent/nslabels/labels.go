@@ -26,7 +26,7 @@ type namespaceHandler struct {
 }
 
 func Register(ctx context.Context, cluster *config.UserOnlyContext) {
-	log.Info("registering namespaceHandler for adding labels", "operation", "register_namespace_handler")
+	log.Info("Registering namespaceHandler for adding labels", "operation", "register_namespace_handler")
 	nsh := &namespaceHandler{
 		secrets:  cluster.Core.Secrets(""),
 		nsClient: cluster.Core.Namespaces(""),
@@ -38,7 +38,7 @@ func (nsh *namespaceHandler) Sync(key string, ns *corev1.Namespace) (runtime.Obj
 	if ns == nil {
 		return nil, nil
 	}
-	log.Debug("namespaceHandler sync", "operation", "namespace_handler_sync", "key", key, "namespace", ns.Name)
+	log.Debug("NamespaceHandler sync", "operation", "namespace_handler_sync", "key", key, "namespace", ns.Name)
 
 	field, ok := ns.Annotations[ProjectIDFieldLabel]
 	if !ok {
@@ -56,10 +56,10 @@ func (nsh *namespaceHandler) Sync(key string, ns *corev1.Namespace) (runtime.Obj
 		clusterID = splits[0]
 	}
 
-	log.Debug("namespaceHandler sync project ID", "operation", "namespace_handler_sync", "project_id", projectID)
+	log.Debug("NamespaceHandler sync project ID", "operation", "namespace_handler_sync", "project_id", projectID)
 
 	if err := nsh.addProjectIDLabelToNamespace(ns, projectID, clusterID); err != nil {
-		log.Error("error adding project id label to namespace", "operation", "namespace_handler_sync", "error", err, "namespace", ns.Name)
+		log.Error("Error adding project id label to namespace", "operation", "namespace_handler_sync", "error", err, "namespace", ns.Name)
 		return nil, nil
 	}
 
@@ -72,9 +72,9 @@ func (nsh *namespaceHandler) addProjectIDLabelToNamespace(ns *corev1.Namespace, 
 	}
 	if ns.Labels[ProjectIDFieldLabel] != projectID {
 		if err := nsh.updateProjectIDLabelForSecrets(projectID, ns.Name, clusterID); err != nil {
-			log.Trace("updating project ID label for secrets", "operation", "add_project_id_label", "error", err)
+			log.Trace("Updating project ID label for secrets", "operation", "add_project_id_label", "error", err)
 		}
-		log.Info("adding label to namespace", "operation", "add_project_id_label", "label", ProjectIDFieldLabel, "project_id", projectID, "namespace", ns.Name)
+		log.Info("Adding label to namespace", "operation", "add_project_id_label", "label", ProjectIDFieldLabel, "project_id", projectID, "namespace", ns.Name)
 		nscopy := ns.DeepCopy()
 		if nscopy.Labels == nil {
 			nscopy.Labels = map[string]string{}

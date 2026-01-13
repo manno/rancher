@@ -103,7 +103,7 @@ func (h *handler) deployPlans(cluster *mgmtv3.Cluster) error {
 				strategy.DrainServerNodes, masterPlanName)
 
 			if !cmp(*masterPlan, newMaster) {
-				log.Info("updating plan", "operation", "k3s-based-upgrader", "plan", newMaster.Name, "cluster", cluster.Name)
+				log.Info("Updating plan", "operation", "k3s-based-upgrader", "plan", newMaster.Name, "cluster", cluster.Name)
 				planClient = planConfig.Plans(systemUpgradeNS)
 				masterPlan, err = planClient.Update(context.TODO(), &newMaster, metav1.UpdateOptions{})
 				if err != nil {
@@ -118,7 +118,7 @@ func (h *handler) deployPlans(cluster *mgmtv3.Cluster) error {
 				strategy.DrainWorkerNodes, upgradeImage, workerPlanName, masterPlanName)
 
 			if !cmp(*workerPlan, newWorker) {
-				log.Info("updating plan", "operation", "k3s-based-upgrader", "plan", newWorker.Name, "cluster", cluster.Name)
+				log.Info("Updating plan", "operation", "k3s-based-upgrader", "plan", newWorker.Name, "cluster", cluster.Name)
 				planClient = planConfig.Plans(systemUpgradeNS)
 				workerPlan, err = planClient.Update(context.TODO(), &newWorker, metav1.UpdateOptions{})
 				if err != nil {
@@ -128,7 +128,7 @@ func (h *handler) deployPlans(cluster *mgmtv3.Cluster) error {
 		}
 
 	} else { // create the plans
-		log.Info("creating plans", "operation", "k3s-based-upgrader", "cluster", cluster.Name)
+		log.Info("Creating plans", "operation", "k3s-based-upgrader", "cluster", cluster.Name)
 		planClient = planConfig.Plans(systemUpgradeNS)
 		genMasterPlan := generateMasterPlan(Version,
 			strategy.ServerConcurrency,
@@ -146,7 +146,7 @@ func (h *handler) deployPlans(cluster *mgmtv3.Cluster) error {
 		if err != nil {
 			return err
 		}
-		log.Info("plans successfully deployed", "operation", "k3s-based-upgrader", "cluster", cluster.Name)
+		log.Info("Plans successfully deployed", "operation", "k3s-based-upgrader", "cluster", cluster.Name)
 	}
 
 	cluster, err = h.modifyClusterCondition(cluster, *masterPlan, *workerPlan, strategy)

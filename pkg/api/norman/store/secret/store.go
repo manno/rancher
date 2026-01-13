@@ -65,7 +65,7 @@ func NewNamespacedSecretStore(ctx context.Context, clientGetter proxy.ClientGett
 					return data, nil
 				}
 				if err := cert.AddCertInfo(data); err != nil {
-					log.Error("error parsing cert, will not display correctly in UI", "operation", "transformer", "cert_name", data["name"], "error", err)
+					log.Error("Error parsing cert, will not display correctly in UI", "operation", "transformer", "cert_name", data["name"], "error", err)
 					return data, nil
 				}
 				return data, nil

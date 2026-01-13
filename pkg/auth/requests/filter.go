@@ -58,7 +58,7 @@ func (h authHeaderHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	log.Trace("rancher auth filter headers", "operation", "serve_http", "headers", req.Header)
+	log.Trace("Rancher auth filter headers", "operation", "serve_http", "headers", req.Header)
 
 	auditUser, ok := audit.FromContext(req.Context())
 	if ok {

@@ -73,7 +73,7 @@ func (r *Retriever) GeneratePreBootstrapClusterAgentManifest(controlPlane *rkev1
 func (r *Retriever) preBootstrapCluster(cp *rkev1.RKEControlPlane) (bool, error) {
 	mgmtCluster, err := r.mgmtClusterCache.Get(cp.Spec.ManagementClusterName)
 	if err != nil {
-		log.Warn("failed to get management cluster for rke control plane", "operation", "pre_bootstrap", "mgmt_cluster", cp.Spec.ManagementClusterName, "control_plane", cp.Name, "error", err)
+		log.Warn("Failed to get management cluster for rke control plane", "operation", "pre_bootstrap", "mgmt_cluster", cp.Spec.ManagementClusterName, "control_plane", cp.Name, "error", err)
 		return false, fmt.Errorf("failed to get mgmt Cluster %v: %w", cp.Spec.ManagementClusterName, err)
 	}
 

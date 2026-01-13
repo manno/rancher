@@ -60,7 +60,7 @@ func (c *Controller) CreateService(key string, w *Workload) error {
 	}
 
 	if errs := validation.IsDNS1123Subdomain(w.Name); len(errs) != 0 {
-		log.Debug("not creating service for workload, dns name is invalid", "operation", "ensure_service_for_workload", "workload", w.Name)
+		log.Debug("Not creating service for workload, dns name is invalid", "operation", "ensure_service_for_workload", "workload", w.Name)
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func (c *Controller) CreateServiceForWorkload(workload *Workload) error {
 		} else {
 			// check if the port of the same type
 			if existing.Spec.Type != toCreate.Type {
-				log.Warn("service already exists with different type", "operation", "create_service_for_workload", "service_name", existing.Name, "namespace", existing.Namespace, "expected_type", toCreate.Type, "actual_type", existing.Spec.Type)
+				log.Warn("Service already exists with different type", "operation", "create_service_for_workload", "service_name", existing.Name, "namespace", existing.Namespace, "expected_type", toCreate.Type, "actual_type", existing.Spec.Type)
 				return nil
 			}
 			isOwner := false
@@ -140,7 +140,7 @@ func (c *Controller) CreateServiceForWorkload(workload *Workload) error {
 				}
 			}
 			if !isOwner {
-				log.Warn("service already exists with different owner", "operation", "create_service_for_workload", "service_name", existing.Name, "namespace", existing.Namespace)
+				log.Warn("Service already exists with different owner", "operation", "create_service_for_workload", "service_name", existing.Name, "namespace", existing.Namespace)
 				return nil
 			}
 
@@ -167,7 +167,7 @@ func (c *Controller) CreateServiceForWorkload(workload *Workload) error {
 		toRemove = append(toRemove, existingSvc)
 	}
 	for _, svc := range toRemove {
-		log.Info("deleting service for workload", "operation", "create_service_for_workload", "namespace", svc.Namespace, "service", svc.Name, "type", svc.Spec.Type, "workload_namespace", workload.Namespace, "workload", workload.Name)
+		log.Info("Deleting service for workload", "operation", "create_service_for_workload", "namespace", svc.Namespace, "service", svc.Name, "type", svc.Spec.Type, "workload_namespace", workload.Namespace, "workload", workload.Name)
 		if err := c.services.DeleteNamespaced(svc.Namespace, svc.Name, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
@@ -201,7 +201,7 @@ func (c *Controller) updateService(toUpdate Service, existing *corev1.Service) e
 	if existing.Spec.Type == ClusterIPServiceType && existing.Spec.ClusterIP == "None" {
 		existing.Spec.ClusterIP = toUpdate.ClusterIP
 	}
-	log.Info("updating service with ports", "operation", "update_service", "namespace", existing.Namespace, "service", existing.Name, "ports_count", len(portsToUpdate))
+	log.Info("Updating service with ports", "operation", "update_service", "namespace", existing.Namespace, "service", existing.Name, "ports_count", len(portsToUpdate))
 	_, err := c.services.Update(existing)
 	if err != nil {
 		return err
@@ -263,7 +263,7 @@ func (c *Controller) createService(toCreate Service, workload *Workload) error {
 		},
 	}
 
-	log.Info("creating service for workload", "operation", "create_service", "namespace", service.Namespace, "service", service.Name, "type", service.Spec.Type, "ports_count", len(toCreate.ServicePorts), "workload", workload.Key)
+	log.Info("Creating service for workload", "operation", "create_service", "namespace", service.Namespace, "service", service.Name, "type", service.Spec.Type, "ports_count", len(toCreate.ServicePorts), "workload", workload.Key)
 	_, err = c.services.Create(service)
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {

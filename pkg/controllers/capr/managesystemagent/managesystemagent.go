@@ -122,13 +122,13 @@ func (h *handler) InstallSystemAgentUpgrader(_ string, cluster *rancherv1.Cluste
 	// Skip if the system-upgrade-controller app is not ready or the target version has not been installed,
 	// because new Plans may depend on functionality of a new version of the system-upgrade-controller app
 	if !capr.SystemUpgradeControllerReady.IsTrue(cp) {
-		log.Debug("waiting for system-upgrade-controller to be ready", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "reason", capr.SystemUpgradeControllerReady.GetReason(cp))
+		log.Debug("Waiting for system-upgrade-controller to be ready", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "reason", capr.SystemUpgradeControllerReady.GetReason(cp))
 		return cluster, nil
 	}
 
 	targetVersion := settings.SystemUpgradeControllerChartVersion.Get()
 	if targetVersion != capr.SystemUpgradeControllerReady.GetMessage(cp) {
-		log.Debug("waiting for system-upgrade-controller upgrade", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "target_version", targetVersion)
+		log.Debug("Waiting for system-upgrade-controller upgrade", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "target_version", targetVersion)
 		return cluster, nil
 	}
 
@@ -180,7 +180,7 @@ func (h *handler) InstallSystemAgentUpgrader(_ string, cluster *rancherv1.Cluste
 
 	val, ok := cp.Annotations[AppliedSystemAgentUpgraderHashAnnotation]
 	if ok && hash == val {
-		log.Debug("applied templates for system-agent-upgrader is up to date", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
+		log.Debug("Applied templates for system-agent-upgrader is up to date", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 		return cluster, nil
 	}
 
@@ -192,7 +192,7 @@ func (h *handler) InstallSystemAgentUpgrader(_ string, cluster *rancherv1.Cluste
 	installCounter.Add(1)
 	defer installCounter.Add(-1)
 
-	log.Info("applying system-agent-upgrader templates", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
+	log.Info("Applying system-agent-upgrader templates", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 	// Construct a Wrangler's Apply object
 	kcSecret, err := h.secrets.Cache().Get(cluster.Namespace, cluster.Status.ClientSecretName)
 	if err != nil {
@@ -513,7 +513,7 @@ func (h *handler) UninstallFleetBasedApps(_ string, cluster *rancherv1.Cluster) 
 		return cluster, err
 	}
 	if bundle != nil && bundle.DeletionTimestamp == nil {
-		log.Info("uninstalling the bundle", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "bundle", bundle.Name)
+		log.Info("Uninstalling the bundle", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "bundle", bundle.Name)
 		err := h.bundles.Delete(bundle.Namespace, bundle.Name, &metav1.DeleteOptions{})
 		if err == nil {
 			dropAnnotation = true
@@ -529,7 +529,7 @@ func (h *handler) UninstallFleetBasedApps(_ string, cluster *rancherv1.Cluster) 
 		return cluster, err
 	}
 	if managedChart != nil && managedChart.DeletionTimestamp == nil {
-		log.Info("uninstalling the managedChart", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "chart", sucName)
+		log.Info("Uninstalling the managedChart", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "chart", sucName)
 		err := h.managedCharts.Delete(managedChart.Namespace, managedChart.Name, &metav1.DeleteOptions{})
 		if err == nil {
 			dropAnnotation = true
@@ -555,7 +555,7 @@ func (h *handler) UninstallFleetBasedApps(_ string, cluster *rancherv1.Cluster) 
 	if _, ok := cp.Annotations[AppliedSystemAgentUpgraderHashAnnotation]; !ok {
 		return cluster, nil
 	}
-	log.Debug("removing AppliedSystemAgentUpgraderHashAnnotation", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
+	log.Debug("Removing AppliedSystemAgentUpgraderHashAnnotation", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 	cp = cp.DeepCopy()
 	delete(cp.Annotations, AppliedSystemAgentUpgraderHashAnnotation)
 	if _, err = h.rkeControlPlanes.Update(cp); err != nil {

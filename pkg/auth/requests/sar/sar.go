@@ -91,7 +91,7 @@ func (sar subjectAccessReview) checkUserCanImpersonateUser(ctx context.Context, 
 	if err != nil {
 		return false, err
 	}
-	log.Debug("impersonate check result", "operation", "check_user_can_impersonate_user", "allowed", result.Status.Allowed)
+	log.Debug("Impersonate check result", "operation", "check_user_can_impersonate_user", "allowed", result.Status.Allowed)
 	return result.Status.Allowed, nil
 }
 
@@ -111,7 +111,7 @@ func (sar subjectAccessReview) checkUserCanImpersonateGroup(ctx context.Context,
 	if err != nil {
 		return false, err
 	}
-	log.Debug("impersonate check result", "operation", "check_user_can_impersonate_group", "allowed", result.Status.Allowed)
+	log.Debug("Impersonate check result", "operation", "check_user_can_impersonate_group", "allowed", result.Status.Allowed)
 
 	return result.Status.Allowed, nil
 }
@@ -134,7 +134,7 @@ func (sar subjectAccessReview) checkUserCanImpersonateExtras(ctx context.Context
 			if err != nil {
 				return false, err
 			}
-			log.Debug("impersonate check result", "operation", "check_user_can_impersonate_extras", "allowed", result.Status.Allowed)
+			log.Debug("Impersonate check result", "operation", "check_user_can_impersonate_extras", "allowed", result.Status.Allowed)
 			if !result.Status.Allowed {
 				return false, nil
 			}
@@ -165,7 +165,7 @@ func (sar subjectAccessReview) checkUserCanImpersonateServiceAccount(ctx context
 	if err != nil {
 		return false, err
 	}
-	log.Debug("impersonate sa check result", "operation", "check_user_can_impersonate_service_account", "allowed", result.Status.Allowed)
+	log.Debug("Impersonate sa check result", "operation", "check_user_can_impersonate_service_account", "allowed", result.Status.Allowed)
 	return result.Status.Allowed, nil
 }
 

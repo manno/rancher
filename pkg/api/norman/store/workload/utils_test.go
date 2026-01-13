@@ -24,7 +24,7 @@ func TestGetRegistryDomain(t *testing.T) {
 			t.Fail()
 		}
 		if d != test[1] {
-			log.Info("registry domain mismatch", "domain", d)
+			log.Info("Registry domain mismatch", "domain", d)
 			t.Fail()
 		}
 	}

@@ -98,11 +98,11 @@ func (c *ClusterLifecycleCleanup) Remove(obj *v3.Cluster) (runtime.Object, error
 			err = c.cleanupImportedCluster(obj)
 		}
 		if err != nil {
-			log.Info("error cleaning up cluster", "cluster", obj.Name, "error", err)
+			log.Info("Error cleaning up cluster", "cluster", obj.Name, "error", err)
 		}
 		return err == nil, nil
 	}); err != nil {
-		log.Warn("could not clean imported cluster, moving on with removing cluster", "cluster", obj.Name, "error", err)
+		log.Warn("Could not clean imported cluster, moving on with removing cluster", "cluster", obj.Name, "error", err)
 	}
 
 	c.Manager.Stop(obj)
@@ -115,7 +115,7 @@ func (c *ClusterLifecycleCleanup) cleanupLocalCluster(obj *v3.Cluster) error {
 		return err
 	}
 	if userContext == nil {
-		log.Debug("could not get context for local cluster, skipping cleanup")
+		log.Debug("Could not get context for local cluster, skipping cleanup")
 		return nil
 	}
 
@@ -147,7 +147,7 @@ func (c *ClusterLifecycleCleanup) cleanupImportedCluster(cluster *v3.Cluster) er
 		return err
 	}
 	if userContext == nil {
-		log.Debug("could not get context for imported cluster, skipping cleanup")
+		log.Debug("Could not get context for imported cluster, skipping cleanup")
 		return nil
 	}
 
@@ -435,7 +435,7 @@ func cleanupNamespaces(client kubernetes.Interface) error {
 			}
 
 			if updated {
-				log.Debug("updating local namespace", "namespace", nameSpace.Name)
+				log.Debug("Updating local namespace", "namespace", nameSpace.Name)
 				_, err = client.CoreV1().Namespaces().Update(context.TODO(), nameSpace, metav1.UpdateOptions{})
 				if err != nil {
 					return err

@@ -175,7 +175,7 @@ func (r *rancherTelemetryImpl) PerManagedClusterTelemetry() iter.Seq2[ClusterID,
 		for _, cl := range r.managedClusters {
 			nodes, ok := r.managedNodes[ClusterID(cl.Name)]
 			if !ok {
-				log.Warn("detected no associated nodes for cluster", "operation", "gather_cluster_metrics", "cluster", cl.Name)
+				log.Warn("Detected no associated nodes for cluster", "operation", "gather_cluster_metrics", "cluster", cl.Name)
 			}
 
 			if !yield(ClusterID(cl.Name), &clusterTelemetryImpl{

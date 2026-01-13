@@ -20,7 +20,7 @@ func (p *Planner) rotateCertificates(controlPlane *rkev1.RKEControlPlane, status
 
 	found, joinServer, _, err := p.findInitNode(controlPlane, clusterPlan)
 	if err != nil {
-		log.Error("error searching for init node during certificate rotation",
+		log.Error("Error searching for init node during certificate rotation",
 			"namespace", controlPlane.Namespace,
 			"cluster_name", controlPlane.Name,
 			"operation", "certificate_rotation",
@@ -28,7 +28,7 @@ func (p *Planner) rotateCertificates(controlPlane *rkev1.RKEControlPlane, status
 		return status, err
 	}
 	if !found || joinServer == "" {
-		log.Warn("skipping certificate creation",
+		log.Warn("Skipping certificate creation",
 			"namespace", controlPlane.Namespace,
 			"cluster_name", controlPlane.Name,
 			"operation", "certificate_rotation",
@@ -84,7 +84,7 @@ func shouldRotate(cp *rkev1.RKEControlPlane) bool {
 
 	// The controlplane must be initialized before we rotate anything
 	if cp.Status.Initialized != true {
-		log.Warn("skipping certificate rotation",
+		log.Warn("Skipping certificate rotation",
 			"namespace", cp.Namespace,
 			"cluster_name", cp.Name,
 			"operation", "certificate_rotation",

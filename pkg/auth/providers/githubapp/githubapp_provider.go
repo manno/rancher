@@ -137,7 +137,7 @@ func (g *Provider) LoginUser(host string, githubCredential *apiv3.GithubLogin, c
 	ctx := context.Background()
 	accessToken, err := g.githubClient.getAccessToken(ctx, securityCode, config)
 	if err != nil {
-		log.Info("error generating accessToken from github", "provider", "githubapp", "operation", "login_user", "error", err)
+		log.Info("Error generating accessToken from github", "provider", "githubapp", "operation", "login_user", "error", err)
 		return apiv3.Principal{}, nil, "", err
 	}
 
@@ -331,7 +331,7 @@ func (g *Provider) toPrincipal(principalType string, acct common.GitHubAccount, 
 func (g *Provider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []apiv3.Principal) (bool, error) {
 	config, err := g.getConfig()
 	if err != nil {
-		log.Error("error fetching github config", "provider", "githubapp", "operation", "can_access_with_group_providers", "error", err)
+		log.Error("Error fetching github config", "provider", "githubapp", "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 

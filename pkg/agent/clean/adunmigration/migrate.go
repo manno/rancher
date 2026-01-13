@@ -83,7 +83,7 @@ type skippedUserWorkUnit struct {
 func scaledContext(restConfig *restclient.Config) (*config.ScaledContext, error) {
 	sc, err := config.NewScaledContext(*restConfig, nil)
 	if err != nil {
-		log.Error("failed to create scaledContext",
+		log.Error("Failed to create scaledContext",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return nil, err
@@ -92,7 +92,7 @@ func scaledContext(restConfig *restclient.Config) (*config.ScaledContext, error)
 	ctx := context.Background()
 	err = sc.Start(ctx)
 	if err != nil {
-		log.Error("failed to start scaled context",
+		log.Error("Failed to start scaled context",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return nil, err
@@ -106,10 +106,10 @@ func scaledContext(restConfig *restclient.Config) (*config.ScaledContext, error)
 func UnmigrateAdGUIDUsersOnce(sc *config.ScaledContext) error {
 	migrationConfigMap, err := sc.Core.ConfigMaps(activedirectory.StatusConfigMapNamespace).GetNamespaced(activedirectory.StatusConfigMapNamespace, activedirectory.StatusConfigMapName, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		log.Error("unable to check unmigration configmap",
+		log.Error("Unable to check unmigration configmap",
 			"operation", migrateAdUserOperation,
 			"error", err)
-		log.Error("cannot determine if it is safe to proceed, refusing to run",
+		log.Error("Cannot determine if it is safe to proceed, refusing to run",
 			"operation", migrateAdUserOperation)
 		return nil
 	}
@@ -117,13 +117,13 @@ func UnmigrateAdGUIDUsersOnce(sc *config.ScaledContext) error {
 		migrationStatus := migrationConfigMap.Data[activedirectory.StatusMigrationField]
 		switch migrationStatus {
 		case activedirectory.StatusMigrationFinished:
-			log.Debug("ad-guid migration has already been completed, refusing to run again at startup", "operation", migrateAdUserOperation)
+			log.Debug("Ad-guid migration has already been completed, refusing to run again at startup", "operation", migrateAdUserOperation)
 			return nil
 		case activedirectory.StatusMigrationFinishedWithMissing:
-			log.Info("ad-guid migration has already been completed. To clean-up missing users, you can run the utility manually", "operation", migrateAdUserOperation)
+			log.Info("Ad-guid migration has already been completed. To clean-up missing users, you can run the utility manually", "operation", migrateAdUserOperation)
 			return nil
 		case activedirectory.StatusMigrationFinishedWithSkipped:
-			log.Info("ad-guid migration has already been completed. To try and resolve skipped users, you can run the utility manually", "operation", migrateAdUserOperation)
+			log.Info("Ad-guid migration has already been completed. To try and resolve skipped users, you can run the utility manually", "operation", migrateAdUserOperation)
 			return nil
 		}
 
@@ -135,10 +135,10 @@ func UnmigrateAdGUIDUsersOnce(sc *config.ScaledContext) error {
 // appropriate DN-based PrincipalID.
 func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMissingUsers bool) error {
 	if dryRun {
-		log.Info("dryRun is true, no objects will be deleted/modified", "operation", migrateAdUserOperation)
+		log.Info("DryRun is true, no objects will be deleted/modified", "operation", migrateAdUserOperation)
 		deleteMissingUsers = false
 	} else if deleteMissingUsers {
-		log.Info("deleteMissingUsers is true, GUID-based users not present in Active Directory will be deleted", "operation", migrateAdUserOperation)
+		log.Info("DeleteMissingUsers is true, GUID-based users not present in Active Directory will be deleted", "operation", migrateAdUserOperation)
 	}
 
 	sc, adConfig, err := prepareClientContexts(clientConfig)
@@ -148,10 +148,10 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 
 	migrationConfigMap, err := sc.Core.ConfigMaps(activedirectory.StatusConfigMapNamespace).GetNamespaced(activedirectory.StatusConfigMapNamespace, activedirectory.StatusConfigMapName, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		log.Error("unable to check unmigration configmap",
+		log.Error("Unable to check unmigration configmap",
 			"operation", migrateAdUserOperation,
 			"error", err)
-		log.Error("cannot determine if it is safe to proceed, refusing to run",
+		log.Error("Cannot determine if it is safe to proceed, refusing to run",
 			"operation", migrateAdUserOperation)
 		return nil
 	}
@@ -159,7 +159,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 		migrationStatus := migrationConfigMap.Data[activedirectory.StatusMigrationField]
 		switch migrationStatus {
 		case activedirectory.StatusMigrationRunning:
-			log.Info("ad-guid migration is currently running, refusing to run again concurrently", "operation", migrateAdUserOperation)
+			log.Info("Ad-guid migration is currently running, refusing to run again concurrently", "operation", migrateAdUserOperation)
 			return nil
 		}
 	}
@@ -170,7 +170,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 	if !dryRun {
 		err = updateMigrationStatus(sc, activedirectory.StatusMigrationField, activedirectory.StatusMigrationRunning)
 		if err != nil {
-			log.Error("unable to update migration status configmap",
+			log.Error("Unable to update migration status configmap",
 				"operation", migrateAdUserOperation,
 				"error", err)
 			return err
@@ -182,7 +182,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 		defer func(sc *config.ScaledContext, status string) {
 			err := updateMigrationStatus(sc, status, finalStatus)
 			if err != nil {
-				log.Error("unable to update migration status configmap",
+				log.Error("Unable to update migration status configmap",
 					"operation", migrateAdUserOperation,
 					"error", err)
 			}
@@ -190,17 +190,17 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 
 		// Early bail: if the AD configuration is disabled, then we're done! Update the configmap right now and exit.
 		if !adConfig.Enabled {
-			log.Info("during unmigration, found that Active Directory is not enabled. nothing to do", "operation", migrateAdUserOperation)
+			log.Info("During unmigration, found that Active Directory is not enabled. nothing to do", "operation", migrateAdUserOperation)
 			finalStatus = activedirectory.StatusMigrationFinished
 			return nil
 		}
 	}
 
-	log.Info("beginning ad-guid unmigration", "operation", migrateAdUserOperation)
+	log.Info("Beginning ad-guid unmigration", "operation", migrateAdUserOperation)
 
 	users, err := sc.Management.Users("").List(metav1.ListOptions{})
 	if err != nil {
-		log.Error("unable to fetch user list",
+		log.Error("Unable to fetch user list",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return err
@@ -215,7 +215,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 	tokenList, err := tokenInterface.List(metav1.ListOptions{})
 	if err != nil {
 		finalStatus = activedirectory.StatusMigrationFailed
-		log.Error("unable to fetch token objects",
+		log.Error("Unable to fetch token objects",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return err
@@ -226,7 +226,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 	crtbList, err := crtbInterface.List(metav1.ListOptions{})
 	if err != nil {
 		finalStatus = activedirectory.StatusMigrationFailed
-		log.Error("unable to fetch CRTB objects",
+		log.Error("Unable to fetch CRTB objects",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return err
@@ -237,7 +237,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 	prtbList, err := prtbInterface.List(metav1.ListOptions{})
 	if err != nil {
 		finalStatus = activedirectory.StatusMigrationFailed
-		log.Error("unable to fetch PRTB objects",
+		log.Error("Unable to fetch PRTB objects",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return err
@@ -248,7 +248,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 	grbList, err := grbInterface.List(metav1.ListOptions{})
 	if err != nil {
 		finalStatus = activedirectory.StatusMigrationFailed
-		log.Error("unable to fetch GRB objects",
+		log.Error("Unable to fetch GRB objects",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		return err
@@ -263,7 +263,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 	}
 
 	for _, user := range skippedUsers {
-		log.Error("unable to migrate user due to a connection failure, this user will be skipped",
+		log.Error("Unable to migrate user due to a connection failure, this user will be skipped",
 			"operation", migrateAdUserOperation,
 			"user", user.originalUser.Name)
 		if !dryRun {
@@ -272,20 +272,20 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 	}
 	for _, missingUser := range missingUsers {
 		if deleteMissingUsers && !dryRun {
-			log.Info("user with GUID does not seem to exist in Active Directory, proceeding to delete this user permanently",
+			log.Info("User with GUID does not seem to exist in Active Directory, proceeding to delete this user permanently",
 				"operation", migrateAdUserOperation,
 				"user", missingUser.originalUser.Name,
 				"guid", missingUser.guid)
 			updateUnmigratedUsers(missingUser.originalUser.Name, migrateStatusMissing, false, sc)
 			err = sc.Management.Users("").Delete(missingUser.originalUser.Name, &metav1.DeleteOptions{})
 			if err != nil {
-				log.Error("failed to delete missing user",
+				log.Error("Failed to delete missing user",
 					"operation", migrateAdUserOperation,
 					"user", missingUser.originalUser.Name,
 					"error", err)
 			}
 		} else {
-			log.Info("user with GUID does not seem to exist in Active Directory, this user will be skipped",
+			log.Info("User with GUID does not seem to exist in Active Directory, this user will be skipped",
 				"operation", migrateAdUserOperation,
 				"user", missingUser.originalUser.Name,
 				"guid", missingUser.guid)
@@ -316,7 +316,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 			progress := fmt.Sprintf("%.0f%%", percentDone)
 			err = updateMigrationStatus(sc, migrationStatusPercentage, progress)
 			if err != nil {
-				log.Error("unable to update migration status",
+				log.Error("Unable to update migration status",
 					"operation", migrateAdUserOperation,
 					"error", err)
 			}
@@ -325,7 +325,7 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 
 	err = migrateAllowedUserPrincipals(&usersToMigrate, &missingUsers, sc, dryRun, deleteMissingUsers)
 	if err != nil {
-		log.Error("unable to migrate allowed users",
+		log.Error("Unable to migrate allowed users",
 			"operation", migrateAdUserOperation,
 			"error", err)
 		finalStatus = activedirectory.StatusMigrationFailed
@@ -333,9 +333,9 @@ func UnmigrateAdGUIDUsers(clientConfig *restclient.Config, dryRun bool, deleteMi
 	}
 
 	if dryRun {
-		log.Info("end of ad-guid unmigration", "operation", migrateAdUserOperation)
+		log.Info("End of ad-guid unmigration", "operation", migrateAdUserOperation)
 	} else {
-		log.Info("end of ad-guid unmigration, results saved to configmap",
+		log.Info("End of ad-guid unmigration, results saved to configmap",
 			"operation", migrateAdUserOperation,
 			"configmap", activedirectory.StatusConfigMapName)
 	}
@@ -369,21 +369,21 @@ func identifyMigrationWorkUnits(users *v3.UserList, lConn retryableLdapConnectio
 	// sort them into "found" and "not found" lists. At this stage we might have GUID-based duplicates, and we'll
 	// detect and sort those accordingly
 	ldapPermanentlyFailed := false
-	log.Debug("locating GUID-based Active Directory users", "operation", identifyAdUserOperation)
+	log.Debug("Locating GUID-based Active Directory users", "operation", identifyAdUserOperation)
 	for _, user := range users.Items {
 		if !isAdUser(&user) {
-			log.Debug("user has no AD principals, skipping",
+			log.Debug("User has no AD principals, skipping",
 				"operation", identifyAdUserOperation,
 				"user", user.Name)
 			continue
 		}
 		principalID := adPrincipalID(&user)
-		log.Debug("processing AD user",
+		log.Debug("Processing AD user",
 			"operation", identifyAdUserOperation,
 			"user", user.Name,
 			"principal_id", principalID)
 		if !isGUID(principalID) {
-			log.Debug("does not appear to be a GUID-based principal ID, taking no action",
+			log.Debug("Does not appear to be a GUID-based principal ID, taking no action",
 				"operation", identifyAdUserOperation,
 				"principal_id", principalID)
 			continue
@@ -393,7 +393,7 @@ func identifyMigrationWorkUnits(users *v3.UserList, lConn retryableLdapConnectio
 		if err != nil {
 			// This really shouldn't be possible to hit, since isGuid will fail to parse anything that would
 			// cause getExternalID to choke on the input, but for maximum safety we'll handle it anyway.
-			log.Error("failed to extract GUID from principal, cannot process user",
+			log.Error("Failed to extract GUID from principal, cannot process user",
 				"operation", identifyAdUserOperation,
 				"principal_id", principalID,
 				"user", user.Name,
@@ -407,7 +407,7 @@ func identifyMigrationWorkUnits(users *v3.UserList, lConn retryableLdapConnectio
 		} else {
 			// Check for guid-based duplicates here. If we find one, we don't need to perform an other LDAP lookup.
 			if i, exists := knownGUIDWorkUnits[guid]; exists {
-				log.Debug("user is GUID-based and a duplicate",
+				log.Debug("User is GUID-based and a duplicate",
 					"operation", identifyAdUserOperation,
 					"user", user.Name,
 					"guid", guid,
@@ -422,7 +422,7 @@ func identifyMigrationWorkUnits(users *v3.UserList, lConn retryableLdapConnectio
 				continue
 			}
 			if i, exists := knownGUIDMissingUnits[guid]; exists {
-				log.Debug("user is GUID-based and a duplicate of user which is known to be missing",
+				log.Debug("User is GUID-based and a duplicate of user which is known to be missing",
 					"operation", identifyAdUserOperation,
 					"user", user.Name,
 					"guid", guid,
@@ -438,7 +438,7 @@ func identifyMigrationWorkUnits(users *v3.UserList, lConn retryableLdapConnectio
 					"guid", guid)
 				skippedUsers = append(skippedUsers, skippedUserWorkUnit{guid: guid, originalUser: userCopy})
 			} else if errors.Is(err, LdapErrorNotFound{}) {
-				log.Debug("user is GUID-based and the Active Directory server doesn't know about it, marking as missing",
+				log.Debug("User is GUID-based and the Active Directory server doesn't know about it, marking as missing",
 					"operation", identifyAdUserOperation,
 					"user", user.Name,
 					"guid", guid)
@@ -449,7 +449,7 @@ func identifyMigrationWorkUnits(users *v3.UserList, lConn retryableLdapConnectio
 				skippedUsers = append(skippedUsers, skippedUserWorkUnit{guid: guid, originalUser: userCopy})
 				ldapPermanentlyFailed = true
 			} else {
-				log.Debug("user is GUID-based and the Active Directory server knows it",
+				log.Debug("User is GUID-based and the Active Directory server knows it",
 					"operation", identifyAdUserOperation,
 					"user", user.Name,
 					"guid", guid,
@@ -463,35 +463,35 @@ func identifyMigrationWorkUnits(users *v3.UserList, lConn retryableLdapConnectio
 	}
 
 	if len(usersToMigrate) == 0 {
-		log.Debug("found 0 users in need of migration, exiting without checking for DN-based duplicates", "operation", identifyAdUserOperation)
+		log.Debug("Found 0 users in need of migration, exiting without checking for DN-based duplicates", "operation", identifyAdUserOperation)
 		return usersToMigrate, missingUsers, skippedUsers
 	}
 
 	// Now for the second pass, we need to identify DN-based users, and see if they are duplicates of any of the GUID
 	// users that we found in the first pass. We'll prefer the oldest user as the originalUser object, this will be
 	// the one we keep when we resolve duplicates later.
-	log.Debug("locating any DN-based Active Directory users", "operation", identifyAdUserOperation)
+	log.Debug("Locating any DN-based Active Directory users", "operation", identifyAdUserOperation)
 	for _, user := range users.Items {
 		if !isAdUser(&user) {
-			log.Debug("user has no AD principals, skipping",
+			log.Debug("User has no AD principals, skipping",
 				"operation", identifyAdUserOperation,
 				"user", user.Name)
 			continue
 		}
 		principalID := adPrincipalID(&user)
-		log.Debug("processing AD user",
+		log.Debug("Processing AD user",
 			"operation", identifyAdUserOperation,
 			"user", user.Name,
 			"principal_id", principalID)
 		if isGUID(principalID) {
-			log.Debug("does not appear to be a DN-based principal ID, taking no action",
+			log.Debug("Does not appear to be a DN-based principal ID, taking no action",
 				"operation", identifyAdUserOperation,
 				"principal_id", principalID)
 			continue
 		}
 		dn, err := getExternalID(principalID)
 		if err != nil {
-			log.Error("failed to extract DN from principal, cannot process user",
+			log.Error("Failed to extract DN from principal, cannot process user",
 				"operation", identifyAdUserOperation,
 				"principal_id", principalID,
 				"user", user.Name,
@@ -499,7 +499,7 @@ func identifyMigrationWorkUnits(users *v3.UserList, lConn retryableLdapConnectio
 			continue
 		}
 		if i, exists := knownDnWorkUnits[dn]; exists {
-			log.Debug("user is DN-based and a duplicate",
+			log.Debug("User is DN-based and a duplicate",
 				"operation", identifyAdUserOperation,
 				"user", user.Name,
 				"distinguished_name", dn,
@@ -571,7 +571,7 @@ func updateMigrationStatus(sc *config.ScaledContext, status string, value string
 func updateUnmigratedUsers(user string, status string, reset bool, sc *config.ScaledContext) {
 	cm, err := sc.Core.ConfigMaps(activedirectory.StatusConfigMapNamespace).Get(activedirectory.StatusConfigMapName, metav1.GetOptions{})
 	if err != nil {
-		log.Error("unable to fetch configmap to update users",
+		log.Error("Unable to fetch configmap to update users",
 			"operation", migrateAdUserOperation,
 			"status", status,
 			"error", err)
@@ -595,14 +595,14 @@ func updateUnmigratedUsers(user string, status string, reset bool, sc *config.Sc
 	cm.Data[migrationStatusLastUpdate] = metav1.Now().Format(time.RFC3339)
 	if _, err := sc.Core.ConfigMaps(activedirectory.StatusConfigMapNamespace).Update(cm); err != nil {
 		if err != nil {
-			log.Error("unable to update migration status configmap",
+			log.Error("Unable to update migration status configmap",
 				"operation", migrateAdUserOperation,
 				"error", err)
 		}
 	}
 	err = updateADConfigMigrationStatus(cm.Data, sc)
 	if err != nil {
-		log.Error("unable to update AuthConfig status",
+		log.Error("Unable to update AuthConfig status",
 			"operation", migrateAdUserOperation,
 			"error", err)
 	}

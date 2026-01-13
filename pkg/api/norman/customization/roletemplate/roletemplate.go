@@ -55,7 +55,7 @@ func (w Wrapper) Validator(request *types.APIContext, schema *types.Schema, data
 func (w Wrapper) Formatter(apiContext *types.APIContext, resource *types.RawResource) {
 	roleTemplates, err := w.RoleTemplateLister.List("", labels.Everything())
 	if err != nil {
-		log.Warn("failed to list roletemplates", "operation", "roletemplate_formatter", "error", err)
+		log.Warn("Failed to list roletemplates", "operation", "roletemplate_formatter", "error", err)
 		return
 	}
 

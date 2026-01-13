@@ -195,11 +195,11 @@ func (m *Manager) installCharts(charts map[desiredKey]map[string]interface{}, ta
 	for key, values := range charts {
 		for {
 			if err := m.install(key.namespace, key.chartName, key.releaseName, key.minVersion, key.exactVersion, values, takeOwnership, key.installImageOverride); err == repo.ErrNoChartName || apierrors.IsNotFound(err) {
-				log.Error("failed to find system chart, will retry in 5 seconds", "operation", "remove", "chart", key.chartName, "error", err)
+				log.Error("Failed to find system chart, will retry in 5 seconds", "operation", "remove", "chart", key.chartName, "error", err)
 				time.Sleep(5 * time.Second)
 				continue
 			} else if err != nil {
-				log.Error("failed to install system chart", "operation", "remove", "chart", key.chartName, "release", key.releaseName, "error", err)
+				log.Error("Failed to install system chart", "operation", "remove", "chart", key.chartName, "release", key.releaseName, "error", err)
 				errs = append(errs, err)
 			}
 			break
@@ -330,7 +330,7 @@ func (m *Manager) install(namespace, chartName, releaseName, minVersion, exactVe
 		var tolerations []v1.Toleration
 		tolerations, err = m.operation.AddCpTaintsToTolerations(tolerations)
 		if err != nil {
-			log.Warn("failed to add tolerations for control plane taints", "operation", "install", "error", err)
+			log.Warn("Failed to add tolerations for control plane taints", "operation", "install", "error", err)
 		} else if len(tolerations) > 0 {
 			desiredValue["tolerations"] = tolerations
 		}
@@ -507,7 +507,7 @@ func desiredVersionAndValues(releases []*release.Release, minVersion, desiredVer
 				return false, "", nil, err
 			}
 			if desired.LessThan(min) {
-				log.Error("available chart version is less than min version", "operation", "should_install_upgrade", "chart", r.Chart.Name(), "available", desired, "min", min)
+				log.Error("Available chart version is less than min version", "operation", "should_install_upgrade", "chart", r.Chart.Name(), "available", desired, "min", min)
 				return false, "", nil, repo.ErrNoChartName
 			}
 			if min.LessThan(current) || min.Equal(current) {
@@ -515,7 +515,7 @@ func desiredVersionAndValues(releases []*release.Release, minVersion, desiredVer
 				if !bytes.Equal(patchedJSON, actualValueJSON) {
 					return false, r.Chart.Metadata.Version, desiredValues, nil
 				}
-				log.Debug("skipping install/upgrade, current version meets minimum requirement", "operation", "should_install_upgrade", "desired", desired.String(), "release", r.Name, "current", current.String(), "min", minVersion)
+				log.Debug("Skipping install/upgrade, current version meets minimum requirement", "operation", "should_install_upgrade", "desired", desired.String(), "release", r.Name, "current", current.String(), "min", minVersion)
 				return true, "", nil, nil
 			}
 		}

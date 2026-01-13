@@ -81,7 +81,7 @@ func Cluster() error {
 	if os.Getenv("SLEEP_FIRST") == "true" {
 		// The sleep allows Rancher server time to finish updating ownerReferences
 		// and close the connection.
-		log.Info("Starting sleep for 1 min to allow server time to disconnect....")
+		log.Info("Starting sleep for 1 min to allow server time to disconnect")
 		time.Sleep(time.Duration(1) * time.Minute)
 	}
 
@@ -159,7 +159,7 @@ func Cluster() error {
 }
 
 func removeNamespace(namespace string, client *kubernetes.Clientset) error {
-	log.Info("attempting to remove namespace", "namespace", namespace)
+	log.Info("Attempting to remove namespace", "namespace", namespace)
 	return tryUpdate(func() error {
 		ns, err := client.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 		if err != nil {
@@ -172,7 +172,7 @@ func removeNamespace(namespace string, client *kubernetes.Clientset) error {
 			ns.Finalizers = []string{}
 		}
 
-		log.Info("updating namespace", "namespace", ns.Name)
+		log.Info("Updating namespace", "namespace", ns.Name)
 		if !dryRun {
 			ns, err = client.CoreV1().Namespaces().Update(context.TODO(), ns, metav1.UpdateOptions{})
 			if err != nil {
@@ -180,7 +180,7 @@ func removeNamespace(namespace string, client *kubernetes.Clientset) error {
 			}
 		}
 
-		log.Info("deleting namespace", "namespace", ns.Name)
+		log.Info("Deleting namespace", "namespace", ns.Name)
 		if !dryRun {
 			err = client.CoreV1().Namespaces().Delete(context.TODO(), namespace, metav1.DeleteOptions{})
 			if err != nil {
@@ -250,7 +250,7 @@ func cleanupNamespaces(client *kubernetes.Clientset) []error {
 			}
 
 			if updated {
-				log.Info("updating namespace", "namespace_name", nameSpace.Name)
+				log.Info("Updating namespace", "namespace_name", nameSpace.Name)
 				if !dryRun {
 					_, err = client.CoreV1().Namespaces().Update(context.TODO(), nameSpace, metav1.UpdateOptions{})
 					if err != nil {
@@ -281,7 +281,7 @@ func cleanupClusterRoleBindings(client *kubernetes.Clientset) []error {
 	var errs []error
 
 	for _, crb := range crbs.Items {
-		log.Info("deleting clusterRoleBinding", "binding_name", crb.Name)
+		log.Info("Deleting clusterRoleBinding", "binding_name", crb.Name)
 		if !dryRun {
 			err = client.RbacV1().ClusterRoleBindings().Delete(context.TODO(), crb.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -302,7 +302,7 @@ func cleanupRoleBindings(client *kubernetes.Clientset) []error {
 	var errs []error
 
 	for _, rb := range rbs.Items {
-		log.Info("deleting roleBinding", "binding_name", rb.Name)
+		log.Info("Deleting roleBinding", "binding_name", rb.Name)
 		if !dryRun {
 			err = client.RbacV1().RoleBindings(rb.Namespace).Delete(context.TODO(), rb.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -323,7 +323,7 @@ func cleanupClusterRoles(client *kubernetes.Clientset) []error {
 	var errs []error
 
 	for _, cr := range crs.Items {
-		log.Info("deleting clusterRole", "role_name", cr.Name)
+		log.Info("Deleting clusterRole", "role_name", cr.Name)
 		if !dryRun {
 			err = client.RbacV1().ClusterRoles().Delete(context.TODO(), cr.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -344,7 +344,7 @@ func cleanupRoles(client *kubernetes.Clientset) []error {
 	var errs []error
 
 	for _, r := range rs.Items {
-		log.Info("deleting role", "role_name", r.Name)
+		log.Info("Deleting role", "role_name", r.Name)
 		if !dryRun {
 			err = client.RbacV1().Roles(r.Namespace).Delete(context.TODO(), r.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -357,9 +357,9 @@ func cleanupRoles(client *kubernetes.Clientset) []error {
 
 func cleanupWebhookResources(client *kubernetes.Clientset) []error {
 	log.Info("Starting cleanup of webhook-specific resources")
-	log.Info("deleting clusterrolebinding", "binding_name", usercontrollers.WebhookClusterRoleBindingName)
-	log.Info("deleting mutatingwebhookconfiguration", "config_name", usercontrollers.WebhookConfigurationName)
-	log.Info("deleting validatingwebhookconfigurations", "config_name", usercontrollers.WebhookConfigurationName)
+	log.Info("Deleting clusterrolebinding", "binding_name", usercontrollers.WebhookClusterRoleBindingName)
+	log.Info("Deleting mutatingwebhookconfiguration", "config_name", usercontrollers.WebhookConfigurationName)
+	log.Info("Deleting validatingwebhookconfigurations", "config_name", usercontrollers.WebhookConfigurationName)
 
 	var errs []error
 
@@ -392,7 +392,7 @@ func deleteJob(client *kubernetes.Clientset) error {
 	for _, job := range jobs.Items {
 		prop := metav1.DeletePropagationBackground
 		if strings.HasPrefix(job.Name, "cattle-cleanup") {
-			log.Info("deleting job", "job_name", job.Name)
+			log.Info("Deleting job", "job_name", job.Name)
 			if !dryRun {
 				err = client.BatchV1().Jobs("default").Delete(context.TODO(), job.Name, metav1.DeleteOptions{
 					PropagationPolicy: &prop,

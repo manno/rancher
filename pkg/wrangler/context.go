@@ -121,7 +121,7 @@ func init() {
 	if timeout := os.Getenv(cacheSyncTimeoutEnvVar); timeout != "" {
 		var err error
 		if cacheSyncTimeout, err = time.ParseDuration(timeout); err != nil {
-			log.Fatal("env var is not a valid duration", "operation", "init_wrangler", "env_var", cacheSyncTimeoutEnvVar, "value", timeout, "error", err)
+			log.Fatal("Env var is not a valid duration", "operation", "init_wrangler", "env_var", cacheSyncTimeoutEnvVar, "value", timeout, "error", err)
 		}
 	}
 }
@@ -212,7 +212,7 @@ func (w *Context) OnLeader(f func(ctx context.Context) error) {
 }
 
 func (w *Context) checkGVK(ctx context.Context, gvk schema.GroupVersionKind) error {
-	log.Warn("cache did not sync", "operation", "check_gvk", "gvk", gvk.String())
+	log.Warn("Cache did not sync", "operation", "check_gvk", "gvk", gvk.String())
 	crd, err := w.CRD.CustomResourceDefinition().Get(gvk.GroupKind().String(), metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get crd for gvk: %s", err)
@@ -251,7 +251,7 @@ func (w *Context) StartWithTransaction(ctx context.Context, f func(context.Conte
 	for gvk, isSynced := range gvks {
 		if !isSynced {
 			if err := w.checkGVK(ctx, gvk); err != nil {
-				log.Error("found issues for gvk", "operation", "start_with_transaction", "gvk", gvk.String(), "error", err)
+				log.Error("Found issues for gvk", "operation", "start_with_transaction", "gvk", gvk.String(), "error", err)
 			}
 		}
 	}
@@ -302,7 +302,7 @@ func (w *Context) Start(ctx context.Context) error {
 		return err
 	}
 	w.leadership.Start(ctx)
-	log.Trace("wrangler context has started", "operation", "start")
+	log.Trace("Wrangler context has started", "operation", "start")
 	return nil
 }
 
@@ -318,14 +318,14 @@ func (w *Context) WithAgent(userAgent string) *Context {
 	}
 	k8sClientWithAgent, err := kubernetes.NewForConfig(restConfigCopy)
 	if err != nil {
-		log.Debug("failed to set agent on k8s client", "operation", "with_agent", "user_agent", userAgent, "error", err)
+		log.Debug("Failed to set agent on k8s client", "operation", "with_agent", "user_agent", userAgent, "error", err)
 	}
 	if err == nil {
 		wContextCopy.K8s = k8sClientWithAgent
 	}
 	applyWithAgent, err := apply.NewForConfig(restConfigCopy)
 	if err != nil {
-		log.Debug("failed to set agent on apply client", "operation", "with_agent", "user_agent", userAgent, "error", err)
+		log.Debug("Failed to set agent on apply client", "operation", "with_agent", "user_agent", userAgent, "error", err)
 	}
 	if err == nil {
 		wContextCopy.Apply = applyWithAgent

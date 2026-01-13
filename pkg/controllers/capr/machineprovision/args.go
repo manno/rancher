@@ -275,11 +275,11 @@ func addAwsClusterOwnedTag(args map[string]any, clusterID string) {
 	tagValue := fmt.Sprintf("%s%s,owned", awsClusterTagPrefix, clusterID)
 	if tags, ok := args["tags"]; !ok || convert.ToString(tags) == "" {
 		args["tags"] = tagValue
-		log.Trace("adding cluster id tag to machine args", "operation", "add_tags", "tag", tagValue)
+		log.Trace("Adding cluster id tag to machine args", "operation", "add_tags", "tag", tagValue)
 	} else {
 		tagString := convert.ToString(tags)
 		if !strings.Contains(tagString, awsClusterTagPrefix) {
-			log.Trace("appending cluster id tag to machine args", "operation", "add_tags", "tag", tagValue)
+			log.Trace("Appending cluster id tag to machine args", "operation", "add_tags", "tag", tagValue)
 			args["tags"] = tagString + "," + tagValue
 		}
 	}
@@ -402,11 +402,11 @@ func getHostname(infra infraObject) string {
 	if limitAnno != "" {
 		l, err := strconv.Atoi(limitAnno)
 		if err != nil {
-			log.Error("failed to parse annotation as int", "operation", "parse_hostname_limit", "annotation", capr.HostnameLengthLimitAnnotation, "value", limitAnno, "kind", infra.obj.GetObjectKind(), "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "error", err)
+			log.Error("Failed to parse annotation as int", "operation", "parse_hostname_limit", "annotation", capr.HostnameLengthLimitAnnotation, "value", limitAnno, "kind", infra.obj.GetObjectKind(), "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "error", err)
 		} else if l < capr.MinimumHostnameLengthLimit {
-			log.Debug("parsed annotation less than minimum", "operation", "parse_hostname_limit", "annotation", capr.HostnameLengthLimitAnnotation, "value", l, "minimum", capr.MinimumHostnameLengthLimit)
+			log.Debug("Parsed annotation less than minimum", "operation", "parse_hostname_limit", "annotation", capr.HostnameLengthLimitAnnotation, "value", l, "minimum", capr.MinimumHostnameLengthLimit)
 		} else if l > capr.MaximumHostnameLengthLimit {
-			log.Debug("parsed annotation greater than maximum", "operation", "parse_hostname_limit", "annotation", capr.HostnameLengthLimitAnnotation, "value", l, "maximum", capr.MaximumHostnameLengthLimit)
+			log.Debug("Parsed annotation greater than maximum", "operation", "parse_hostname_limit", "annotation", capr.HostnameLengthLimitAnnotation, "value", l, "maximum", capr.MaximumHostnameLengthLimit)
 		} else {
 			limit = l
 		}

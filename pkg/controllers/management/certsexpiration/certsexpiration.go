@@ -70,13 +70,13 @@ func (c *certsExpiration) sync(key string, cluster *v3.Cluster) (runtime.Object,
 	for certName, certObj := range certBundle {
 		info, err := rkecerts.GetCertExpiration(certObj.CertificatePEM)
 		if err != nil {
-			log.Debug("failed to get expiration date for certificate", "operation", "sync_certs_expiration", "certificate", certName, "error", err)
+			log.Debug("Failed to get expiration date for certificate", "operation", "sync_certs_expiration", "certificate", certName, "error", err)
 			continue
 		}
 		certsExpInfo[certName] = info
 		err = logCertExpirationWarning(certName, info)
 		if err != nil {
-			log.Warn("certificate has or will expire and date is corrupted", "operation", "sync_certs_expiration", "certificate", certName, "error", err)
+			log.Warn("Certificate has or will expire and date is corrupted", "operation", "sync_certs_expiration", "certificate", certName, "error", err)
 			continue
 		}
 	}
@@ -94,9 +94,9 @@ func logCertExpirationWarning(name string, certExp v32.CertExpiration) error {
 		return err
 	}
 	if time.Now().UTC().After(date) { // warn if expired
-		log.Warn("certificate from local cluster has expired", "operation", "log_cert_expiration_warning", "certificate", name)
+		log.Warn("Certificate from local cluster has expired", "operation", "log_cert_expiration_warning", "certificate", name)
 	} else if time.Now().UTC().AddDate(0, 1, 0).After(date) { // warn if within a month
-		log.Warn("certificate from local cluster will expire soon", "operation", "log_cert_expiration_warning", "certificate", name)
+		log.Warn("Certificate from local cluster will expire soon", "operation", "log_cert_expiration_warning", "certificate", name)
 	}
 	return nil
 }
@@ -118,7 +118,7 @@ func getFullStateFromK8s(ctx context.Context, k8sClient kubernetes.Interface) (*
 		fullStateBytes, err := getFullStateBytesFromSecret(ctx, k8sClient, FullStateSecretName)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Debug("full-state secret not found, falling back to configmap", "operation", "get_full_state_from_k8s")
+				log.Debug("Full-state secret not found, falling back to configmap", "operation", "get_full_state_from_k8s")
 
 				fullStateBytes, err = getFullStateBytesFromConfigMap(ctx, k8sClient, FullStateConfigMapName)
 				if err != nil {

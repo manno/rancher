@@ -246,7 +246,7 @@ func setPorts(workloadName string, data map[string]interface{}) error {
 	for _, c := range convert.ToInterfaceSlice(containers) {
 		cMap, err := convert.EncodeToMap(c)
 		if err != nil {
-			log.Warn("failed to transform container to map", "operation", "set_ports", "error", err)
+			log.Warn("Failed to transform container to map", "operation", "set_ports", "error", err)
 			continue
 		}
 		v, ok := values.GetValue(cMap, "ports")
@@ -257,7 +257,7 @@ func setPorts(workloadName string, data map[string]interface{}) error {
 			for _, p := range ports {
 				port, err := convert.EncodeToMap(p)
 				if err != nil {
-					log.Warn("failed to transform port to map", "operation", "set_ports", "error", err)
+					log.Warn("Failed to transform port to map", "operation", "set_ports", "error", err)
 					continue
 				}
 
@@ -362,7 +362,7 @@ func getNodeName(apiContext *types.APIContext, nodeID string) string {
 func setState(data map[string]interface{}, stateMap map[string]string) {
 	content, err := json.Marshal(stateMap)
 	if err != nil {
-		log.Error("failed to save state on workload", "operation", "set_state", "workload_id", data["id"], "error", err)
+		log.Error("Failed to save state on workload", "operation", "set_state", "workload_id", data["id"], "error", err)
 		return
 	}
 
@@ -384,7 +384,7 @@ func getDomain(image string) string {
 	var repo string
 	named, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
-		log.Debug("error parsing image reference", "operation", "get_domain", "error", err)
+		log.Debug("Error parsing image reference", "operation", "get_domain", "error", err)
 		return repo
 	}
 	domain := reference.Domain(named)

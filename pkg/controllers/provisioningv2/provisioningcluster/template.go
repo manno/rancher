@@ -147,7 +147,7 @@ func toMachineTemplate(machinePoolName string, cluster *rancherv1.Cluster, machi
 	}
 
 	if machinePool.DynamicSchemaSpec == "" {
-		log.Debug("rkecluster waiting for dynamic schema to be populated for machine pool", "namespace", cluster.Namespace, "cluster", cluster.Name, "machine_pool", machinePoolName)
+		log.Debug("Rkecluster waiting for dynamic schema to be populated for machine pool", "namespace", cluster.Namespace, "cluster", cluster.Name, "machine_pool", machinePoolName)
 		return nil, generic.ErrSkip
 	}
 	var spec v3.DynamicSchemaSpec
@@ -220,9 +220,9 @@ func populateHostnameLengthLimitAnnotation(mp rancherv1.RKEMachinePool, cluster 
 
 	if limit := mp.HostnameLengthLimit; limit != 0 {
 		if limit < capr.MinimumHostnameLengthLimit {
-			log.Error("rkecluster cannot use machine pool hostname length limit, under minimum value", "namespace", cluster.Namespace, "cluster", cluster.Name, "machine_pool", mp.Name, "limit", limit, "minimum", capr.MinimumHostnameLengthLimit)
+			log.Error("Rkecluster cannot use machine pool hostname length limit, under minimum value", "namespace", cluster.Namespace, "cluster", cluster.Name, "machine_pool", mp.Name, "limit", limit, "minimum", capr.MinimumHostnameLengthLimit)
 		} else if limit > capr.MaximumHostnameLengthLimit {
-			log.Error("rkecluster cannot use machine pool hostname length limit, over maximum value", "namespace", cluster.Namespace, "cluster", cluster.Name, "machine_pool", mp.Name, "limit", limit, "maximum", capr.MaximumHostnameLengthLimit)
+			log.Error("Rkecluster cannot use machine pool hostname length limit, over maximum value", "namespace", cluster.Namespace, "cluster", cluster.Name, "machine_pool", mp.Name, "limit", limit, "maximum", capr.MaximumHostnameLengthLimit)
 		} else {
 			hostnameLimit = limit
 		}
@@ -231,9 +231,9 @@ func populateHostnameLengthLimitAnnotation(mp rancherv1.RKEMachinePool, cluster 
 	// if the machine pool limit was not specified, or was invalid, fallback to cluster default
 	if limit := cluster.Spec.RKEConfig.MachinePoolDefaults.HostnameLengthLimit; hostnameLimit == 0 && limit != 0 {
 		if limit < capr.MinimumHostnameLengthLimit {
-			log.Error("rkecluster cannot use cluster machine pool default hostname length limit, under minimum value", "namespace", cluster.Namespace, "cluster", cluster.Name, "limit", limit, "minimum", capr.MinimumHostnameLengthLimit)
+			log.Error("Rkecluster cannot use cluster machine pool default hostname length limit, under minimum value", "namespace", cluster.Namespace, "cluster", cluster.Name, "limit", limit, "minimum", capr.MinimumHostnameLengthLimit)
 		} else if limit > capr.MaximumHostnameLengthLimit {
-			log.Error("rkecluster cannot use cluster machine pool default hostname length limit, over maximum value", "namespace", cluster.Namespace, "cluster", cluster.Name, "limit", limit, "maximum", capr.MaximumHostnameLengthLimit)
+			log.Error("Rkecluster cannot use cluster machine pool default hostname length limit, over maximum value", "namespace", cluster.Namespace, "cluster", cluster.Name, "limit", limit, "maximum", capr.MaximumHostnameLengthLimit)
 		} else {
 			hostnameLimit = limit
 		}
@@ -540,7 +540,7 @@ func rkeControlPlane(cluster *rancherv1.Cluster) (*rkev1.RKEControlPlane, error)
 	filteredClusterSpec.RKEConfig.RotateCertificates = nil
 	b64GZCluster, err := capr.CompressInterface(filteredClusterSpec)
 	if err != nil {
-		log.Error("error while gz/b64 encoding cluster specification", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
+		log.Error("Error while gz/b64 encoding cluster specification", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 		return nil, err
 	}
 	rkeConfig := cluster.Spec.RKEConfig.DeepCopy()

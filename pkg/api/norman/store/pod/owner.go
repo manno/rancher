@@ -36,7 +36,7 @@ func getOwnerWithKind(apiContext *types.APIContext, namespace, ownerKind, name s
 		subContext = apiContext.SubContext["/v3/schemas/cluster"]
 	}
 	if subContext == "" {
-		log.Warn("failed to find subcontext to lookup replicaset owner", "operation", "get_owner_with_kind")
+		log.Warn("Failed to find subcontext to lookup replicaset owner", "operation", "get_owner_with_kind")
 		return "", "", nil
 	}
 

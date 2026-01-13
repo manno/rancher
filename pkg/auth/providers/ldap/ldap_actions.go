@@ -196,7 +196,7 @@ func (p *ldapProvider) saveLDAPConfig(config *v3.LdapConfig) error {
 
 	config.ServiceAccountPassword = name
 
-	log.Debug("updating config", "provider", p.providerName, "operation", "save_ldap_config")
+	log.Debug("Updating config", "provider", p.providerName, "operation", "save_ldap_config")
 	_, err = p.authConfigs.ObjectClient().Update(config.ObjectMeta.Name, config)
 	if err != nil {
 		return err

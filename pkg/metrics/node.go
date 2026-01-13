@@ -51,11 +51,11 @@ type nodeMetrics struct {
 
 func (m *nodeMetrics) collect(ctx context.Context) {
 	for range ticker.Context(ctx, reportInterval) {
-		log.Debug("collecting nodes to report metrics", "operation", "collect_node_metrics")
+		log.Debug("Collecting nodes to report metrics", "operation", "collect_node_metrics")
 
 		nodes, err := m.nodeCache.List("", labels.Everything())
 		if err != nil {
-			log.Error("couldn't list v3.Nodes", "operation", "collect_node_metrics", "error", err)
+			log.Error("Couldn't list v3.Nodes", "operation", "collect_node_metrics", "error", err)
 			continue
 		}
 
@@ -63,7 +63,7 @@ func (m *nodeMetrics) collect(ctx context.Context) {
 		for _, node := range nodes {
 			info, err := m.getNodeInfo(node)
 			if err != nil {
-				log.Debug("could not determine node info", "operation", "collect_node_metrics", "error", err)
+				log.Debug("Could not determine node info", "operation", "collect_node_metrics", "error", err)
 				continue
 			}
 			infos = append(infos, info)
@@ -72,7 +72,7 @@ func (m *nodeMetrics) collect(ctx context.Context) {
 		setMetrics(infos)
 	}
 
-	log.Debug("context cancelled, exiting", "operation", "collect_node_metrics")
+	log.Debug("Context cancelled, exiting", "operation", "collect_node_metrics")
 }
 
 type nodeLabelValues struct {

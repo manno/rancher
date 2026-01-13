@@ -27,7 +27,7 @@ func SetRTBStore(ctx context.Context, schema *types.Schema, mgmt *config.ScaledC
 				u, err := userLister.Get("", id)
 				if err != nil {
 					if !errors.IsNotFound(err) {
-						log.Error("problem retrieving user for CRTB from cache during CRTB transformation", "operation", "set_rtb_store_transformer", "user_id", id, "error", err)
+						log.Error("Problem retrieving user for CRTB from cache during CRTB transformation", "operation", "set_rtb_store_transformer", "user_id", id, "error", err)
 					}
 					return data, nil
 				}

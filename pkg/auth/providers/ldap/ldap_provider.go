@@ -173,13 +173,13 @@ func (p *ldapProvider) SearchPrincipals(searchKey, principalType string, myToken
 		if IsNotConfigured(err) {
 			return principals, err
 		}
-		log.Warn("search principals failed to get ldap config", "provider", p.providerName, "operation", "search_principals", "error", err)
+		log.Warn("Search principals failed to get ldap config", "provider", p.providerName, "operation", "search_principals", "error", err)
 		return principals, nil
 	}
 
 	lConn, err := ldap.Connect(config, caPool)
 	if err != nil {
-		log.Warn("search principals failed to connect to ldap", "provider", p.providerName, "operation", "search_principals", "error", err)
+		log.Warn("Search principals failed to connect to ldap", "provider", p.providerName, "operation", "search_principals", "error", err)
 		return principals, nil
 	}
 	defer lConn.Close()
@@ -302,7 +302,7 @@ func (p *ldapProvider) getLDAPConfig(genericClient objectclient.GenericClient) (
 func (p *ldapProvider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []v3.Principal) (bool, error) {
 	config, _, err := p.getLDAPConfig(p.authConfigs.ObjectClient().UnstructuredClient())
 	if err != nil {
-		log.Error("error fetching ldap config", "provider", p.providerName, "operation", "can_access_with_group_providers", "error", err)
+		log.Error("Error fetching ldap config", "provider", p.providerName, "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 	allowed, err := p.userMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipalID, groupPrincipals)

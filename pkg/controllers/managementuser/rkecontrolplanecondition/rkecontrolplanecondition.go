@@ -55,7 +55,7 @@ func (h *handler) syncSystemUpgradeControllerCondition(obj *rkev1.RKEControlPlan
 
 	targetVersion := settings.SystemUpgradeControllerChartVersion.Get()
 	if targetVersion == "" {
-		log.Warn("the SystemUpgradeControllerChartVersion setting is not set", "operation", "rkecontrolplanecondition")
+		log.Warn("The SystemUpgradeControllerChartVersion setting is not set", "operation", "rkecontrolplanecondition")
 		capr.SystemUpgradeControllerReady.Reason(&status, fmt.Sprintf("the SystemUpgradeControllerChartVersion setting is not set"))
 		capr.SystemUpgradeControllerReady.Message(&status, "")
 		capr.SystemUpgradeControllerReady.False(&status)

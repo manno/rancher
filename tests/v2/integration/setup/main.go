@@ -39,8 +39,8 @@ func main() {
 	hostURL := fmt.Sprintf("%s:443", ipAddress.String())
 
 	var userToken *management.Token
-	log.Info("cattle agent is", "agent_image", agentImage)
-	log.Info("bootstrap password is", "password", bootstrapPassword)
+	log.Info("Cattle agent is", "agent_image", agentImage)
+	log.Info("Bootstrap password is", "password", bootstrapPassword)
 	err := kwait.PollUntilContextTimeout(context.TODO(), 500*time.Millisecond, 5*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		userToken, err = token.GenerateUserToken(&management.User{
 			Username: "admin",
@@ -54,7 +54,7 @@ func main() {
 	})
 
 	if err != nil {
-		log.Fatal("error with generating admin token", "error", err)
+		log.Fatal("Error with generating admin token", "error", err)
 	}
 
 	clusterName := namegen.AppendRandomString(k3dClusterNameBasename)
@@ -66,7 +66,7 @@ func main() {
 	rancherConfig.ClusterName = clusterName
 
 	if err := defaults.Set(rancherConfig); err != nil {
-		log.Fatal("error with setting up config file", "error", err)
+		log.Fatal("Error with setting up config file", "error", err)
 	}
 
 	config.WriteConfig(rancherClient.ConfigurationFileKey, rancherConfig)
@@ -77,12 +77,12 @@ func main() {
 
 	client, err = rancherClient.NewClient("", testSession)
 	if err != nil {
-		log.Fatal("error instantiating client", "error", err)
+		log.Fatal("Error instantiating client", "error", err)
 	}
 
 	_, err = k3d.CreateAndImportK3DCluster(client, clusterName, agentImage, "", 1, 0, true)
 	if err != nil {
-		log.Fatal("error creating and importing a k3d cluster", "error", err)
+		log.Fatal("Error creating and importing a k3d cluster", "error", err)
 	}
 
 }
@@ -91,7 +91,7 @@ func main() {
 func getOutboundIP() net.IP {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
-		log.Fatal("error dialing outbound IP", "error", err)
+		log.Fatal("Error dialing outbound IP", "error", err)
 	}
 	defer conn.Close()
 

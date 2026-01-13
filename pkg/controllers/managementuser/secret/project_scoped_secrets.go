@@ -179,7 +179,7 @@ func (n *namespaceHandler) removeUndesiredProjectScopedSecrets(namespace *corev1
 	var errs error
 	for _, secret := range secretsToDelete.UnsortedList() {
 		// secret in namespace does not belong here
-		log.Info("cleaning project scoped secret from namespace", "operation", "cleanSecrets", "secret_name", secret.Name, "namespace", secret.Namespace)
+		log.Info("Cleaning project scoped secret from namespace", "operation", "cleanSecrets", "secret_name", secret.Name, "namespace", secret.Namespace)
 		errs = errors.Join(errs, n.secretClient.Delete(namespace.Name, secret.Name, &metav1.DeleteOptions{}))
 	}
 	return errs
@@ -195,13 +195,13 @@ func (n *namespaceHandler) getProjectFromNamespace(namespace *corev1.Namespace) 
 	}
 	clusterName, projectName, found := strings.Cut(projectID, ":")
 	if !found {
-		log.Debug("namespace projectId annotation is malformed, should be <cluster name>:<project name>", "operation", "getProjectFromNamespace", "namespace", namespace.Name, "project_id", namespace.Annotations[projectIDLabel])
+		log.Debug("Namespace projectId annotation is malformed, should be <cluster name>:<project name>", "operation", "getProjectFromNamespace", "namespace", namespace.Name, "project_id", namespace.Annotations[projectIDLabel])
 		return nil, nil
 	}
 
 	project, err := n.projectCache.Get(clusterName, projectName)
 	if apierrors.IsNotFound(err) {
-		log.Warn("namespace references project which does not exist, not re-enqueueing", "operation", "getProjectFromNamespace", "namespace", namespace.Name, "cluster_name", clusterName, "project_name", projectName)
+		log.Warn("Namespace references project which does not exist, not re-enqueueing", "operation", "getProjectFromNamespace", "namespace", namespace.Name, "cluster_name", clusterName, "project_name", projectName)
 		return nil, nil
 	}
 	return project, err
@@ -214,7 +214,7 @@ func (n *namespaceHandler) secretEnqueueNamespace(_, _ string, obj runtime.Objec
 	}
 	secret, ok := obj.(*corev1.Secret)
 	if !ok {
-		log.Error("unable to convert object to a secret", "operation", "secretEnqueueNamespace", "object", obj)
+		log.Error("Unable to convert object to a secret", "operation", "secretEnqueueNamespace", "object", obj)
 		return nil, nil
 	}
 
@@ -249,7 +249,7 @@ func (n *namespaceHandler) getNamespacesFromSecret(secret *corev1.Secret) ([]*co
 		return nil, err
 	}
 	if project.GetProjectBackingNamespace() != secret.Namespace {
-		log.Trace("secret not in the project namespace, not copying", "operation", "secretEnqueueNamespace", "secret_name", secret.Name)
+		log.Trace("Secret not in the project namespace, not copying", "operation", "secretEnqueueNamespace", "secret_name", secret.Name)
 		return nil, nil
 	}
 

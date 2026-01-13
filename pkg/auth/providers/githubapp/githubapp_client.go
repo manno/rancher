@@ -75,7 +75,7 @@ func (g *githubAppClient) getUser(ctx context.Context, githubAccessToken string,
 	var githubAcct common.GitHubAccount
 
 	if err := json.Unmarshal(b, &githubAcct); err != nil {
-		log.Error("error unmarshalling response", "provider", "githubapp", "operation", "get_user", "error", err)
+		log.Error("Error unmarshalling response", "provider", "githubapp", "operation", "get_user", "error", err)
 		return common.GitHubAccount{}, err
 	}
 
@@ -182,7 +182,7 @@ func (g *githubAppClient) postToGithub(ctx context.Context, url string, form url
 	req.Header.Add("Accept", "application/json")
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		log.Error("received error from github", "provider", "githubapp", "operation", "post_to_github", "error", err)
+		log.Error("Received error from github", "provider", "githubapp", "operation", "post_to_github", "error", err)
 		return nil, err
 	}
 
@@ -215,7 +215,7 @@ func (g *githubAppClient) getFromGithub(ctx context.Context, githubAccessToken s
 	req.Header.Add("User-agent", "rancher/github-app-client")
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		log.Error("received error from github", "provider", "githubapp", "operation", "get_from_github", "error", err)
+		log.Error("Received error from github", "provider", "githubapp", "operation", "get_from_github", "error", err)
 		return nil, "", err
 	}
 	defer resp.Body.Close()

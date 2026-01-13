@@ -251,7 +251,7 @@ func (m *manager) compareAndUpdateClusterRole(clusterRole *rbacv1.ClusterRole, r
 	}
 	clusterRole = clusterRole.DeepCopy()
 	clusterRole.Rules = rt.Rules
-	log.Info("updating clusterrole due to rules difference", "operation", "ensure_cluster_role", "cluster_role", clusterRole.Name, "role_template", rt.Name, "display_name", rt.DisplayName)
+	log.Info("Updating clusterrole due to rules difference", "operation", "ensure_cluster_role", "cluster_role", clusterRole.Name, "role_template", rt.Name, "display_name", rt.DisplayName)
 	_, err := m.clusterRoles.Update(clusterRole)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't update clusterRole %v", rt.Name)
@@ -260,7 +260,7 @@ func (m *manager) compareAndUpdateClusterRole(clusterRole *rbacv1.ClusterRole, r
 }
 
 func (m *manager) createClusterRole(rt *v3.RoleTemplate) error {
-	log.Info("creating clusterrole for roletemplate", "operation", "create_cluster_role", "role_template", rt.Name, "display_name", rt.DisplayName)
+	log.Info("Creating clusterrole for roletemplate", "operation", "create_cluster_role", "role_template", rt.Name, "display_name", rt.DisplayName)
 	_, err := m.clusterRoles.Create(&rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        rt.Name,
@@ -306,7 +306,7 @@ func ToLowerRoleTemplates(roleTemplates map[string]*v3.RoleTemplate) {
 
 func (m *manager) gatherRoles(rt *v3.RoleTemplate, roleTemplates map[string]*v3.RoleTemplate, depthCounter int) error {
 	if depthCounter == rolesCircularSoftLimit {
-		log.Warn("roletemplate has caused many recursive function calls", "operation", "gather_roles", "depth", rolesCircularSoftLimit)
+		log.Warn("Roletemplate has caused many recursive function calls", "operation", "gather_roles", "depth", rolesCircularSoftLimit)
 	}
 	if depthCounter >= rolesCircularHardLimit {
 		return fmt.Errorf("roletemplate '%s' has caused %d recursive function calls, possible circular dependency", rt.Name, rolesCircularHardLimit)
@@ -363,7 +363,7 @@ func (m *manager) ensureClusterBindings(roles map[string]*v3.RoleTemplate, bindi
 	}
 
 	deleteFunc := func(name string) error {
-		log.Info("deleting clusterrolebinding", "operation", "ensure_cluster_bindings", "name", name)
+		log.Info("Deleting clusterrolebinding", "operation", "ensure_cluster_bindings", "name", name)
 		err := m.workload.RBACw.ClusterRoleBinding().Delete(name, &metav1.DeleteOptions{})
 		return client.IgnoreNotFound(err)
 	}
@@ -400,7 +400,7 @@ func (m *manager) ensureProjectRoleBindings(ns string, roles map[string]*v3.Role
 	}
 
 	deleteFunc := func(name string) error {
-		log.Info("deleting rolebinding", "operation", "ensure_project_bindings", "name", name, "namespace", ns)
+		log.Info("Deleting rolebinding", "operation", "ensure_project_bindings", "name", name, "namespace", ns)
 		err := m.workload.RBACw.RoleBinding().Delete(ns, name, &metav1.DeleteOptions{})
 		return client.IgnoreNotFound(err)
 	}
@@ -461,7 +461,7 @@ func (m *manager) ensureBindings(ns string, roles map[string]*v3.RoleTemplate, b
 		case *rbacv1.RoleBinding:
 			_, err := m.rbLister.Get(ns, roleBinding.Name)
 			if apierrors.IsNotFound(err) {
-				log.Info("creating rolebinding", "operation", "ensure_bindings", "key", key, "namespace", ns)
+				log.Info("Creating rolebinding", "operation", "ensure_bindings", "key", key, "namespace", ns)
 				_, err := m.roleBindings.Create(roleBinding)
 				if err != nil && !apierrors.IsAlreadyExists(err) {
 					return err
@@ -470,7 +470,7 @@ func (m *manager) ensureBindings(ns string, roles map[string]*v3.RoleTemplate, b
 				return err
 			}
 		case *rbacv1.ClusterRoleBinding:
-			log.Info("creating clusterrolebinding", "operation", "ensure_bindings", "key", key)
+			log.Info("Creating clusterrolebinding", "operation", "ensure_bindings", "key", key)
 			_, err := m.workload.RBACw.ClusterRoleBinding().Create(roleBinding)
 			if err != nil && !apierrors.IsAlreadyExists(err) {
 				return err

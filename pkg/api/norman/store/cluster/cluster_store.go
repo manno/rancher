@@ -61,7 +61,7 @@ func (t *transformer) transposeGenericConfigToDynamicField(data map[string]inter
 			}
 		}
 		if driver == nil {
-			log.Warn("unable to find the kontainer driver", "operation", "transpose_generic_config", "driver_name", driverName, "field_driver", data[clusterprovisioner.DriverNameField])
+			log.Warn("Unable to find the kontainer driver", "operation", "transpose_generic_config", "driver_name", driverName, "field_driver", data[clusterprovisioner.DriverNameField])
 			return data, nil
 		}
 
@@ -103,7 +103,7 @@ func GetClusterStore(schema *types.Schema, mgmt *config.ScaledContext, clusterMa
 
 	dynamicClient, err := dynamic.NewForConfig(&mgmt.RESTConfig)
 	if err != nil {
-		log.Warn("error creating k8s dynamic client", "operation", "get_cluster_store", "error", err)
+		log.Warn("Error creating k8s dynamic client", "operation", "get_cluster_store", "error", err)
 	} else {
 		s.ClusterClient = dynamicClient.Resource(v3.ClusterGroupVersionResource)
 	}

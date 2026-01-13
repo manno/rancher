@@ -295,7 +295,7 @@ func reconcile[T generic.RuntimeMetaObject, TList runtime.Object](
 
 	for name := range existing {
 		if _, ok := builtRoles[name]; !ok {
-			log.Info("removing role", "operation", "reconcile_roles", "name", name)
+			log.Info("Removing role", "operation", "reconcile_roles", "name", name)
 			if err := client.Delete(name, nil); err != nil {
 				return errors.Wrapf(err, "couldn't delete %v", name)
 			}
@@ -317,7 +317,7 @@ func reconcile[T generic.RuntimeMetaObject, TList runtime.Object](
 			continue
 		}
 
-		log.Info("creating role", "operation", "reconcile_roles", "name", name)
+		log.Info("Creating role", "operation", "reconcile_roles", "name", name)
 		if _, err := client.Create(gr); err != nil {
 			return errors.Wrapf(err, "couldn't create %v", name)
 		}
@@ -327,7 +327,7 @@ func reconcile[T generic.RuntimeMetaObject, TList runtime.Object](
 }
 
 func (rb *roleBuilder) reconcileGlobalRoles(grClient wranglerv3.GlobalRoleClient) error {
-	log.Info("reconciling globalroles", "operation", "add_roles_from_crds")
+	log.Info("Reconciling globalroles", "operation", "add_roles_from_crds")
 	build := func(current *roleBuilder) (string, *v3.GlobalRole, error) {
 		gr := &v3.GlobalRole{
 			ObjectMeta: v1.ObjectMeta{
@@ -386,7 +386,7 @@ func (rb *roleBuilder) reconcileGlobalRoles(grClient wranglerv3.GlobalRoleClient
 }
 
 func (rb *roleBuilder) reconcileRoleTemplates(rtClient wranglerv3.RoleTemplateClient) error {
-	log.Info("reconciling roletemplates", "operation", "add_roles_from_crds")
+	log.Info("Reconciling roletemplates", "operation", "add_roles_from_crds")
 	build := func(current *roleBuilder) (string, *v3.RoleTemplate, error) {
 		if current.externalRules != nil && !current.external {
 			return "", nil, fmt.Errorf("can't create RoleTemplate with externalRules and external=false")

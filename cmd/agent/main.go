@@ -60,7 +60,7 @@ func main() {
 	// The cleanup is only performed by the cattle-cluster-agent,
 	// in whose template the CATTLE_CREDENTIAL_NAME environment variable is set
 	if os.Getenv("CATTLE_CREDENTIAL_NAME") != "" {
-		rancherlog.Info("starting cattle-credential-cleanup goroutine in the background")
+		rancherlog.Info("Starting cattle-credential-cleanup goroutine in the background")
 		go clean.UnusedCattleCredentials()
 	}
 
@@ -80,7 +80,7 @@ func main() {
 	}
 
 	if err != nil {
-		rancherlog.Fatal("agent failed to initialize", "error", err)
+		rancherlog.Fatal("Agent failed to initialize", "error", err)
 	}
 }
 
@@ -271,7 +271,7 @@ func run(ctx context.Context) error {
 
 		err = rancher.Run(topContext)
 		if err != nil {
-			rancherlog.Fatal("failed to run rancher agent", "error", err)
+			rancherlog.Fatal("Failed to run rancher agent", "error", err)
 		}
 		return nil
 	}
@@ -290,8 +290,8 @@ func run(ctx context.Context) error {
 			wsURL += "/register"
 		}
 
-		rancherlog.Info("connecting to server", "url", wsURL, "token_prefix", token[:len(token)/2])
-		rancherlog.Trace("connecting to server", "url", wsURL, "token", token)
+		rancherlog.Info("Connecting to server", "url", wsURL, "token_prefix", token[:len(token)/2])
+		rancherlog.Trace("Connecting to server", "url", wsURL, "token", token)
 		remotedialer.ClientConnect(ctx, wsURL, headers, nil, func(proto, address string) bool {
 			switch proto {
 			case "tcp":
@@ -319,10 +319,10 @@ func exitCertWriter(ctx context.Context) {
 		os.Exit(0)
 	}()
 
-	rancherlog.Info("attempting to stop share-mnt container")
+	rancherlog.Info("Attempting to stop share-mnt container")
 	c, err := client.NewClientWithOpts(client.WithAPIVersionNegotiation(), client.FromEnv)
 	if err != nil {
-		rancherlog.Error("operation failed", "error", err)
+		rancherlog.Error("Operation failed", "error", err)
 		os.Exit(0)
 	}
 
@@ -333,7 +333,7 @@ func exitCertWriter(ctx context.Context) {
 		Filters: args,
 	})
 	if err != nil {
-		rancherlog.Error("operation failed", "error", err)
+		rancherlog.Error("Operation failed", "error", err)
 		os.Exit(0)
 	}
 
@@ -341,7 +341,7 @@ func exitCertWriter(ctx context.Context) {
 		if len(container.Names) > 0 && strings.Contains(container.Names[0], "share-mnt") {
 			err := c.ContainerKill(ctx, container.ID, "SIGTERM")
 			if err != nil {
-				rancherlog.Error("operation failed", "error", err)
+				rancherlog.Error("Operation failed", "error", err)
 				os.Exit(0) // only need to write certs so exit cleanly
 			}
 		}
@@ -351,23 +351,23 @@ func exitCertWriter(ctx context.Context) {
 }
 
 func certinfo(cert *x509.Certificate) {
-	rancherlog.Info("certificate subject", "subject", cert.Subject)
-	rancherlog.Info("certificate issuer", "issuer", cert.Issuer)
-	rancherlog.Info("certificate is CA", "is_ca", cert.IsCA)
+	rancherlog.Info("Certificate subject", "subject", cert.Subject)
+	rancherlog.Info("Certificate issuer", "issuer", cert.Issuer)
+	rancherlog.Info("Certificate is CA", "is_ca", cert.IsCA)
 	if len(cert.DNSNames) > 0 {
-		rancherlog.Info("certificate DNS names", "dns_names", cert.DNSNames)
+		rancherlog.Info("Certificate DNS names", "dns_names", cert.DNSNames)
 	} else {
-		rancherlog.Info("certificate DNS names", "dns_names", "<none>")
+		rancherlog.Info("Certificate DNS names", "dns_names", "<none>")
 	}
 	if len(cert.IPAddresses) > 0 {
-		rancherlog.Info("certificate IP addresses", "ip_addresses", cert.IPAddresses)
+		rancherlog.Info("Certificate IP addresses", "ip_addresses", cert.IPAddresses)
 	} else {
-		rancherlog.Info("certificate IP addresses", "ip_addresses", "<none>")
+		rancherlog.Info("Certificate IP addresses", "ip_addresses", "<none>")
 	}
-	rancherlog.Info("certificate not before", "not_before", cert.NotBefore)
-	rancherlog.Info("certificate not after", "not_after", cert.NotAfter)
-	rancherlog.Info("certificate signature algorithm", "signature_algorithm", cert.SignatureAlgorithm)
-	rancherlog.Info("certificate public key algorithm", "public_key_algorithm", cert.PublicKeyAlgorithm)
+	rancherlog.Info("Certificate not before", "not_before", cert.NotBefore)
+	rancherlog.Info("Certificate not after", "not_after", cert.NotAfter)
+	rancherlog.Info("Certificate signature algorithm", "signature_algorithm", cert.SignatureAlgorithm)
+	rancherlog.Info("Certificate public key algorithm", "public_key_algorithm", cert.PublicKeyAlgorithm)
 }
 
 func configureLog() {
@@ -386,12 +386,12 @@ func configureLog() {
 func rootCATransport() *http.Transport {
 	caFile, err := os.ReadFile(caFileLocation)
 	if err != nil {
-		rancherlog.Error("unable to read CA file", "location", caFileLocation, "error", err)
+		rancherlog.Error("Unable to read CA file", "location", caFileLocation, "error", err)
 		return nil
 	}
 	certPool := x509.NewCertPool()
 	if ok := certPool.AppendCertsFromPEM(caFile); !ok {
-		rancherlog.Error("unable to parse CA file", "location", caFileLocation)
+		rancherlog.Error("Unable to parse CA file", "location", caFileLocation)
 		return nil
 	}
 	return &http.Transport{

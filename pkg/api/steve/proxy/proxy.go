@@ -197,10 +197,10 @@ func (h *Handler) dialer(ctx context.Context, network, address string) (net.Conn
 		conn, err = dialer(ctx, network, "127.0.0.1:6080")
 		if err != nil && strings.Contains(err.Error(), "failed to find Session for client") {
 			if i < 14 {
-				log.Trace("lost connection, retrying", "operation", "proxy_dialer", "attempt", i+1)
+				log.Trace("Lost connection, retrying", "operation", "proxy_dialer", "attempt", i+1)
 				time.Sleep(time.Second)
 			} else {
-				log.Trace("lost connection, failed to reconnect after 15 attempts", "operation", "proxy_dialer")
+				log.Trace("Lost connection, failed to reconnect after 15 attempts", "operation", "proxy_dialer")
 			}
 		} else {
 			break

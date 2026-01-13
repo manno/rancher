@@ -122,7 +122,7 @@ func DownloadIndex(secret *corev1.Secret, repoURL string, caBundle []byte, insec
 	parsedURL.Path = path.Join(parsedURL.Path, "index.yaml")
 
 	url := parsedURL.String()
-	log.Info("downloading repo index", "operation", "download_index", "url", url)
+	log.Info("Downloading repo index", "operation", "download_index", "url", url)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -145,7 +145,7 @@ func DownloadIndex(secret *corev1.Secret, repoURL string, caBundle []byte, insec
 	// become a "fetch any file" service.
 	index := &repo.IndexFile{}
 	if err := yaml.Unmarshal(bytes, index); err != nil {
-		log.Error("failed to unmarshal index", "operation", "download_index", "url", url, "error", err)
+		log.Error("Failed to unmarshal index", "operation", "download_index", "url", url, "error", err)
 		return nil, fmt.Errorf("failed to parse response from %s", url)
 	}
 

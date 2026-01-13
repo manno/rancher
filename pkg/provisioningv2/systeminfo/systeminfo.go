@@ -38,7 +38,7 @@ func (r *Retriever) GetSystemPodLabelSelectors(controlPlane *v1.RKEControlPlane)
 
 	fc, err := r.fleetClusterCache.Get(controlPlane.Namespace, controlPlane.Name)
 	if err != nil {
-		log.Error("error retrieving fleet cluster", "operation", "get_fleet_cluster", "namespace", controlPlane.Namespace, "cluster", controlPlane.Name, "error", err)
+		log.Error("Error retrieving fleet cluster", "operation", "get_fleet_cluster", "namespace", controlPlane.Namespace, "cluster", controlPlane.Name, "error", err)
 		// Don't return here so we don't erroneously block pod cleanup
 	} else {
 		cfsNamespace := "cattle-fleet-system"

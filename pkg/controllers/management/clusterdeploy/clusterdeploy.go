@@ -86,7 +86,7 @@ type clusterDeploy struct {
 }
 
 func (cd *clusterDeploy) sync(key string, cluster *apimgmtv3.Cluster) (runtime.Object, error) {
-	log.Trace("clusterDeploy: sync called", "key", key)
+	log.Trace("ClusterDeploy: sync called", "key", key)
 	var (
 		err, updateErr error
 	)
@@ -104,7 +104,7 @@ func (cd *clusterDeploy) sync(key string, cluster *apimgmtv3.Cluster) (runtime.O
 
 	err = cd.doSync(cluster)
 	if cluster != nil && !reflect.DeepEqual(cluster, original) {
-		log.Trace("clusterDeploy: sync: cluster changed, calling Update", "cluster", cluster.Name)
+		log.Trace("ClusterDeploy: sync: cluster changed, calling Update", "cluster", cluster.Name)
 		_, updateErr = cd.clusters.Update(cluster)
 	}
 
@@ -115,10 +115,10 @@ func (cd *clusterDeploy) sync(key string, cluster *apimgmtv3.Cluster) (runtime.O
 }
 
 func (cd *clusterDeploy) doSync(cluster *apimgmtv3.Cluster) error {
-	log.Trace("clusterDeploy: doSync called", "cluster", cluster.Name)
+	log.Trace("ClusterDeploy: doSync called", "cluster", cluster.Name)
 
 	if !apimgmtv3.ClusterConditionProvisioned.IsTrue(cluster) {
-		log.Trace("clusterDeploy: doSync: cluster is not yet provisioned", "cluster", cluster.Name)
+		log.Trace("ClusterDeploy: doSync: cluster is not yet provisioned", "cluster", cluster.Name)
 		return nil
 	}
 
@@ -130,7 +130,7 @@ func (cd *clusterDeploy) doSync(cluster *apimgmtv3.Cluster) error {
 		return err
 	}
 	if err := healthsyncer.IsAPIUp(cd.ctx, uc.K8sClient.CoreV1().Namespaces()); err != nil {
-		log.Trace("clusterDeploy: doSync: cannot connect to API for cluster", "cluster", cluster.Name)
+		log.Trace("ClusterDeploy: doSync: cannot connect to API for cluster", "cluster", cluster.Name)
 		return ErrCantConnectToAPI
 	}
 
@@ -138,14 +138,14 @@ func (cd *clusterDeploy) doSync(cluster *apimgmtv3.Cluster) error {
 	if err != nil {
 		return err
 	}
-	log.Trace("clusterDeploy: doSync: found nodes for cluster", "count", len(nodes), "cluster", cluster.Name)
+	log.Trace("ClusterDeploy: doSync: found nodes for cluster", "count", len(nodes), "cluster", cluster.Name)
 
 	if len(nodes) == 0 {
 		return nil
 	}
 
 	_, err = apimgmtv3.ClusterConditionSystemAccountCreated.DoUntilTrue(cluster, func() (runtime.Object, error) {
-		log.Trace("clusterDeploy: doSync: Creating SystemAccount for cluster", "cluster", cluster.Name)
+		log.Trace("ClusterDeploy: doSync: Creating SystemAccount for cluster", "cluster", cluster.Name)
 		return cluster, cd.systemAccountManager.CreateSystemAccount(cluster)
 	})
 	if err != nil {
@@ -197,7 +197,7 @@ func agentFeaturesChanged(desired, actual map[string]bool) bool {
 }
 
 func redeployAgent(cluster *apimgmtv3.Cluster, desiredAgent, desiredAuth string, desiredFeatures map[string]bool, desiredTaints []corev1.Taint) bool {
-	log.Trace("clusterDeploy: redeployAgent called for cluster", "cluster", cluster.Name)
+	log.Trace("ClusterDeploy: redeployAgent called for cluster", "cluster", cluster.Name)
 	if !apimgmtv3.ClusterConditionAgentDeployed.IsTrue(cluster) {
 		return true
 	}
@@ -206,12 +206,12 @@ func redeployAgent(cluster *apimgmtv3.Cluster, desiredAgent, desiredAuth string,
 	agentFeaturesChanged := agentFeaturesChanged(desiredFeatures, cluster.Status.AgentFeatures)
 
 	if forceDeploy || imageChange || agentFeaturesChanged {
-		log.Info("redeploying Rancher agents",
+		log.Info("Redeploying Rancher agents",
 			"cluster_name", cluster.Name,
 			"force_deploy", forceDeploy,
 			"image_changed", imageChange,
 			"features_changed", agentFeaturesChanged)
-		log.Trace("clusterDeploy: redeployAgent",
+		log.Trace("ClusterDeploy: redeployAgent",
 			"currentAgentImage", cluster.Status.AgentImage, "desiredAgent", desiredAgent,
 			"currentAuthImage", cluster.Status.AuthImage, "desiredAuth", desiredAuth,
 			"currentAgentFeatures", cluster.Status.AgentFeatures, "desiredFeatures", desiredFeatures)
@@ -221,7 +221,7 @@ func redeployAgent(cluster *apimgmtv3.Cluster, desiredAgent, desiredAuth string,
 	ca := getAgentImages(cluster.Name)
 	if cluster.Status.AgentImage != ca {
 		// downstream agent does not match, kick a redeploy with settings agent
-		log.Info("redeploying agents due to image mismatch",
+		log.Info("Redeploying agents due to image mismatch",
 			"cluster_name", cluster.Name,
 			"old_value", cluster.Status.AgentImage,
 			"new_value", image.ResolveWithCluster(settings.AgentImage.Get(), cluster),
@@ -233,11 +233,11 @@ func redeployAgent(cluster *apimgmtv3.Cluster, desiredAgent, desiredAuth string,
 	// Taints/tolerations
 	// Current control plane taints are cached for comparison
 	currentTaints := getCachedControlPlaneTaints(cluster.Name)
-	log.Trace("clusterDeploy: redeployAgent taints", "cluster", cluster.Name, "currentTaints", currentTaints, "desiredTaints", desiredTaints)
+	log.Trace("ClusterDeploy: redeployAgent taints", "cluster", cluster.Name, "currentTaints", currentTaints, "desiredTaints", desiredTaints)
 	toAdd, toDelete := taints.GetToDiffTaints(currentTaints, desiredTaints)
 	// Any change to current triggers redeploy
 	if len(toAdd) > 0 || len(toDelete) > 0 {
-		log.Info("redeploying agents due to toleration mismatch",
+		log.Info("Redeploying agents due to toleration mismatch",
 			"cluster_name", cluster.Name,
 			"old_value", currentTaints,
 			"new_value", desiredTaints,
@@ -248,7 +248,7 @@ func redeployAgent(cluster *apimgmtv3.Cluster, desiredAgent, desiredAuth string,
 	}
 
 	if !reflect.DeepEqual(append(settings.DefaultAgentSettingsAsEnvVars(), cluster.Spec.AgentEnvVars...), cluster.Status.AppliedAgentEnvVars) {
-		log.Info("redeploying agents due to env vars mismatch",
+		log.Info("Redeploying agents due to env vars mismatch",
 			"cluster_name", cluster.Name,
 			"old_value", cluster.Status.AppliedAgentEnvVars,
 			"new_value", cluster.Spec.AgentEnvVars,
@@ -257,20 +257,20 @@ func redeployAgent(cluster *apimgmtv3.Cluster, desiredAgent, desiredAuth string,
 	}
 
 	if pdbChanged, _ := util.AgentSchedulingPodDisruptionBudgetChanged(cluster); pdbChanged {
-		log.Info("redeploying agent due to configuration change",
+		log.Info("Redeploying agent due to configuration change",
 			"cluster_name", cluster.Name,
 			"reason", "pdb_changed")
 		return true
 	}
 
 	if util.AgentDeploymentCustomizationChanged(cluster) {
-		log.Info("redeploying agent due to configuration change",
+		log.Info("Redeploying agent due to configuration change",
 			"cluster_name", cluster.Name,
 			"reason", "deployment_customization_changed")
 		return true
 	}
 
-	log.Trace("clusterDeploy: redeployAgent: returning false for redeployAgent")
+	log.Trace("ClusterDeploy: redeployAgent: returning false for redeployAgent")
 
 	return false
 }
@@ -286,7 +286,7 @@ func (cd *clusterDeploy) managePodDisruptionBudget(cluster *apimgmtv3.Cluster) e
 		return nil
 	}
 
-	log.Debug("clusterDeploy: Removing Pod Disruption Budget", "cluster", cluster.Name)
+	log.Debug("ClusterDeploy: Removing Pod Disruption Budget", "cluster", cluster.Name)
 
 	pdbYaml, err := systemtemplate.PodDisruptionBudgetTemplate(cluster)
 	if err != nil {
@@ -300,7 +300,7 @@ func (cd *clusterDeploy) managePodDisruptionBudget(cluster *apimgmtv3.Cluster) e
 
 	defer func() {
 		if err := cd.mgmt.SystemTokens.DeleteToken(tokenName); err != nil {
-			log.Error("cleanup for clusterdeploy token failed, will not retry", "tokenName", tokenName, "error", err)
+			log.Error("Cleanup for clusterdeploy token failed, will not retry", "tokenName", tokenName, "error", err)
 		}
 	}()
 
@@ -326,7 +326,7 @@ func (cd *clusterDeploy) managePriorityClass(cluster *apimgmtv3.Cluster) (bool, 
 		return pcChanged, pcCreated, pcRemovedFromCluster, nil
 	}
 
-	log.Debug("clusterDeploy: Updating Priority Class", "cluster", cluster.Name, "pcChanged", pcChanged, "pcCreated", pcCreated, "pcRemoved", pcRemovedFromCluster)
+	log.Debug("ClusterDeploy: Updating Priority Class", "cluster", cluster.Name, "pcChanged", pcChanged, "pcCreated", pcCreated, "pcRemoved", pcRemovedFromCluster)
 
 	pcYaml, err := systemtemplate.PriorityClassTemplate(cluster)
 	if err != nil {
@@ -340,7 +340,7 @@ func (cd *clusterDeploy) managePriorityClass(cluster *apimgmtv3.Cluster) (bool, 
 
 	defer func() {
 		if err := cd.mgmt.SystemTokens.DeleteToken(tokenName); err != nil {
-			log.Error("cleanup for clusterdeploy token failed, will not retry", "tokenName", tokenName, "error", err)
+			log.Error("Cleanup for clusterdeploy token failed, will not retry", "tokenName", tokenName, "error", err)
 		}
 	}()
 
@@ -379,7 +379,7 @@ func (cd *clusterDeploy) ensurePriorityClass(cluster *apimgmtv3.Cluster, kubeCon
 		return false, nil
 	}
 
-	log.Debug("clusterDeploy: deployAgent: ensuring that downstream priority class exists", "cluster", cluster.Name)
+	log.Debug("ClusterDeploy: deployAgent: ensuring that downstream priority class exists", "cluster", cluster.Name)
 
 	out, err := kubectl.GetNonNamespacedResource(kubeConfig, util.PriorityClassKind, util.PriorityClassName)
 	if err == nil {
@@ -388,7 +388,7 @@ func (cd *clusterDeploy) ensurePriorityClass(cluster *apimgmtv3.Cluster, kubeCon
 
 	if strings.Contains(string(out), "Error from server (NotFound)") {
 		if rancherFeatures.ClusterAgentSchedulingCustomization.Enabled() {
-			log.Debug("clusterDeploy: deployAgent: recreating downstream priority class", "cluster", cluster.Name)
+			log.Debug("ClusterDeploy: deployAgent: recreating downstream priority class", "cluster", cluster.Name)
 			pcYaml, err := systemtemplate.PriorityClassTemplate(cluster)
 			if err != nil {
 				return false, fmt.Errorf("clusterDeploy: could not create priority class yaml: %w", err)
@@ -414,13 +414,13 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 	desiredAuth := systemtemplate.GetDesiredAuthImage(cluster)
 	desiredFeatures := systemtemplate.GetDesiredFeatures(cluster)
 
-	log.Trace("clusterDeploy: deployAgent: desired features for cluster", "desiredFeatures", desiredFeatures, "cluster", cluster.Name)
+	log.Trace("ClusterDeploy: deployAgent: desired features for cluster", "desiredFeatures", desiredFeatures, "cluster", cluster.Name)
 
 	desiredTaints, err := cd.getControlPlaneTaints(cluster.Name)
 	if err != nil {
 		return err
 	}
-	log.Trace("clusterDeploy: deployAgent: desired taints for cluster", "desiredTaints", desiredTaints, "cluster", cluster.Name)
+	log.Trace("ClusterDeploy: deployAgent: desired taints for cluster", "desiredTaints", desiredTaints, "cluster", cluster.Name)
 
 	pcChanged, pcCreated, pcDeleted, err := cd.managePriorityClass(cluster)
 	if err != nil {
@@ -439,7 +439,7 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 	}
 	defer func() {
 		if err := cd.mgmt.SystemTokens.DeleteToken(tokenName); err != nil {
-			log.Error("cleanup for clusterdeploy token failed, will not retry", "tokenName", tokenName, "error", err)
+			log.Error("Cleanup for clusterdeploy token failed, will not retry", "tokenName", tokenName, "error", err)
 		}
 	}()
 
@@ -449,17 +449,17 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 	// In this case we need to manually roll out the deployment. The only exception to this is if the PC is
 	// being created for the first time or removed, at which point the reference needs to be updated.
 	if !agentManifestChanged {
-		log.Debug("clusterDeploy: deployAgent: restarting rollout of cattle-cluster-agent deployment to apply updated priority class value")
+		log.Debug("ClusterDeploy: deployAgent: restarting rollout of cattle-cluster-agent deployment to apply updated priority class value")
 		output, err := kubectl.RestartRolloutWithNamespace("cattle-system", "deployment/cattle-cluster-agent", kubeConfig)
 		if err != nil {
-			log.Error("clusterDeploy: failed to rollout cattle-cluster-agent deployment", "output", string(output), "error", err)
+			log.Error("ClusterDeploy: failed to rollout cattle-cluster-agent deployment", "output", string(output), "error", err)
 			return err
 		}
 		util.UpdateAppliedAgentDeploymentCustomization(cluster)
 		return nil
 	}
 
-	log.Trace("clusterDeploy: deployAgent: detected a change in desired cluster agent manifest")
+	log.Trace("ClusterDeploy: deployAgent: detected a change in desired cluster agent manifest")
 
 	// pcChanged and pcCreated indicate that 'managePriorityClass' function has recently recreated
 	// the downstream PC, so there is no need to check a second time.
@@ -467,7 +467,7 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 	if !pcExists {
 		pcExists, err = cd.ensurePriorityClass(cluster, kubeConfig)
 		if err != nil {
-			log.Error("clusterDeploy: deployAgent: failed to ensure priority class exists for cluster", "cluster", cluster.Name, "error", err)
+			log.Error("ClusterDeploy: deployAgent: failed to ensure priority class exists for cluster", "cluster", cluster.Name, "error", err)
 			return err
 		}
 	}
@@ -477,18 +477,18 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 		if err != nil {
 			return cluster, err
 		}
-		log.Trace("clusterDeploy: deployAgent: agent YAML", "yaml", string(yaml))
+		log.Trace("ClusterDeploy: deployAgent: agent YAML", "yaml", string(yaml))
 		var output []byte
 		for i := 0; i < 5; i++ {
 			// This will fail almost always the first time because when we create the namespace in the file it won't have privileges.
 			// This allows for 5*5 seconds for the cluster to be ready to apply the agent YAML before erroring out
-			log.Trace("clusterDeploy: deployAgent: applying agent YAML for cluster", "cluster", cluster.Name, "try", i+1, "output", string(output))
+			log.Trace("ClusterDeploy: deployAgent: applying agent YAML for cluster", "cluster", cluster.Name, "try", i+1, "output", string(output))
 			output, err = kubectl.Apply(yaml, kubeConfig)
 			if err == nil {
-				log.Debug("clusterDeploy: deployAgent: successfully applied agent YAML for cluster", "cluster", cluster.Name, "try", i+1)
+				log.Debug("ClusterDeploy: deployAgent: successfully applied agent YAML for cluster", "cluster", cluster.Name, "try", i+1)
 				break
 			}
-			log.Debug("clusterDeploy: deployAgent: error while applying agent YAML for cluster", "cluster", cluster.Name, "try", i+1)
+			log.Debug("ClusterDeploy: deployAgent: error while applying agent YAML for cluster", "cluster", cluster.Name, "try", i+1)
 			time.Sleep(5 * time.Second)
 		}
 		if err != nil {
@@ -538,7 +538,7 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 }
 
 func (cd *clusterDeploy) getKubeConfig(cluster *apimgmtv3.Cluster) (*clientcmdapi.Config, string, error) {
-	log.Trace("clusterDeploy: getKubeConfig called for cluster", "cluster", cluster.Name)
+	log.Trace("ClusterDeploy: getKubeConfig called for cluster", "cluster", cluster.Name)
 	systemUser, err := cd.systemAccountManager.GetSystemUser(cluster.Name)
 	if err != nil {
 		return nil, "", err
@@ -555,7 +555,7 @@ func (cd *clusterDeploy) getKubeConfig(cluster *apimgmtv3.Cluster) (*clientcmdap
 }
 
 func (cd *clusterDeploy) getYAML(cluster *apimgmtv3.Cluster, agentImage, authImage string, features map[string]bool, taints []corev1.Taint, priorityClassExists bool) ([]byte, error) {
-	log.Trace("clusterDeploy: getYAML: Desired agent configuration for cluster",
+	log.Trace("ClusterDeploy: getYAML: Desired agent configuration for cluster",
 		"agentImage", agentImage, "authImage", authImage, "features", features, "taints", taints, "cluster", cluster.Name)
 
 	token, err := cd.systemAccountManager.GetOrCreateSystemClusterToken(cluster.Name)
@@ -642,14 +642,14 @@ func getCachedControlPlaneTaints(name string) []corev1.Taint {
 }
 
 func clearAgentImages(name string) {
-	log.Trace("clusterDeploy: clearAgentImages called for", "name", name)
+	log.Trace("ClusterDeploy: clearAgentImages called for", "name", name)
 	agentImagesMutex.Lock()
 	defer agentImagesMutex.Unlock()
 	delete(agentImages[clusterImage], name)
 }
 
 func clearControlPlaneTaints(name string) {
-	log.Trace("clusterDeploy: clearControlPlaneTaints called for", "name", name)
+	log.Trace("ClusterDeploy: clearControlPlaneTaints called for", "name", name)
 	controlPlaneTaintsMutex.Lock()
 	defer controlPlaneTaintsMutex.Unlock()
 	delete(controlPlaneTaints, name)
@@ -674,16 +674,16 @@ func (cd *clusterDeploy) getControlPlaneTaints(name string) ([]corev1.Taint, err
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("clusterDeploy: getControlPlaneTaints: Length of nodes for cluster", "cluster", name, "count", len(nodes))
+	log.Debug("ClusterDeploy: getControlPlaneTaints: Length of nodes for cluster", "cluster", name, "count", len(nodes))
 
 	for _, node := range nodes {
 		controlPlaneLabelFound = false
 		// Filtering nodes for controlplane nodes based on labels
 		for controlPlaneLabelKey, controlPlaneLabelValue := range controlPlaneLabels {
 			if labelValue, ok := node.Status.NodeLabels[controlPlaneLabelKey]; ok {
-				log.Trace("clusterDeploy: getControlPlaneTaints: node has label key", "node", node.Status.NodeName, "labelKey", controlPlaneLabelKey)
+				log.Trace("ClusterDeploy: getControlPlaneTaints: node has label key", "node", node.Status.NodeName, "labelKey", controlPlaneLabelKey)
 				if labelValue == controlPlaneLabelValue {
-					log.Trace("clusterDeploy: getControlPlaneTaints: node has label key and value", "node", node.Status.NodeName, "labelKey", controlPlaneLabelKey, "labelValue", controlPlaneLabelValue)
+					log.Trace("ClusterDeploy: getControlPlaneTaints: node has label key and value", "node", node.Status.NodeName, "labelKey", controlPlaneLabelKey, "labelValue", controlPlaneLabelValue)
 					controlPlaneLabelFound = true
 					break
 				}
@@ -693,15 +693,15 @@ func (cd *clusterDeploy) getControlPlaneTaints(name string) ([]corev1.Taint, err
 			toAdd, _ := taints.GetToDiffTaints(allTaints, node.Spec.InternalNodeSpec.Taints)
 			for _, taintStr := range toAdd {
 				if !strings.HasPrefix(taintStr.Key, "node.kubernetes.io") {
-					log.Debug("clusterDeploy: getControlPlaneTaints: toAdd", "taints", toAdd)
+					log.Debug("ClusterDeploy: getControlPlaneTaints: toAdd", "taints", toAdd)
 					allTaints = append(allTaints, taintStr)
 					continue
 				}
-				log.Trace("clusterDeploy: getControlPlaneTaints: skipping k8s internal taint", "taint", taintStr)
+				log.Trace("ClusterDeploy: getControlPlaneTaints: skipping k8s internal taint", "taint", taintStr)
 			}
 		}
 	}
-	log.Debug("clusterDeploy: getControlPlaneTaints: allTaints", "taints", allTaints)
+	log.Debug("ClusterDeploy: getControlPlaneTaints: allTaints", "taints", allTaints)
 
 	return allTaints, nil
 }

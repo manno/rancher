@@ -94,7 +94,7 @@ type driverCreator struct {
 }
 
 func (c *driverCreator) add(name string) error {
-	log.Info("adding kontainer driver", "name", name)
+	log.Info("Adding kontainer driver", "name", name)
 
 	driver, err := c.driversLister.Get("", name)
 	if err != nil {
@@ -132,7 +132,7 @@ func (c *driverCreator) add(name string) error {
 }
 
 func (c *driverCreator) addCustomDriver(name, url, checksum, uiURL string, active bool, domains ...string) error {
-	log.Info("adding kontainer driver", "name", name)
+	log.Info("Adding kontainer driver", "name", name)
 	_, err := c.driversLister.Get("", name)
 	if err != nil {
 		if errors.IsNotFound(err) {

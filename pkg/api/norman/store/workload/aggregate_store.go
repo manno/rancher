@@ -134,7 +134,7 @@ func store(registries map[string]projectclient.RegistryCredential, domainToCreds
 	for registry := range registries {
 		rd, err := GetRegistryDomain(registry)
 		if err != nil {
-			log.Error("unable to get domain for registry", "operation", "store", "registry", registry, "error", err)
+			log.Error("Unable to get domain for registry", "operation", "store", "registry", registry, "error", err)
 			continue
 		}
 		secretRef := corev1.LocalObjectReference{Name: name}
@@ -182,12 +182,12 @@ func streamStore(eg *errgroup.Group, apiContext *types.APIContext, schema *types
 		events, err := schema.Store.Watch(apiContext, schema, opt)
 		if err != nil || events == nil {
 			if err != nil {
-				log.Error("failed on subscribe", "operation", "stream_store", "schema_id", schema.ID, "error", err)
+				log.Error("Failed on subscribe", "operation", "stream_store", "schema_id", schema.ID, "error", err)
 			}
 			return err
 		}
 
-		log.Debug("watching schema", "operation", "stream_store", "schema_id", schema.ID)
+		log.Debug("Watching schema", "operation", "stream_store", "schema_id", schema.ID)
 
 		for e := range events {
 			result <- capabilitiesToUpperCase(e)

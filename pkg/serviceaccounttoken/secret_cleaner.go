@@ -52,7 +52,7 @@ type serviceAccountsCache interface {
 // This should only be started in the leader pod.
 func StartServiceAccountSecretCleaner(ctx context.Context, secrets secretsCache, serviceAccounts serviceAccountsCache, client clientcorev1.CoreV1Interface) error {
 	if !features.CleanStaleSecrets.Enabled() {
-		log.Info("service account secret cleaner disabled, not starting", "operation", "start_sa_secret_cleaner")
+		log.Info("Service account secret cleaner disabled, not starting", "operation", "start_sa_secret_cleaner")
 		return nil
 	}
 
@@ -65,23 +65,23 @@ func StartServiceAccountSecretCleaner(ctx context.Context, secrets secretsCache,
 
 	startTime := time.Now()
 
-	log.Info("starting service account secret cleaner", "operation", "start_sa_secret_cleaner", "secret_count", secretsQueue.List.Len())
+	log.Info("Starting service account secret cleaner", "operation", "start_sa_secret_cleaner", "secret_count", secretsQueue.List.Len())
 	ticker := time.NewTicker(cleanCycleDelay)
 
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
-				log.Info("terminating service account secret cleaner", "operation", "sa_secret_cleaner")
+				log.Info("Terminating service account secret cleaner", "operation", "sa_secret_cleaner")
 				return
 			case <-ticker.C:
 				if err := CleanServiceAccountSecrets(ctx, client.Secrets(impersonationNamespace), serviceAccounts, secretsQueue.dequeue(cleaningBatchSize)); err != nil {
-					log.Error("error cleaning service account secrets", "operation", "sa_secret_cleaner", "error", err)
+					log.Error("Error cleaning service account secrets", "operation", "sa_secret_cleaner", "error", err)
 				}
 				if l := secretsQueue.List.Len(); l > 0 {
-					log.Info("service account secret cleaner has secrets remaining", "operation", "sa_secret_cleaner", "remaining", l)
+					log.Info("Service account secret cleaner has secrets remaining", "operation", "sa_secret_cleaner", "remaining", l)
 				} else {
-					log.Info("service account secret cleaner has no secrets remaining, terminating", "operation", "sa_secret_cleaner", "elapsed", time.Since(startTime))
+					log.Info("Service account secret cleaner has no secrets remaining, terminating", "operation", "sa_secret_cleaner", "elapsed", time.Since(startTime))
 					return
 				}
 				// This ensures that no matter how long the cleaning takes,
@@ -118,7 +118,7 @@ func CleanServiceAccountSecrets(ctx context.Context, secrets clientv1.SecretInte
 	}
 
 	for _, secretRef := range toBeDeleted {
-		log.Debug("deleting service account secret", "operation", "clean_sa_secrets", "secret", secretRef)
+		log.Debug("Deleting service account secret", "operation", "clean_sa_secrets", "secret", secretRef)
 		if err := secrets.Delete(ctx, secretRef.Name, metav1.DeleteOptions{}); err != nil {
 			deletionErr = errors.Join(deletionErr, err)
 		}
@@ -126,7 +126,7 @@ func CleanServiceAccountSecrets(ctx context.Context, secrets clientv1.SecretInte
 	}
 
 	if deletedCount > 0 {
-		log.Info("secret cleaner deleted secrets", "operation", "clean_sa_secrets", "deleted_count", deletedCount)
+		log.Info("Secret cleaner deleted secrets", "operation", "clean_sa_secrets", "deleted_count", deletedCount)
 	}
 
 	return deletionErr

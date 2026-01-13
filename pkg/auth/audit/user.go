@@ -28,7 +28,7 @@ func getUserNameForBasicLogin(body []byte) string {
 
 	err := json.Unmarshal(body, input)
 	if err != nil {
-		rlog.Debug("error unmarshalling user, cannot add login info to audit log", "operation", "get_user_name_for_basic_login", "error", err)
+		rlog.Debug("Error unmarshalling user, cannot add login info to audit log", "operation", "get_user_name_for_basic_login", "error", err)
 		return ""
 	}
 

@@ -25,7 +25,7 @@ func GetExternalImages(rancherVersion string, externalData map[string]interface{
 		return nil, fmt.Errorf("invalid source provided: %s", source)
 	}
 
-	log.Info("generating image list", "operation", "generate_image_list", "source", source)
+	log.Info("Generating image list", "operation", "generate_image_list", "source", source)
 	externalImagesMap := make(map[string]bool)
 	releases, _ := externalData["releases"].([]interface{})
 
@@ -80,12 +80,12 @@ func GetExternalImages(rancherVersion string, externalData map[string]interface{
 			}
 		}
 
-		log.Debug("adding compatible release", "operation", "generate_image_list", "source", source, "version", version)
+		log.Debug("Adding compatible release", "operation", "generate_image_list", "source", source, "version", version)
 		compatibleReleases = append(compatibleReleases, version)
 	}
 
 	if compatibleReleases == nil || len(compatibleReleases) < 1 {
-		log.Info("skipping image generation since no compatible releases found", "operation", "generate_image_list", "rancher_version", rancherVersion)
+		log.Info("Skipping image generation since no compatible releases found", "operation", "generate_image_list", "rancher_version", rancherVersion)
 		return nil, nil
 	}
 
@@ -98,7 +98,7 @@ func GetExternalImages(rancherVersion string, externalData map[string]interface{
 
 		images, err := downloadExternalSupportingImages(release, source, osType)
 		if err != nil {
-			log.Info("could not find supporting images for release", "operation", "generate_image_list", "source", source, "release", release, "error", err)
+			log.Info("Could not find supporting images for release", "operation", "generate_image_list", "source", source, "release", release, "error", err)
 			continue
 		}
 
@@ -115,12 +115,12 @@ func GetExternalImages(rancherVersion string, externalData map[string]interface{
 
 	var externalImages []string
 	for imageName := range externalImagesMap {
-		log.Debug("adding image", "operation", "generate_image_list", "source", source, "image", imageName)
+		log.Debug("Adding image", "operation", "generate_image_list", "source", source, "image", imageName)
 		externalImages = append(externalImages, imageName)
 	}
 
 	sort.Strings(externalImages)
-	log.Info("finished generating image list", "operation", "generate_image_list", "source", source)
+	log.Info("Finished generating image list", "operation", "generate_image_list", "source", source)
 	return externalImages, nil
 }
 

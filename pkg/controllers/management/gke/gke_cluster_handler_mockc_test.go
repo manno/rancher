@@ -83,7 +83,7 @@ func getMockGkeOperatorController(t *testing.T, clusterState string) mockGkeOper
 // test setInitialUpstreamSpec
 
 func (m *mockGkeOperatorController) setInitialUpstreamSpec(cluster *mgmtv3.Cluster) (*mgmtv3.Cluster, error) {
-	log.Info("setting initial upstream spec on cluster", "cluster_name", cluster.Name)
+	log.Info("Setting initial upstream spec on cluster", "cluster_name", cluster.Name)
 
 	// mock
 	upstreamSpec := &v1.GKEClusterConfigSpec{}

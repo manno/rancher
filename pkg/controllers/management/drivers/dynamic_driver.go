@@ -71,7 +71,7 @@ func (d *BaseDriver) copyTo(dest string) error {
 	}
 	defer src.Close()
 
-	log.Info("copying driver binary", "operation", "stage", "src", d.srcBinName(), "dest", tmpPath)
+	log.Info("Copying driver binary", "operation", "stage", "src", d.srcBinName(), "dest", tmpPath)
 	_, err = io.Copy(f, src)
 	if err != nil {
 		return errors.Wrapf(err, "Couldn't copy %v to %v", d.srcBinName(), tmpPath)
@@ -94,7 +94,7 @@ func (d *BaseDriver) Executable() error {
 	if d.Builtin {
 		return nil
 	}
-	log.Debug("checking if driver is executable", "operation", "executable", "driver", d.DriverName)
+	log.Debug("Checking if driver is executable", "operation", "executable", "driver", d.DriverName)
 	binaryPath := d.binName()
 	info, err := os.Lstat(binaryPath)
 	if err != nil {

@@ -43,7 +43,7 @@ func identifyCRTBs(workunits *[]migrateUserWorkUnit, crtbList *v3.ClusterRoleTem
 			if workUnitContainsName(&(*workunits)[index], crtb.UserName) {
 				(*workunits)[index].activeDirectoryCRTBs = append((*workunits)[index].activeDirectoryCRTBs, crtb)
 			} else {
-				log.Warn("found CRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+				log.Warn("Found CRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
 					"operation", identifyAdUserOperation,
 					"principal", crtb.UserPrincipalName,
 					"user", crtb.UserName)
@@ -52,7 +52,7 @@ func identifyCRTBs(workunits *[]migrateUserWorkUnit, crtbList *v3.ClusterRoleTem
 			if workUnitContainsName(&(*workunits)[index], crtb.UserName) {
 				(*workunits)[index].duplicateLocalCRTBs = append((*workunits)[index].duplicateLocalCRTBs, crtb)
 			} else {
-				log.Warn("found CRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+				log.Warn("Found CRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
 					"operation", identifyAdUserOperation,
 					"principal", crtb.UserPrincipalName,
 					"user", crtb.UserName)
@@ -69,7 +69,7 @@ func identifyPRTBs(workunits *[]migrateUserWorkUnit, prtbList *v3.ProjectRoleTem
 			if workUnitContainsName(&(*workunits)[index], prtb.UserName) {
 				(*workunits)[index].activeDirectoryPRTBs = append((*workunits)[index].activeDirectoryPRTBs, prtb)
 			} else {
-				log.Warn("found PRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+				log.Warn("Found PRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
 					"operation", identifyAdUserOperation,
 					"principal", prtb.UserPrincipalName,
 					"user", prtb.UserName)
@@ -78,7 +78,7 @@ func identifyPRTBs(workunits *[]migrateUserWorkUnit, prtbList *v3.ProjectRoleTem
 			if workUnitContainsName(&(*workunits)[index], prtb.UserName) {
 				(*workunits)[index].duplicateLocalPRTBs = append((*workunits)[index].duplicateLocalPRTBs, prtb)
 			} else {
-				log.Warn("found PRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+				log.Warn("Found PRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
 					"operation", identifyAdUserOperation,
 					"principal", prtb.UserPrincipalName,
 					"user", prtb.UserName)
@@ -148,7 +148,7 @@ func updateCRTB(crtbInterface v3norman.ClusterRoleTemplateBindingInterface, oldC
 		createdCrtb, err = crtbInterface.Create(newCrtb)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				log.Error("internal error while creating CRTB, will backoff and retry",
+				log.Error("Internal error while creating CRTB, will backoff and retry",
 					"operation", migrateCrtbsOperation,
 					"error", err)
 				return false, err
@@ -167,7 +167,7 @@ func updateCRTB(crtbInterface v3norman.ClusterRoleTemplateBindingInterface, oldC
 		err = crtbInterface.DeleteNamespaced(oldCrtb.Namespace, oldCrtb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				log.Error("internal error while deleting CRTB, will backoff and retry",
+				log.Error("Internal error while deleting CRTB, will backoff and retry",
 					"operation", migrateCrtbsOperation,
 					"error", err)
 				return false, err
@@ -197,7 +197,7 @@ func updateCRTB(crtbInterface v3norman.ClusterRoleTemplateBindingInterface, oldC
 		_, err = crtbInterface.Update(updatedCrtb)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				log.Error("internal error while updating CRTB, will backoff and retry",
+				log.Error("Internal error while updating CRTB, will backoff and retry",
 					"operation", migrateCrtbsOperation,
 					"error", err)
 				return false, err
@@ -227,7 +227,7 @@ func migrateCRTBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRu
 		} else {
 			err := updateCRTB(crtbInterface, &oldCrtb, workunit.originalUser.Name, dnPrincipalID)
 			if err != nil {
-				log.Error("error while migrating CRTBs for user",
+				log.Error("Error while migrating CRTBs for user",
 					"operation", migrateCrtbsOperation,
 					"user", workunit.originalUser.Name,
 					"error", err)
@@ -247,7 +247,7 @@ func migrateCRTBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRu
 		} else {
 			err := updateCRTB(crtbInterface, &oldCrtb, workunit.originalUser.Name, localPrincipalID)
 			if err != nil {
-				log.Error("error while migrating crtbs for user",
+				log.Error("Error while migrating crtbs for user",
 					"operation", migrateCrtbsOperation,
 					"user", workunit.originalUser.Name,
 					"error", err)
@@ -300,7 +300,7 @@ func updatePRTB(prtbInterface v3norman.ProjectRoleTemplateBindingInterface, oldP
 		createdPrtb, err = prtbInterface.Create(newPrtb)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				log.Error("internal error while creating prtb, will backoff and retry",
+				log.Error("Internal error while creating prtb, will backoff and retry",
 					"operation", migratePrtbsOperation,
 					"error", err)
 				return false, err
@@ -319,7 +319,7 @@ func updatePRTB(prtbInterface v3norman.ProjectRoleTemplateBindingInterface, oldP
 		err = prtbInterface.DeleteNamespaced(oldPrtb.Namespace, oldPrtb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				log.Error("internal error while deleting prtb, will backoff and retry",
+				log.Error("Internal error while deleting prtb, will backoff and retry",
 					"operation", migratePrtbsOperation,
 					"error", err)
 				return false, err
@@ -347,7 +347,7 @@ func updatePRTB(prtbInterface v3norman.ProjectRoleTemplateBindingInterface, oldP
 		_, err = prtbInterface.Update(updatedPrtb)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				log.Error("internal error while updating PRTB, will backoff and retry",
+				log.Error("Internal error while updating PRTB, will backoff and retry",
 					"operation", migratePrtbsOperation,
 					"error", err)
 				return false, err
@@ -378,7 +378,7 @@ func migratePRTBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRu
 		} else {
 			err := updatePRTB(prtbInterface, &oldPrtb, workunit.originalUser.Name, dnPrincipalID)
 			if err != nil {
-				log.Error("error while migrating prtbs for user",
+				log.Error("Error while migrating prtbs for user",
 					"operation", migratePrtbsOperation,
 					"user", workunit.originalUser.Name,
 					"error", err)
@@ -399,7 +399,7 @@ func migratePRTBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRu
 		} else {
 			err := updatePRTB(prtbInterface, &oldPrtb, workunit.originalUser.Name, localPrincipalID)
 			if err != nil {
-				log.Error("error while migrating prtbs for user",
+				log.Error("Error while migrating prtbs for user",
 					"operation", migratePrtbsOperation,
 					"user", workunit.originalUser.Name,
 					"error", err)
@@ -458,7 +458,7 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				createdGrb, err = grbInterface.Create(newGrb)
 				if err != nil {
 					if apierrors.IsInternalError(err) {
-						log.Error("internal error while creating GRB, will backoff and retry",
+						log.Error("Internal error while creating GRB, will backoff and retry",
 							"operation", migrateGrbsOperation,
 							"error", err)
 						return false, err
@@ -468,7 +468,7 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				return true, nil
 			})
 			if err != nil {
-				log.Error("permanent error while creating GRB, giving up",
+				log.Error("Permanent error while creating GRB, giving up",
 					"operation", migrateGrbsOperation,
 					"error", err)
 				continue
@@ -480,7 +480,7 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				err = sc.Management.GlobalRoleBindings("").Delete(oldGrb.Name, &metav1.DeleteOptions{})
 				if err != nil {
 					if apierrors.IsInternalError(err) {
-						log.Error("internal error while deleting GRB, will backoff and retry",
+						log.Error("Internal error while deleting GRB, will backoff and retry",
 							"operation", migrateGrbsOperation,
 							"error", err)
 						return false, err
@@ -490,7 +490,7 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				return true, nil
 			})
 			if err != nil {
-				log.Error("permanent error when deleting GRB, giving up",
+				log.Error("Permanent error when deleting GRB, giving up",
 					"operation", migrateGrbsOperation,
 					"error", err)
 				continue
@@ -511,7 +511,7 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				_, err = sc.Management.GlobalRoleBindings("").Update(updatedGrb)
 				if err != nil {
 					if apierrors.IsInternalError(err) {
-						log.Error("internal error while updating GRB, will backoff and retry",
+						log.Error("Internal error while updating GRB, will backoff and retry",
 							"operation", migrateGrbsOperation,
 							"error", err)
 						return false, err
@@ -521,7 +521,7 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				return true, nil
 			})
 			if err != nil {
-				log.Error("permanent error when updating GRB, giving up",
+				log.Error("Permanent error when updating GRB, giving up",
 					"operation", migrateGrbsOperation,
 					"error", err)
 			}

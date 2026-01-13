@@ -151,7 +151,7 @@ func (m *mcm) Wait(ctx context.Context) {
 			if _, err := m.wranglerContext.Core.Namespace().Get(namespace.GlobalNamespace, metav1.GetOptions{}); err == nil {
 				return
 			}
-			log.Info("waiting for initial data to be populated", "operation", "mcm_wait")
+			log.Info("Waiting for initial data to be populated", "operation", "mcm_wait")
 			time.Sleep(2 * time.Second)
 		}
 	case <-ctx.Done():
@@ -215,7 +215,7 @@ func (m *mcm) Start(ctx context.Context) error {
 		go managementdata.CleanupDuplicateBindings(m.ScaledContext, m.wranglerContext)
 		go managementdata.CleanupOrphanBindings(m.ScaledContext, m.wranglerContext)
 
-		log.Info("rancher startup complete", "operation", "mcm_start")
+		log.Info("Rancher startup complete", "operation", "mcm_start")
 		return nil
 	})
 

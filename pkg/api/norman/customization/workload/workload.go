@@ -181,7 +181,7 @@ func (a *Config) rollbackDeployment(apiContext *types.APIContext, clusterContext
 		return httperror.NewAPIError(httperror.ServerError, fmt.Sprintf("Error parsing api version for deployment %v: %v", name, err))
 	}
 	if deploymentVersion == k8sappsv1.SchemeGroupVersion {
-		log.Debug("deployment apiversion is apps/v1", "operation", "rollback_deployment")
+		log.Debug("Deployment apiversion is apps/v1", "operation", "rollback_deployment")
 		// DeploymentRollback & RollbackTo are deprecated in apps/v1
 		// only way to rollback is update deployment podSpec with replicaSet podSpec
 		split := strings.SplitN(rollbackInput.ReplicaSetID, ":", 3)
@@ -203,7 +203,7 @@ func (a *Config) rollbackDeployment(apiContext *types.APIContext, clusterContext
 	}
 
 	revision := fetchRevisionFor(apiContext, rollbackInput, namespace, name, currRevision)
-	log.Debug("rollback input", "operation", "rollback_deployment", "revision", revision)
+	log.Debug("Rollback input", "operation", "rollback_deployment", "revision", revision)
 	if revision == "" {
 		return httperror.NewAPIError(httperror.ServerError, fmt.Sprintf("ReplicaSet %s doesn't exist for deployment %s", rollbackInput.ReplicaSetID, deployment.ID))
 	}
@@ -325,7 +325,7 @@ func (a *Config) canUpdateWorkload(apiContext *types.APIContext, resource *types
 		apiGroup = batchv1.GroupName
 		pluralName = batchv1.CronJobResource.Name
 	default:
-		log.Debug("invalid workload type", "operation", "can_update_workload", "workload_type", workloadType)
+		log.Debug("Invalid workload type", "operation", "can_update_workload", "workload_type", workloadType)
 		return errInvalidWorkloadType
 	}
 

@@ -42,7 +42,7 @@ func HelmClient(secret *corev1.Secret, caBundle []byte, insecureSkipTLSVerify bo
 		}
 		pool, err := x509.SystemCertPool()
 		if err != nil {
-			log.Debug("getting system cert pool failed", "operation", "new_http_client", "error", err)
+			log.Debug("Getting system cert pool failed", "operation", "new_http_client", "error", err)
 			pool = x509.NewCertPool()
 		}
 		pool.AddCert(cert)

@@ -98,7 +98,7 @@ func getKubernetesVersionRange(ctx context.Context, runtime, serverVersion strin
 	for _, release := range config.Releases {
 		versionParsed, err := semver.ParseTolerant(release.Version)
 		if err != nil {
-			log.Trace("failed to parse release version", "operation", "get_kubernetes_version_range", "version", release.Version, "error", err)
+			log.Trace("Failed to parse release version", "operation", "get_kubernetes_version_range", "version", release.Version, "error", err)
 			continue
 		}
 		majorMinorKey := fmt.Sprintf("%d.%d", versionParsed.Major, versionParsed.Minor)
@@ -107,12 +107,12 @@ func getKubernetesVersionRange(ctx context.Context, runtime, serverVersion strin
 		}
 		minVersionParsed, err := semver.ParseTolerant(release.ChannelServerMinVersion)
 		if err != nil {
-			log.Trace("failed to parse ChannelServerMinVersion", "operation", "get_kubernetes_version_range", "version", release.ChannelServerMinVersion, "error", err)
+			log.Trace("Failed to parse ChannelServerMinVersion", "operation", "get_kubernetes_version_range", "version", release.ChannelServerMinVersion, "error", err)
 			continue
 		}
 		maxVersionParsed, err := semver.ParseTolerant(release.ChannelServerMaxVersion)
 		if err != nil {
-			log.Trace("failed to parse ChannelServerMaxVersion", "operation", "get_kubernetes_version_range", "version", release.ChannelServerMaxVersion, "error", err)
+			log.Trace("Failed to parse ChannelServerMaxVersion", "operation", "get_kubernetes_version_range", "version", release.ChannelServerMaxVersion, "error", err)
 			continue
 		}
 		if serverVersionParsed.LT(minVersionParsed) || serverVersionParsed.GT(maxVersionParsed) {

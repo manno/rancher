@@ -64,13 +64,13 @@ func (d *Deployer) Ensure(ctx context.Context, labels map[string]string) error {
 		_, err = d.serviceAccounts.Create(sa)
 		if err != nil {
 			if errors.IsAlreadyExists(err) {
-				d.log.Debug("service account already exists")
+				d.log.Debug("Service account already exists")
 				return nil
 			}
 			return fmt.Errorf("failed to create service account %s in namespace %s: %w",
 				saName, consts.DefaultSCCNamespace, err)
 		}
-		d.log.Info("created service account", "account", saName, "namespace", consts.DefaultSCCNamespace)
+		d.log.Info("Created service account", "account", saName, "namespace", consts.DefaultSCCNamespace)
 	}
 
 	return nil

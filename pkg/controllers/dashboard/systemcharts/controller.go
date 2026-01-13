@@ -345,7 +345,7 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 				suc, err := h.deploymentCache.Get(namespace.System, sucDeploymentName)
 				if err != nil && !errors.IsNotFound(err) {
 					toEnable = false
-					log.Warn("systemcharts: failed to get deployment", "operation", "enabled", "namespace", namespace.System, "name", sucDeploymentName, "error", err)
+					log.Warn("Systemcharts: failed to get deployment", "operation", "enabled", "namespace", namespace.System, "name", sucDeploymentName, "error", err)
 				}
 				if suc != nil {
 					// The missing annotation suggests that either the legacy Fleet bundle in the node-driver RKE2/K3s cluster,
@@ -366,7 +366,7 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 					// Rancher has direct access to the mgmt v3 cluster and the ImportedClusterVersionManagement setting
 					cluster, err := h.clusterCache.Get("local")
 					if err != nil {
-						log.Warn("systemcharts: failed to get local cluster", "operation", "enabled", "error", err)
+						log.Warn("Systemcharts: failed to get local cluster", "operation", "enabled", "error", err)
 					}
 					if cluster != nil && (cluster.Status.Driver == v3.ClusterDriverRke2 || cluster.Status.Driver == v3.ClusterDriverK3s) {
 						versionManagementEnabled = importedclusterversionmanagement.Enabled(cluster)
@@ -375,14 +375,14 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 				if isInHarvesterLocal() {
 					cluster, err := h.clusterCache.Get("local")
 					if err != nil {
-						log.Warn("systemcharts: failed to get local cluster for harvester", "operation", "enabled", "error", err)
+						log.Warn("Systemcharts: failed to get local cluster for harvester", "operation", "enabled", "error", err)
 					}
 					if cluster != nil && cluster.Status.Provider == "harvester" && cluster.Status.Driver == v3.ClusterDriverImported {
 						versionManagementEnabled = importedclusterversionmanagement.Enabled(cluster)
 					}
 				}
 				toInstall := versionManagementEnabled && toEnable
-				log.Debug("systemcharts: install system-upgrade-controller", "operation", "enabled", "to_install", toInstall, "version_management_enabled", versionManagementEnabled, "to_enable", toEnable)
+				log.Debug("Systemcharts: install system-upgrade-controller", "operation", "enabled", "to_install", toInstall, "version_management_enabled", versionManagementEnabled, "to_enable", toEnable)
 				return toInstall
 			},
 			Uninstall: func() bool {
@@ -391,7 +391,7 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 				// The removal of the plans is handled in the k3sbasedupgrade package.
 				plans, err := h.planCache.List(namespace.System, managedPlanSelector)
 				if err != nil {
-					log.Warn("systemcharts: failed to list plans", "operation", "uninstall", "error", err)
+					log.Warn("Systemcharts: failed to list plans", "operation", "uninstall", "error", err)
 				}
 				if len(plans) == 0 {
 					noManagedPlan = true
@@ -408,7 +408,7 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 					// Rancher has direct access to the mgmt v3 cluster and the ImportedClusterVersionManagement setting
 					cluster, err := h.clusterCache.Get("local")
 					if err != nil {
-						log.Warn("systemcharts: failed to get local cluster", "operation", "uninstall", "error", err)
+						log.Warn("Systemcharts: failed to get local cluster", "operation", "uninstall", "error", err)
 					}
 					if cluster != nil && (cluster.Status.Driver == v3.ClusterDriverRke2 || cluster.Status.Driver == v3.ClusterDriverK3s) {
 						versionManagementEnabled = importedclusterversionmanagement.Enabled(cluster)
@@ -417,14 +417,14 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 				if isInHarvesterLocal() {
 					cluster, err := h.clusterCache.Get("local")
 					if err != nil {
-						log.Warn("systemcharts: failed to get local cluster for harvester", "operation", "uninstall", "error", err)
+						log.Warn("Systemcharts: failed to get local cluster for harvester", "operation", "uninstall", "error", err)
 					}
 					if cluster != nil && cluster.Status.Provider == "harvester" && cluster.Status.Driver == v3.ClusterDriverImported {
 						versionManagementEnabled = importedclusterversionmanagement.Enabled(cluster)
 					}
 				}
 				toUninstall := !versionManagementEnabled && noManagedPlan
-				log.Debug("systemcharts: uninstall system-upgrade-controller", "operation", "uninstall", "to_uninstall", toUninstall, "version_management_disabled", !versionManagementEnabled, "no_managed_plan", noManagedPlan)
+				log.Debug("Systemcharts: uninstall system-upgrade-controller", "operation", "uninstall", "to_uninstall", toUninstall, "version_management_disabled", !versionManagementEnabled, "no_managed_plan", noManagedPlan)
 				return toUninstall
 			}(),
 		},
@@ -444,7 +444,7 @@ func (h *handler) onDeployment(_ string, d *k8sappsv1.Deployment) (*k8sappsv1.De
 	}
 
 	index := slices.Index(d.Finalizers, legacyAppFinalizer)
-	log.Info("systemcharts: found deployment with target finalizer", "operation", "on_deployment", "namespace", d.Namespace, "name", d.Name, "finalizer_index", index)
+	log.Info("Systemcharts: found deployment with target finalizer", "operation", "on_deployment", "namespace", d.Namespace, "name", d.Name, "finalizer_index", index)
 	if (d.DeletionTimestamp != nil && index == -1) || (d.DeletionTimestamp == nil && index >= 0) {
 		return d, nil
 	}
@@ -471,7 +471,7 @@ func (h *handler) onDeployment(_ string, d *k8sappsv1.Deployment) (*k8sappsv1.De
 		}); err != nil {
 			return nil, fmt.Errorf("failed to update deployment %s/%s: %w", d.Namespace, d.Name, err)
 		}
-		log.Info("systemcharts: enqueue cluster repo", "operation", "on_deployment", "repo", repoName)
+		log.Info("Systemcharts: enqueue cluster repo", "operation", "on_deployment", "repo", repoName)
 		h.clusterRepo.EnqueueAfter(repoName, 2*time.Second)
 
 	case d.DeletionTimestamp == nil && index == -1:
@@ -508,7 +508,7 @@ func (h *handler) onPlan(_ string, plan *upgradev1.Plan) (*upgradev1.Plan, error
 		return plan, nil
 	}
 	index := slices.Index(plan.Finalizers, managedPlanFinalizer)
-	log.Debug("systemcharts: found plan with target finalizer", "operation", "on_plan", "namespace", plan.Namespace, "name", plan.Name, "finalizer_index", index)
+	log.Debug("Systemcharts: found plan with target finalizer", "operation", "on_plan", "namespace", plan.Namespace, "name", plan.Name, "finalizer_index", index)
 	if (plan.DeletionTimestamp != nil && index == -1) || (plan.DeletionTimestamp == nil && index >= 0) {
 		return plan, nil
 	}
@@ -531,7 +531,7 @@ func (h *handler) onPlan(_ string, plan *upgradev1.Plan) (*upgradev1.Plan, error
 		if err != nil {
 			return nil, err
 		}
-		log.Info("systemcharts: enqueue cluster repo", "operation", "on_plan", "repo", repoName)
+		log.Info("Systemcharts: enqueue cluster repo", "operation", "on_plan", "repo", repoName)
 		h.clusterRepo.EnqueueAfter(repoName, 2*time.Second)
 	}
 	if plan.DeletionTimestamp == nil && index == -1 {
@@ -598,7 +598,7 @@ func (h *handler) setPriorityClass(values map[string]interface{}, chartName stri
 	if err == nil {
 		values[chart.PriorityClassKey] = priorityClassName
 	} else if !chart.IsNotFoundError(err) {
-		log.Warn("systemcharts: failed to get rancher priority class", "operation", "set_priority_class", "key", chart.PriorityClassKey, "chart", chartName, "error", err)
+		log.Warn("Systemcharts: failed to get rancher priority class", "operation", "set_priority_class", "key", chart.PriorityClassKey, "chart", chartName, "error", err)
 	}
 }
 
@@ -606,7 +606,7 @@ func (h *handler) setPriorityClass(values map[string]interface{}, chartName stri
 func (h *handler) getChartValues(chartName string) map[string]interface{} {
 	configMapValues, err := h.chartsConfig.GetChartValues(chartName)
 	if err != nil && !chart.IsNotFoundError(err) {
-		log.Warn("systemcharts: failed to get chart values", "operation", "get_chart_values", "chart", chartName, "error", err)
+		log.Warn("Systemcharts: failed to get chart values", "operation", "get_chart_values", "chart", chartName, "error", err)
 	}
 	return configMapValues
 }
@@ -645,7 +645,7 @@ func isInHarvesterLocal() bool {
 	// the multi-cluster-management and multi-cluster-management-agent features are disabled,
 	// and the Harvester feature is enabled.
 	if !features.MCMAgent.Enabled() && !features.MCM.Enabled() && features.Harvester.Enabled() {
-		log.Debug("rancher is embedded and running in harvester local cluster", "operation", "is_in_harvester_local")
+		log.Debug("Rancher is embedded and running in harvester local cluster", "operation", "is_in_harvester_local")
 		return true
 	}
 	return false
@@ -661,7 +661,7 @@ func (h *handler) namespaceGone(ns string) bool {
 		return true
 	}
 	if err != nil {
-		log.Warn("systemcharts: failed to get namespace", "operation", "namespace_gone", "namespace", ns, "error", err)
+		log.Warn("Systemcharts: failed to get namespace", "operation", "namespace_gone", "namespace", ns, "error", err)
 	}
 	return false
 }
@@ -675,7 +675,7 @@ func (h *handler) onNamespace(_ string, ns *kcorev1.Namespace) (*kcorev1.Namespa
 		return ns, nil
 	}
 
-	log.Debug("systemcharts: namespace change detected", "operation", "on_namespace", "namespace", ns.Name)
+	log.Debug("Systemcharts: namespace change detected", "operation", "on_namespace", "namespace", ns.Name)
 	h.clusterRepo.EnqueueAfter(repoName, 10*time.Second)
 	return ns, nil
 }

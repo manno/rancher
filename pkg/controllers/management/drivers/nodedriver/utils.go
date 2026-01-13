@@ -79,7 +79,7 @@ func ToLowerCamelCase(nodeFlagName string) (string, error) {
 func getCreateFlagsForDriver(driver string) ([]cli.Flag, error) {
 	var flags []cli.Flag
 
-	log.Debug("starting binary", "operation", "getCreateFlagsForDriver", "driver", driver)
+	log.Debug("Starting binary", "operation", "getCreateFlagsForDriver", "driver", driver)
 	finalDriverName := driver
 
 	if os.Getenv("CATTLE_DEV_MODE") == "" {
@@ -105,10 +105,10 @@ func getCreateFlagsForDriver(driver string) ([]cli.Flag, error) {
 
 			defer func() {
 				if err := os.Unsetenv(localbinary.PluginUID); err != nil {
-					log.Warn("error unsetting env var", "operation", "getCreateFlagsForDriver", "error", err)
+					log.Warn("Error unsetting env var", "operation", "getCreateFlagsForDriver", "error", err)
 				}
 				if err := os.Unsetenv(localbinary.PluginGID); err != nil {
-					log.Warn("error unsetting env var", "operation", "getCreateFlagsForDriver", "error", err)
+					log.Warn("Error unsetting env var", "operation", "getCreateFlagsForDriver", "error", err)
 				}
 			}()
 
@@ -127,7 +127,7 @@ func getCreateFlagsForDriver(driver string) ([]cli.Flag, error) {
 	go func() {
 		err := p.Serve()
 		if err != nil {
-			log.Debug("error serving plugin server for driver", "operation", "getCreateFlagsForDriver", "driver", driver, "error", err)
+			log.Debug("Error serving plugin server for driver", "operation", "getCreateFlagsForDriver", "driver", driver, "error", err)
 		}
 	}()
 	defer p.Close()
@@ -156,7 +156,7 @@ func ParseKeyValueString(input string) map[string]string {
 	result := map[string]string{}
 
 	if strings.TrimSpace(input) == "" {
-		log.Debug("empty input string", "operation", "ParseKeyValueString")
+		log.Debug("Empty input string", "operation", "ParseKeyValueString")
 		return result
 	}
 
@@ -166,7 +166,7 @@ func ParseKeyValueString(input string) map[string]string {
 		key := strings.TrimSpace(keyVal[0])
 		value := strings.TrimSpace(keyVal[1])
 		if len(keyVal) != 2 || key == "" {
-			log.Error("failed to parse pair (expected key:value)", "operation", "ParseKeyValueString", "pair", pair)
+			log.Error("Failed to parse pair (expected key:value)", "operation", "ParseKeyValueString", "pair", pair)
 			continue
 		}
 		result[key] = value

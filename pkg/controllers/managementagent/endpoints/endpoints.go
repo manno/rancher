@@ -93,7 +93,7 @@ func getPublicEndpointsFromAnnotations(annotations map[string]string) []v32.Publ
 	if val, ok := annotations[endpointsAnnotation]; ok {
 		err := json.Unmarshal([]byte(val), &eps)
 		if err != nil {
-			log.Error("failed to read public endpoints from annotation", "operation", "get_public_endpoints", "error", err)
+			log.Error("Failed to read public endpoints from annotation", "operation", "get_public_endpoints", "error", err)
 			return eps
 		}
 	}

@@ -217,7 +217,7 @@ func (a *tokenAuthenticator) Authenticate(req *http.Request) (*AuthenticatorResp
 		Extras:        extras,
 	}
 
-	log.Debug("extras returned", "operation", "authenticate", "extras", authResp.Extras)
+	log.Debug("Extras returned", "operation", "authenticate", "extras", authResp.Extras)
 
 	now := a.now().Truncate(time.Second) // Use the second precision.
 	lastUsed := token.GetLastUsedAt()
@@ -252,11 +252,11 @@ func (a *tokenAuthenticator) Authenticate(req *http.Request) (*AuthenticatorResp
 		return fmt.Errorf("unknown token type")
 	}(); err != nil {
 		// Log the error and move on to avoid failing the request.
-		log.Error("error updating lastUsedAt for token", "operation", "authenticate", "token_name", token.GetName(), "error", err)
+		log.Error("Error updating lastUsedAt for token", "operation", "authenticate", "token_name", token.GetName(), "error", err)
 		return authResp, nil
 	}
 
-	log.Debug("updated lastUsedAt for token", "operation", "authenticate", "token_name", token.GetName())
+	log.Debug("Updated lastUsedAt for token", "operation", "authenticate", "token_name", token.GetName())
 	return authResp, nil
 }
 
@@ -355,7 +355,7 @@ func (a *tokenAuthenticator) TokenFromRequest(req *http.Request) (accessor.Token
 	}
 
 	if _, err := tokens.VerifyToken(storedToken, tokenName, tokenKey); err != nil {
-		log.Debug("error verifying token", "operation", "token_from_request", "token_name", tokenName, "error", err)
+		log.Debug("Error verifying token", "operation", "token_from_request", "token_name", tokenName, "error", err)
 		return nil, errors.Wrapf(ErrMustAuthenticate, "failed to verify token: %v", err)
 	}
 
@@ -374,7 +374,7 @@ func extVerifyToken(storedToken *ext.Token, tokenName, tokenKey string) (int, er
 	// Ext token always has a hash. Only a hash.
 	hasher, err := hashers.GetHasherForHash(storedToken.Status.Hash)
 	if err != nil {
-		log.Error("unable to get a hasher for token", "operation", "ext_verify_token", "error", err)
+		log.Error("Unable to get a hasher for token", "operation", "ext_verify_token", "error", err)
 		return http.StatusInternalServerError,
 			fmt.Errorf("unable to verify hash '%s'", storedToken.Status.Hash)
 	}

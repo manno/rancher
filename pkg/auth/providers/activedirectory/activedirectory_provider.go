@@ -227,7 +227,7 @@ func newCAPool(cert string) (*x509.CertPool, error) {
 func (p *adProvider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []v3.Principal) (bool, error) {
 	config, _, err := p.getActiveDirectoryConfig()
 	if err != nil {
-		log.Error("error fetching AD config", "provider", "activedirectory", "operation", "can_access_with_group_providers", "error", err)
+		log.Error("Error fetching AD config", "provider", "activedirectory", "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 	allowed, err := p.userMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipalID, groupPrincipals)

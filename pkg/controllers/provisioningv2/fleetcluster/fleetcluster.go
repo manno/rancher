@@ -275,13 +275,13 @@ func (h *handler) createCluster(cluster *provv1.Cluster, status provv1.ClusterSt
 func (h *handler) addAPIServer(clientSecret string) {
 	secret, err := h.secretsController.Cache().Get(fleetconst.ClustersLocalNamespace, clientSecret)
 	if err != nil {
-		log.Warn("local cluster provisioning failed to get client secret", "operation", "provision_local_cluster", "error", err)
+		log.Warn("Local cluster provisioning failed to get client secret", "operation", "provision_local_cluster", "error", err)
 		return
 	}
 
 	host, ca, err := h.hostGetter.GetClusterHost(h.clientConfig)
 	if err != nil {
-		log.Warn("local cluster provisioning failed to get internal API server URL", "operation", "provision_local_cluster", "error", err)
+		log.Warn("Local cluster provisioning failed to get internal API server URL", "operation", "provision_local_cluster", "error", err)
 		return
 	}
 
@@ -289,7 +289,7 @@ func (h *handler) addAPIServer(clientSecret string) {
 	secret.Data["apiServerCA"] = ca
 
 	if _, err := h.secretsController.Update(secret); err != nil {
-		log.Warn("local cluster provisioning failed to update client secret", "operation", "provision_local_cluster", "error", err)
+		log.Warn("Local cluster provisioning failed to update client secret", "operation", "provision_local_cluster", "error", err)
 	}
 }
 

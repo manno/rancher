@@ -44,7 +44,7 @@ func (f *Formatter) Formatter(request *types.APIContext, resource *types.RawReso
 	if gkeConfig, ok := resource.Values["googleKubernetesEngineConfig"]; ok && gkeConfig != nil {
 		configMap, ok := gkeConfig.(map[string]interface{})
 		if !ok {
-			log.Error("could not convert gke config to map", "operation", "formatter", "cluster_id", resource.ID)
+			log.Error("Could not convert gke config to map", "operation", "formatter", "cluster_id", resource.ID)
 			return
 		}
 
@@ -58,7 +58,7 @@ func (f *Formatter) Formatter(request *types.APIContext, resource *types.RawReso
 	if eksConfig, ok := resource.Values["amazonElasticContainerServiceConfig"]; ok && eksConfig != nil {
 		configMap, ok := eksConfig.(map[string]interface{})
 		if !ok {
-			log.Error("could not convert eks config to map", "operation", "formatter", "cluster_id", resource.ID)
+			log.Error("Could not convert eks config to map", "operation", "formatter", "cluster_id", resource.ID)
 			return
 		}
 
@@ -68,7 +68,7 @@ func (f *Formatter) Formatter(request *types.APIContext, resource *types.RawReso
 
 	nodes, err := f.nodeLister.List(resource.ID, labels.Everything())
 	if err != nil {
-		log.Warn("error getting node list for cluster", "operation", "formatter", "cluster_id", resource.ID, "error", err)
+		log.Warn("Error getting node list for cluster", "operation", "formatter", "cluster_id", resource.ID, "error", err)
 	} else {
 		resource.Values["nodeCount"] = len(nodes)
 	}

@@ -73,7 +73,7 @@ func (p *Provisioner) driverRemove(cluster *apimgmtv3.Cluster, forceRemove bool)
 		kontainerDriver, err := p.getKontainerDriver(cluster.Spec)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Warn("could not find kontainer driver for cluster removal", "error", err)
+				log.Warn("Could not find kontainer driver for cluster removal", "error", err)
 				return nil, nil
 			}
 			return nil, err

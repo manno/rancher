@@ -36,7 +36,7 @@ func removeFinalizerWithPrefix(finalizers []string, prefix string) []string {
 	var nf []string
 	for _, finalizer := range finalizers {
 		if strings.HasPrefix(finalizer, prefix) {
-			log.Debug("finalizer with prefix will be removed", "prefix", prefix)
+			log.Debug("Finalizer with prefix will be removed", "prefix", prefix)
 			continue
 		}
 		nf = append(nf, finalizer)
@@ -47,7 +47,7 @@ func removeFinalizerWithPrefix(finalizers []string, prefix string) []string {
 func removeAnnotationWithPrefix(annotations map[string]string, prefix string) map[string]string {
 	for k := range annotations {
 		if strings.HasPrefix(k, prefix) {
-			log.Debug("annotation with prefix will be removed", "prefix", prefix)
+			log.Debug("Annotation with prefix will be removed", "prefix", prefix)
 			delete(annotations, k)
 		}
 	}

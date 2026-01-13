@@ -58,7 +58,7 @@ func SetPublicEndpointsFields(data map[string]interface{}) {
 		for _, ep := range eps {
 			epMap, err := convert.EncodeToMap(ep)
 			if err != nil {
-				log.Error("failed to convert public endpoint", "operation", "set_public_endpoints_fields", "error", err)
+				log.Error("Failed to convert public endpoint", "operation", "set_public_endpoints_fields", "error", err)
 				continue
 			}
 			epMap["serviceId"] = epMap["serviceName"]

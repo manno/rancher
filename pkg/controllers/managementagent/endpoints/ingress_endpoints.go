@@ -53,7 +53,7 @@ func (c *IngressEndpointsController) reconcileEndpointsForIngress(obj ingresswra
 		return false, err
 	}
 
-	log.Info("updating ingress with public endpoints", "operation", "reconcile_endpoints_for_ingress", "namespace", obj.GetNamespace(), "ingress", obj.GetName(), "endpoints", epsToUpdate)
+	log.Info("Updating ingress with public endpoints", "operation", "reconcile_endpoints_for_ingress", "namespace", obj.GetNamespace(), "ingress", obj.GetName(), "endpoints", epsToUpdate)
 
 	toUpdate, err := ingresswrapper.ToCompatIngress(obj.DeepCopyObject())
 	if err != nil {

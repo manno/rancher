@@ -110,7 +110,7 @@ func (h *autoscalerHandler) resolveImageTagVersion(cluster *capi.Cluster) string
 	minorVersion := h.getKubernetesMinorVersion(cluster)
 	version, exists := imageTagVersions[minorVersion]
 	if !exists || version == "" {
-		log.Debug("no chart version found for kubernetes minor version - latest version will be installed", "operation", "autoscaler.resolveImageTagVersion", "minorVersion", minorVersion)
+		log.Debug("No chart version found for kubernetes minor version - latest version will be installed", "operation", "autoscaler.resolveImageTagVersion", "minorVersion", minorVersion)
 		return ""
 	}
 	return version
@@ -127,7 +127,7 @@ func (h *autoscalerHandler) getChartImageSettings(cluster *capi.Cluster) map[str
 	// parse out the image to properly set all the values in the chart
 	imageRef, err := reference.ParseNamed(autoscalerImage)
 	if err != nil {
-		log.Debug("failed to parse autoscaler image", "operation", "autoscaler.getChartImageSettings", "image", autoscalerImage, "error", err)
+		log.Debug("Failed to parse autoscaler image", "operation", "autoscaler.getChartImageSettings", "image", autoscalerImage, "error", err)
 		return map[string]any{}
 	}
 
@@ -170,7 +170,7 @@ func getChartName() string {
 // getKubernetesMinorVersion returns the k8s minor version which is looked up from the controlPlaneRef on the capi object
 func (h *autoscalerHandler) getKubernetesMinorVersion(cluster *capi.Cluster) int {
 	if cluster.Spec.ControlPlaneRef == nil {
-		log.Debug("no control-plane ref found for cluster - latest version will be installed", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name)
+		log.Debug("No control-plane ref found for cluster - latest version will be installed", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return 0
 	}
 
@@ -179,7 +179,7 @@ func (h *autoscalerHandler) getKubernetesMinorVersion(cluster *capi.Cluster) int
 		cluster.Spec.ControlPlaneRef.Namespace,
 		cluster.Spec.ControlPlaneRef.Name)
 	if err != nil {
-		log.Debug("no control-plane found for cluster - latest version will be installed", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name)
+		log.Debug("No control-plane found for cluster - latest version will be installed", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return 0
 	}
 
@@ -196,25 +196,25 @@ func (h *autoscalerHandler) getKubernetesMinorVersion(cluster *capi.Cluster) int
 	} else {
 		obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(cp)
 		if err != nil {
-			log.Debug("failed to convert object to unstructured - latest version will be installed", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
+			log.Debug("Failed to convert object to unstructured - latest version will be installed", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 			return 0
 		}
 
 		v, ok, err := unstructured.NestedFieldNoCopy(obj, "spec", "version")
 		if !ok || err != nil {
-			log.Debug("failed to get CAPI version field from unstructured object", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name, "ok", ok, "error", err)
+			log.Debug("Failed to get CAPI version field from unstructured object", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name, "ok", ok, "error", err)
 			return 0
 		}
 		k8sVersionStr, ok = v.(string)
 		if !ok {
-			log.Debug("failed to convert version field to string - type assertion failed", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name)
+			log.Debug("Failed to convert version field to string - type assertion failed", "operation", "autoscaler.getKubernetesMinorVersion", "namespace", cluster.Namespace, "cluster", cluster.Name)
 			return 0
 		}
 	}
 
 	version, err := semver.NewVersion(k8sVersionStr)
 	if err != nil {
-		log.Debug("failed to parse kubernetes version", "operation", "autoscaler.getKubernetesMinorVersion", "version", k8sVersionStr, "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
+		log.Debug("Failed to parse kubernetes version", "operation", "autoscaler.getKubernetesMinorVersion", "version", k8sVersionStr, "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 		return 0
 	}
 

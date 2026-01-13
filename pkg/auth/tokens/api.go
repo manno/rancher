@@ -61,7 +61,7 @@ type tokenAPI struct {
 }
 
 func (t *tokenAPI) tokenActionHandler(actionName string, action *types.Action, request *types.APIContext) error {
-	log.Debug("token action handler called", "operation", "token_action_handler", "action", actionName)
+	log.Debug("Token action handler called", "operation", "token_action_handler", "action", actionName)
 	if actionName == "logout" || actionName == "logoutAll" {
 		t.logoutHandler.ServeHTTP(request.Response, request.Request)
 		return nil
@@ -71,12 +71,12 @@ func (t *tokenAPI) tokenActionHandler(actionName string, action *types.Action, r
 }
 
 func (t *tokenAPI) tokenCreateHandler(request *types.APIContext, _ types.RequestHandler) error {
-	log.Debug("token create handler called", "operation", "token_create_handler")
+	log.Debug("Token create handler called", "operation", "token_create_handler")
 	return t.mgr.deriveToken(request)
 }
 
 func (t *tokenAPI) tokenListHandler(request *types.APIContext, _ types.RequestHandler) error {
-	log.Debug("token list handler called", "operation", "token_list_handler")
+	log.Debug("Token list handler called", "operation", "token_list_handler")
 	if request.ID != "" {
 		return t.mgr.getTokenFromRequest(request)
 	}
@@ -84,6 +84,6 @@ func (t *tokenAPI) tokenListHandler(request *types.APIContext, _ types.RequestHa
 }
 
 func (t *tokenAPI) tokenDeleteHandler(request *types.APIContext, _ types.RequestHandler) error {
-	log.Debug("token delete handler called", "operation", "token_delete_handler")
+	log.Debug("Token delete handler called", "operation", "token_delete_handler")
 	return t.mgr.removeToken(request)
 }

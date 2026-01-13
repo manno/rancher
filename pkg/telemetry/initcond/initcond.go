@@ -58,10 +58,10 @@ func getInitInfo(wContext *wrangler.Context) InitInfo {
 
 func WaitForInfo(wContext *wrangler.Context, initInfo *InitInfo, done chan struct{}) {
 	wait.Until(func() {
-		log.Info("initializing required info for telemetry manager", "operation", "init_telemetry")
+		log.Info("Initializing required info for telemetry manager", "operation", "init_telemetry")
 		gotInitInfo := getInitInfo(wContext)
 		if gotInitInfo.isReady() {
-			log.Info("initialized required info for telemetry manager", "operation", "init_telemetry")
+			log.Info("Initialized required info for telemetry manager", "operation", "init_telemetry")
 			initInfo.ServerURL = gotInitInfo.ServerURL
 			initInfo.ClusterUUID = gotInitInfo.ClusterUUID
 			initInfo.InstallUUID = gotInitInfo.InstallUUID
@@ -69,6 +69,6 @@ func WaitForInfo(wContext *wrangler.Context, initInfo *InitInfo, done chan struc
 			initInfo.GitHash = gotInitInfo.GitHash
 			close(done)
 		}
-		log.Info("telemetry manager info not available yet, re-queuing check", "operation", "init_telemetry")
+		log.Info("Telemetry manager info not available yet, re-queuing check", "operation", "init_telemetry")
 	}, InitRetryDuration, done)
 }

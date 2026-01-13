@@ -32,13 +32,13 @@ func (h *handler) cloudConfigSecretRemover(_ string, cluster *v1.Cluster) (*v1.C
 
 		// ensure the secret format is proper
 		if len(namespaceAndName) != 2 {
-			log.Error("provided secret value is not of form secret://namespace:name", "operation", "remove_cloud_config_secret")
+			log.Error("Provided secret value is not of form secret://namespace:name", "operation", "remove_cloud_config_secret")
 			continue
 		}
 
 		secret, err := h.migrator.secrets.GetNamespaced(namespaceAndName[0], namespaceAndName[1], metav1.GetOptions{})
 		if err != nil {
-			log.Error("error retrieving secret defined within cloud-provider-config", "operation", "remove_cloud_config_secret", "namespace", namespaceAndName[0], "secret", namespaceAndName[1], "error", err)
+			log.Error("Error retrieving secret defined within cloud-provider-config", "operation", "remove_cloud_config_secret", "namespace", namespaceAndName[0], "secret", namespaceAndName[1], "error", err)
 			continue
 		}
 

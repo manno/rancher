@@ -105,7 +105,7 @@ func (t *systemTokens) createOrUpdateSystemToken(tokenName, description, kind, u
 	if err != nil {
 		return "", err
 	}
-	log.Info("creating system token", "operation", "create_or_update_system_token", "user", userName, "token_name", tokenName)
+	log.Info("Creating system token", "operation", "create_or_update_system_token", "user", userName, "token_name", tokenName)
 	token, err = t.tokenClient.Create(token)
 	if err != nil {
 		return "", err

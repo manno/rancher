@@ -161,7 +161,7 @@ func waitUntilSSHKey(nodeDir, keyName string, node *v3.Node) error {
 			return errors.New("Timeout waiting for ssh key")
 		}
 		if _, err := os.Stat(keyPath); err != nil {
-			log.Debug("keyPath not found, node is probably still provisioning", "sleep_seconds", increments)
+			log.Debug("KeyPath not found, node is probably still provisioning", "sleep_seconds", increments)
 			time.Sleep(time.Duration(increments) * time.Second)
 			increments = increments * 2
 			continue

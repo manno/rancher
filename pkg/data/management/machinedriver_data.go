@@ -251,7 +251,7 @@ func AddHarvesterMachineDriver(mgmt *config.ManagementContext) error {
 
 	harvesterDriverChecksum, ok := harvesterDriverChecksums[runtime.GOARCH]
 	if !ok {
-		log.Warn("machine driver does not support goarch", "operation", "add_machine_drivers", "driver", HarvesterDriver, "goarch", runtime.GOARCH)
+		log.Warn("Machine driver does not support goarch", "operation", "add_machine_drivers", "driver", HarvesterDriver, "goarch", runtime.GOARCH)
 		harvesterEnabled = false
 	}
 

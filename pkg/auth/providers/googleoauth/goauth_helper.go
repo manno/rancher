@@ -30,7 +30,7 @@ func (g *googleOauthProvider) getUserInfoAndGroups(adminSvc *admin.Service, gOAu
 	}
 	userPrincipal = g.toPrincipal(userType, *user, nil)
 	userPrincipal.Me = true
-	log.Debug("obtained userinfo using oauth access token", "provider", "google_oauth", "operation", "loginuser")
+	log.Debug("Obtained userinfo using oauth access token", "provider", "google_oauth", "operation", "loginuser")
 
 	groupPrincipals, err = g.getGroupsUserBelongsTo(adminSvc, user.SubjectUniqueID, user.HostedDomain, config)
 	if err != nil {
@@ -54,7 +54,7 @@ func (g *googleOauthProvider) getUserInfoAndGroups(adminSvc *admin.Service, gOAu
 		}
 	}
 
-	log.Debug("retrieved user groups using admin directory", "provider", "google_oauth", "operation", "loginuser")
+	log.Debug("Retrieved user groups using admin directory", "provider", "google_oauth", "operation", "loginuser")
 	return userPrincipal, groupPrincipals, nil
 }
 

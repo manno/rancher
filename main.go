@@ -180,7 +180,7 @@ func main() {
 	}
 
 	app.ExitErrHandler = func(c *cli.Context, err error) {
-		rancherlog.Fatal("application exited with error", "error", err)
+		rancherlog.Fatal("Application exited with error", "error", err)
 	}
 
 	app.Run(os.Args)
@@ -199,10 +199,10 @@ func initLogs(c *cli.Context, cfg rancher.Options) {
 	rancherlog.Init(format, level, os.Stdout)
 
 	if cfg.Debug {
-		rancherlog.Debug("loglevel set", "level", level)
+		rancherlog.Debug("Loglevel set", "level", level)
 	}
 	if cfg.Trace {
-		rancherlog.Trace("loglevel set", "level", level)
+		rancherlog.Trace("Loglevel set", "level", level)
 	}
 
 	logserver.StartServerWithDefaults()
@@ -214,7 +214,7 @@ func run(cli *cli.Context, cfg rancher.Options) error {
 	ctx := signals.SetupSignalContext()
 
 	if cfg.AddLocal != "true" && cfg.AddLocal != "auto" {
-		rancherlog.Fatal("add-local flag must be set to 'true', see Rancher 2.5.0 release notes for more information")
+		rancherlog.Fatal("Add-local flag must be set to 'true', see Rancher 2.5.0 release notes for more information")
 	}
 
 	embedded, clientConfig, err := k8s.GetConfig(ctx, cfg.K8sMode, kubeConfig)

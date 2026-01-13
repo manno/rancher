@@ -66,7 +66,7 @@ func (m *Manager) CanDo(apiGroup, resource, verb string, apiContext *types.APICo
 func (m *Manager) Filter(apiContext *types.APIContext, schema *types.Schema, obj map[string]interface{}, context map[string]string) map[string]interface{} {
 	ac, err := m.getAccessControl(apiContext, schema)
 	if err != nil {
-		log.Warn("failed to find access control", "operation", "filter", "error", err)
+		log.Warn("Failed to find access control", "operation", "filter", "error", err)
 		return nil
 	}
 
@@ -76,7 +76,7 @@ func (m *Manager) Filter(apiContext *types.APIContext, schema *types.Schema, obj
 func (m *Manager) FilterList(apiContext *types.APIContext, schema *types.Schema, obj []map[string]interface{}, context map[string]string) []map[string]interface{} {
 	ac, err := m.getAccessControl(apiContext, schema)
 	if err != nil {
-		log.Warn("failed to find access control", "operation", "filter_list", "error", err)
+		log.Warn("Failed to find access control", "operation", "filter_list", "error", err)
 		return nil
 	}
 	return ac.FilterList(apiContext, schema, obj, context)

@@ -72,7 +72,7 @@ func (ap *Provider) testAndApply(request *types.APIContext) error {
 	defer func() {
 		if err != nil {
 			if err = ap.secrets.Delete(common.SecretsNamespace, clients.AccessTokenSecretName, &metav1.DeleteOptions{}); err != nil {
-				log.Error("failed to delete Azure AD access token secret", "provider", "azure", "secret", clients.AccessTokenSecretName, "error", err)
+				log.Error("Failed to delete Azure AD access token secret", "provider", "azure", "secret", clients.AccessTokenSecretName, "error", err)
 			}
 		}
 	}()
@@ -87,7 +87,7 @@ func (ap *Provider) testAndApply(request *types.APIContext) error {
 
 	currentConfig, err := ap.GetAzureConfigK8s()
 	if err != nil {
-		log.Error("failed to fetch Azure AD config", "provider", "azure", "error", err)
+		log.Error("Failed to fetch Azure AD config", "provider", "azure", "error", err)
 		return httperror.NewAPIError(httperror.ServerError, "failed to fetch Azure AD Config from Kubernetes")
 	}
 	migrateNewFlowAnnotation(currentConfig, azureADConfig)

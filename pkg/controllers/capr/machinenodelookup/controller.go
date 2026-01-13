@@ -120,7 +120,7 @@ func (h *handler) associateMachineWithNode(_ string, bootstrap *rkev1.RKEBootstr
 	nodeLabelSelector := metav1.LabelSelector{MatchLabels: map[string]string{capr.MachineUIDLabel: string(machine.GetUID())}}
 	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{LabelSelector: labels.Set(nodeLabelSelector.MatchLabels).String()})
 	if err != nil || len(nodes.Items) == 0 || nodes.Items[0].Spec.ProviderID == "" || !condition.Cond("Ready").IsTrue(nodes.Items[0]) {
-		log.Debug("searching for providerID", "operation", "on_change", "selector", labels.Set(nodeLabelSelector.MatchLabels), "cluster_namespace", rancherCluster.Namespace, "cluster", rancherCluster.Name, "machine", machine.Name, "error", err)
+		log.Debug("Searching for providerID", "operation", "on_change", "selector", labels.Set(nodeLabelSelector.MatchLabels), "cluster_namespace", rancherCluster.Namespace, "cluster", rancherCluster.Name, "machine", machine.Name, "error", err)
 		h.rkeBootstrap.EnqueueAfter(bootstrap.Namespace, bootstrap.Name, nodeErrorEnqueueTime)
 		return bootstrap, nil
 	}

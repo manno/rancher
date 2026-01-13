@@ -66,7 +66,7 @@ func (h *Handler) checkAuthorization(cspNamespace string, cspConfigmap string, w
 	authorized, err := h.authorize(cspNamespace, cspConfigmap, request)
 	if err != nil {
 		util.ReturnHTTPError(writer, request, http.StatusForbidden, http.StatusText(http.StatusForbidden))
-		log.Error("failed to authorize user", "prefix", logPrefix, "error", err)
+		log.Error("Failed to authorize user", "prefix", logPrefix, "error", err)
 		return false
 	}
 	if !authorized {
@@ -106,19 +106,19 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 			util.ReturnHTTPError(writer, request, http.StatusNotImplemented, cspChartName+" must be installed to generate supportconfigs")
 			return
 		}
-		log.Error("error when attempting to determine if adapter is installed", "prefix", logPrefix, "error", err)
+		log.Error("Error when attempting to determine if adapter is installed", "prefix", logPrefix, "error", err)
 		util.ReturnHTTPError(writer, request, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-	log.Info("generating supportconfig", "prefix", logPrefix)
+	log.Info("Generating supportconfig", "prefix", logPrefix)
 	archive, err := h.generateSupportConfig(cspChartNamespace)
-	log.Info("done generating supportconfig", "prefix", logPrefix)
+	log.Info("Done generating supportconfig", "prefix", logPrefix)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
 			util.ReturnHTTPError(writer, request, http.StatusServiceUnavailable, "supportconfig not yet generated, try again later")
 			return
 		}
-		log.Error("error when generating supportconfig", "prefix", logPrefix, "error", err)
+		log.Error("Error when generating supportconfig", "prefix", logPrefix, "error", err)
 		util.ReturnHTTPError(writer, request, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
@@ -126,11 +126,11 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Disposition", "attachment; filename=\"supportconfig_rancher.tar\"")
 	n, err := io.Copy(writer, archive)
 	if err != nil {
-		log.Warn("set archive on http response writer", "error", err)
+		log.Warn("Set archive on http response writer", "error", err)
 		util.ReturnHTTPError(writer, request, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-	log.Debug("wrote bytes in archive response", "prefix", logPrefix, "bytes", n)
+	log.Debug("Wrote bytes in archive response", "prefix", logPrefix, "bytes", n)
 }
 
 // authorize checks to see if the user can get the given csp adapter configmap. Returns a bool (if the user is authorized)

@@ -39,7 +39,7 @@ func (p *Planner) getControlPlaneManifests(controlPlane *rkev1.RKEControlPlane, 
 	// if we have a nil snapshotMetadata object, it's probably because the annotation didn't exist on the controlplane object. this is not breaking though so don't block.
 	snapshotMetadata := getEtcdSnapshotExtraMetadata(controlPlane, capr.GetRuntime(controlPlane.Spec.KubernetesVersion))
 	if snapshotMetadata == nil {
-		log.Error("error generating etcd snapshot extra metadata manifest",
+		log.Error("Error generating etcd snapshot extra metadata manifest",
 			"cluster_name", controlPlane.Spec.ClusterName)
 	} else {
 		result = append(result, *snapshotMetadata)
@@ -64,7 +64,7 @@ func getEtcdSnapshotExtraMetadata(controlPlane *rkev1.RKEControlPlane, runtime s
 		}
 	}
 
-	log.Error("unable to find cluster spec annotation for control plane",
+	log.Error("Unable to find cluster spec annotation for control plane",
 		"cluster_name", controlPlane.Spec.ClusterName,
 		"namespace", controlPlane.Namespace)
 	return nil

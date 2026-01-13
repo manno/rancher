@@ -262,14 +262,14 @@ func (m *MapStringInterface) DeepCopy() *MapStringInterface {
 	dec := gob.NewDecoder(&buf)
 	err := enc.Encode(m)
 	if err != nil {
-		log.Error("error while deep copying mapstringinterface", "operation", "deep_copy", "error", err)
+		log.Error("Error while deep copying mapstringinterface", "operation", "deep_copy", "error", err)
 		return nil
 	}
 
 	var copy MapStringInterface
 	err = dec.Decode(&copy)
 	if err != nil {
-		log.Error("error while deep copying mapstringinterface", "operation", "deep_copy", "error", err)
+		log.Error("Error while deep copying mapstringinterface", "operation", "deep_copy", "error", err)
 		return nil
 	}
 

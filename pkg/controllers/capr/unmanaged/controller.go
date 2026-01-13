@@ -63,7 +63,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, kubeconfigMana
 		if rkeCluster, ok := obj.(*rkev1.RKECluster); ok {
 			var relatedResources []relatedresource.Key
 			if rkeCluster.Annotations[capr.DeleteMissingCustomMachinesAfterAnnotation] != "" {
-				log.Trace("handling related resource for RKECluster", "operation", "resolver", "namespace", rkeCluster.Namespace, "cluster", rkeCluster.Name)
+				log.Trace("Handling related resource for RKECluster", "operation", "resolver", "namespace", rkeCluster.Namespace, "cluster", rkeCluster.Name)
 				machines, err := clients.CAPI.Machine().List(rkeCluster.Namespace, metav1.ListOptions{LabelSelector: capi.ClusterNameLabel + "=" + rkeCluster.Annotations[capi.ClusterNameLabel]})
 				if err != nil {
 					return nil, err
@@ -80,13 +80,13 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, kubeconfigMana
 			return relatedResources, nil
 		} else if m, ok := obj.(*capi.Machine); ok {
 			if m.Spec.InfrastructureRef.Kind == UnmanagedMachineKind && m.Spec.InfrastructureRef.APIVersion == capr.RKEAPIVersion {
-				log.Trace("handling related resource for CAPI machine", "operation", "resolver", "namespace", m.Namespace, "machine", m.Name)
+				log.Trace("Handling related resource for CAPI machine", "operation", "resolver", "namespace", m.Namespace, "machine", m.Name)
 				rkeCluster, err := clients.RKE.RKECluster().Get(m.Namespace, m.Spec.ClusterName, metav1.GetOptions{})
 				if err != nil {
 					return nil, err
 				}
 				if rkeCluster.Annotations[capr.DeleteMissingCustomMachinesAfterAnnotation] != "" && machineHasNodeNotFoundCondition(m) {
-					log.Trace("machine has node not found condition", "operation", "resolver", "namespace", m.Namespace, "machine", m.Name)
+					log.Trace("Machine has node not found condition", "operation", "resolver", "namespace", m.Namespace, "machine", m.Name)
 					return []relatedresource.Key{{
 						Namespace: m.Spec.InfrastructureRef.Namespace,
 						Name:      m.Spec.InfrastructureRef.Name,
@@ -364,7 +364,7 @@ func (h *handler) onUnmanagedMachineChange(_ string, customMachine *rkev1.Custom
 			if capiMachine.Status.NodeRef == nil {
 				return customMachine, nil
 			}
-			log.Trace("evaluating machine for potential deletion", "operation", "on_unmanaged_machine_change", "rkecluster_namespace", rkeCluster.Namespace, "rkecluster", rkeCluster.Name, "custommachine_namespace", customMachine.Namespace, "custommachine", customMachine.Name, "deletion_duration", rkeCluster.Annotations[capr.DeleteMissingCustomMachinesAfterAnnotation])
+			log.Trace("Evaluating machine for potential deletion", "operation", "on_unmanaged_machine_change", "rkecluster_namespace", rkeCluster.Namespace, "rkecluster", rkeCluster.Name, "custommachine_namespace", customMachine.Namespace, "custommachine", customMachine.Name, "deletion_duration", rkeCluster.Annotations[capr.DeleteMissingCustomMachinesAfterAnnotation])
 			d, err := time.ParseDuration(rkeCluster.Annotations[capr.DeleteMissingCustomMachinesAfterAnnotation])
 			if err != nil {
 				return customMachine, err
@@ -392,16 +392,16 @@ func (h *handler) onUnmanagedMachineChange(_ string, customMachine *rkev1.Custom
 
 				_, err = clientset.CoreV1().Nodes().Get(context.Background(), capiMachine.Status.NodeRef.Name, metav1.GetOptions{})
 				if apierror.IsNotFound(err) {
-					log.Info("node not found condition transition time past deletion duration, proceeding with delete", "operation", "on_unmanaged_machine_change", "namespace", customMachine.Namespace, "custommachine", customMachine.Name, "last_transition", lastTransition.String(), "deletion_duration", d.String())
+					log.Info("Node not found condition transition time past deletion duration, proceeding with delete", "operation", "on_unmanaged_machine_change", "namespace", customMachine.Namespace, "custommachine", customMachine.Name, "last_transition", lastTransition.String(), "deletion_duration", d.String())
 					if err := h.machineClient.Delete(capiMachine.Namespace, capiMachine.Name, nil); err != nil {
 						return customMachine, err
 					}
 				}
-				log.Error("unable to validate node was missing in downstream cluster", "operation", "on_unmanaged_machine_change", "namespace", customMachine.Namespace, "custommachine", customMachine.Name, "last_transition", lastTransition.String(), "deletion_duration", d.String(), "node", capiMachine.Status.NodeRef.Name, "error", err)
+				log.Error("Unable to validate node was missing in downstream cluster", "operation", "on_unmanaged_machine_change", "namespace", customMachine.Namespace, "custommachine", customMachine.Name, "last_transition", lastTransition.String(), "deletion_duration", d.String(), "node", capiMachine.Status.NodeRef.Name, "error", err)
 				return customMachine, err
 			}
 			nextEnqueueDuration := lastTransition.Time.Add(d).Sub(now)
-			log.Debug("node not found condition not past deletion duration, enqueuing", "operation", "on_unmanaged_machine_change", "namespace", customMachine.Namespace, "custommachine", customMachine.Name, "last_transition", lastTransition.String(), "deletion_duration", d.String(), "enqueue_after", nextEnqueueDuration)
+			log.Debug("Node not found condition not past deletion duration, enqueuing", "operation", "on_unmanaged_machine_change", "namespace", customMachine.Namespace, "custommachine", customMachine.Name, "last_transition", lastTransition.String(), "deletion_duration", d.String(), "enqueue_after", nextEnqueueDuration)
 			h.unmanagedMachine.EnqueueAfter(customMachine.Namespace, customMachine.Name, nextEnqueueDuration)
 		}
 	}

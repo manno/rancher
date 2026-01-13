@@ -38,10 +38,10 @@ func GetClusterHost(clientCfg clientcmd.ClientConfig) (string, []byte, error) {
 		return cluster.Server, ca, err
 	}
 
-	log.Warn("api server host retrieval: no cluster found for current context", "operation", "get_cluster_host", "context", rawConfig.CurrentContext)
+	log.Warn("Api server host retrieval: no cluster found for current context", "operation", "get_cluster_host", "context", rawConfig.CurrentContext)
 
 	for k, v := range rawConfig.Clusters {
-		log.Warn("api server host retrieval: picking server randomly from configured clusters", "operation", "get_cluster_host", "server", v.Server, "reference", k)
+		log.Warn("Api server host retrieval: picking server randomly from configured clusters", "operation", "get_cluster_host", "server", v.Server, "reference", k)
 		ca, err := getCA(v)
 		return v.Server, ca, err
 	}

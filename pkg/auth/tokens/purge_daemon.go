@@ -36,7 +36,7 @@ type purger struct {
 func (p *purger) purge() {
 	allTokens, err := p.tokenLister.List("", labels.Everything())
 	if err != nil {
-		log.Error("error listing tokens during purge", "operation", "purge", "error", err)
+		log.Error("Error listing tokens during purge", "operation", "purge", "error", err)
 	}
 
 	var count int
@@ -44,14 +44,14 @@ func (p *purger) purge() {
 		if IsExpired(token) {
 			err = p.tokens.Delete(token.ObjectMeta.Name, &metav1.DeleteOptions{})
 			if err != nil && !clientbase.IsNotFound(err) {
-				log.Error("error while deleting expired token", "operation", "purge", "token_name", token.ObjectMeta.Name, "error", err)
+				log.Error("Error while deleting expired token", "operation", "purge", "token_name", token.ObjectMeta.Name, "error", err)
 				continue
 			}
 			count++
 		}
 	}
 	if count > 0 {
-		log.Info("purged expired tokens", "operation", "purge", "count", count)
+		log.Info("Purged expired tokens", "operation", "purge", "count", count)
 	}
 
 	// saml tokens store encrypted token for login request from rancher cli
@@ -66,13 +66,13 @@ func (p *purger) purge() {
 		if token.CreationTimestamp.Add(15 * time.Minute).Before(time.Now()) {
 			err = p.samlTokens.Delete(token.ObjectMeta.Name, &metav1.DeleteOptions{})
 			if err != nil && !clientbase.IsNotFound(err) {
-				log.Error("error while deleting expired token", "operation", "purge", "token_name", token.Name, "error", err)
+				log.Error("Error while deleting expired token", "operation", "purge", "token_name", token.Name, "error", err)
 				continue
 			}
 			count++
 		}
 	}
 	if count > 0 {
-		log.Info("purged saml tokens", "operation", "purge", "count", count)
+		log.Info("Purged saml tokens", "operation", "purge", "count", count)
 	}
 }

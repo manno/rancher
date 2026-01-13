@@ -23,7 +23,7 @@ type defaultSvcAccountHandler struct {
 }
 
 func Register(ctx context.Context, cluster *config.UserOnlyContext) {
-	log.Debug("registering defaultSvcAccountHandler for checking default service account of system namespaces", "operation", "register_default_sa_handler")
+	log.Debug("Registering defaultSvcAccountHandler for checking default service account of system namespaces", "operation", "register_default_sa_handler")
 	nsh := &defaultSvcAccountHandler{
 		serviceAccounts:       cluster.Core.ServiceAccounts(""),
 		serviceAccountsLister: cluster.Core.ServiceAccounts("").Controller().Lister(),
@@ -35,10 +35,10 @@ func (nsh *defaultSvcAccountHandler) Sync(key string, ns *corev1.Namespace) (run
 	if ns == nil || ns.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	log.Debug("syncing default service account", "operation", "sync_default_sa", "key", key, "namespace", ns.Name)
+	log.Debug("Syncing default service account", "operation", "sync_default_sa", "key", key, "namespace", ns.Name)
 	//handle default svcAccount of system namespaces only
 	if err := nsh.handleIfSystemNSDefaultSA(ns); err != nil {
-		log.Error("error handling default ServiceAccount", "operation", "sync_default_sa", "key", key, "error", err)
+		log.Error("Error handling default ServiceAccount", "operation", "sync_default_sa", "key", key, "error", err)
 	}
 	return nil, nil
 }
@@ -60,10 +60,10 @@ func (nsh *defaultSvcAccountHandler) handleIfSystemNSDefaultSA(ns *corev1.Namesp
 	}
 	automountServiceAccountToken := false
 	defSvcAccnt.AutomountServiceAccountToken = &automountServiceAccountToken
-	log.Debug("updating default service account", "operation", "update_default_sa", "namespace", ns.Name)
+	log.Debug("Updating default service account", "operation", "update_default_sa", "namespace", ns.Name)
 	_, err = nsh.serviceAccounts.Update(defSvcAccnt)
 	if err != nil {
-		log.Error("error updating default service account flag", "operation", "update_default_sa", "namespace", ns.Name, "error", err)
+		log.Error("Error updating default service account flag", "operation", "update_default_sa", "namespace", ns.Name, "error", err)
 		return err
 	}
 	return nil

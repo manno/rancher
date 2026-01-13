@@ -25,13 +25,13 @@ type SafeIndex struct {
 
 // Generate generates a new index from a UIPluginCache object
 func (s *SafeIndex) Generate(cachedPlugins []*v1.UIPlugin) error {
-	log.Debug("generating index from plugin controller's cache", "operation", "generate_index")
+	log.Debug("Generating index from plugin controller's cache", "operation", "generate_index")
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Entries = make(map[string]*UIPlugin, len(cachedPlugins))
 	for _, plugin := range cachedPlugins {
 		entry := plugin.Spec.Plugin
-		log.Debug("adding plugin to index", "operation", "generate_index", "plugin_name", entry.Name, "plugin_version", entry.Version)
+		log.Debug("Adding plugin to index", "operation", "generate_index", "plugin_name", entry.Name, "plugin_version", entry.Version)
 		s.Entries[entry.Name] = &UIPlugin{
 			UIPluginEntry: entry,
 			CacheState:    plugin.Status.CacheState,

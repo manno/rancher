@@ -56,7 +56,7 @@ func generateIngressService(name string, port int32, workloadIDs string) (ingres
 	if workloadIDs != "" {
 		b, err := json.Marshal(strings.Split(workloadIDs, "/"))
 		if err != nil {
-			log.Warn("error marshaling workload ids", "operation", "parse_workload", "workload_ids", workloadIDs, "error", err)
+			log.Warn("Error marshaling workload ids", "operation", "parse_workload", "workload_ids", workloadIDs, "error", err)
 			return rtn, err
 		}
 		rtn.workloadIDs = string(b)

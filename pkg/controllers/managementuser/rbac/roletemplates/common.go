@@ -43,10 +43,10 @@ type impersonationHandler struct {
 
 // ensureServiceAccountImpersonator ensures a Service Account Impersonator exists for a given user. If not it creates one.
 func (ih *impersonationHandler) ensureServiceAccountImpersonator(username string) error {
-	log.Debug("ensuring service account impersonator", "operation", "ensure_impersonator", "user", username)
+	log.Debug("Ensuring service account impersonator", "operation", "ensure_impersonator", "user", username)
 	err := ih.impersonator.SetUpImpersonation(&user.DefaultInfo{UID: username})
 	if apierrors.IsNotFound(err) {
-		log.Warn("could not find user, will not create impersonation account on cluster", "operation", "ensure_impersonator", "user", username)
+		log.Warn("Could not find user, will not create impersonation account on cluster", "operation", "ensure_impersonator", "user", username)
 		return nil
 	}
 	return err
@@ -69,7 +69,7 @@ func (ih *impersonationHandler) deleteServiceAccountImpersonator(username string
 		return nil
 	}
 	roleName := impersonation.ImpersonationPrefix + username
-	log.Debug("deleting service account impersonator", "operation", "delete_impersonator", "user", username)
+	log.Debug("Deleting service account impersonator", "operation", "delete_impersonator", "user", username)
 	err = ih.crClient.Delete(roleName, &metav1.DeleteOptions{})
 	if apierrors.IsNotFound(err) {
 		return nil

@@ -28,7 +28,7 @@ func RegisterControllers(ctx context.Context, wContext *wrangler.Context, teleme
 	var systemProject *mgmgv3.Project
 
 	if initErr := retry.OnError(SystemProjectBackoff, func(err error) bool {
-		log.Error("failed to register telemetry controller, will retry", "error", err)
+		log.Error("Failed to register telemetry controller, will retry", "error", err)
 		return true
 	}, func() error {
 		projects, err := wContext.Mgmt.Project().List("local", v1.ListOptions{})

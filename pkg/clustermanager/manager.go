@@ -80,7 +80,7 @@ func (m *Manager) Stop(cluster *apimgmtv3.Cluster) {
 	if !ok {
 		return
 	}
-	log.Info("stopping cluster agent", "operation", "stop_cluster", "cluster", obj.(*record).cluster.ClusterName)
+	log.Info("Stopping cluster agent", "operation", "stop_cluster", "cluster", obj.(*record).cluster.ClusterName)
 	obj.(*record).cancel()
 	m.controllers.Delete(cluster.UID)
 }
@@ -158,7 +158,7 @@ func (m *Manager) startController(r *record, controllers, clusterOwner bool) err
 	if !r.started {
 		go func() {
 			if err := m.doStart(r, clusterOwner); err != nil {
-				log.Error("failed to start cluster controllers", "operation", "start_cluster", "cluster", r.cluster.ClusterName, "error", err)
+				log.Error("Failed to start cluster controllers", "operation", "start_cluster", "cluster", r.cluster.ClusterName, "error", err)
 				m.markUnavailable(r.clusterRec.Name)
 				m.Stop(r.clusterRec)
 			}
@@ -188,7 +188,7 @@ func (m *Manager) changed(r *record, cluster *apimgmtv3.Cluster, controllers, cl
 func (m *Manager) doStart(rec *record, clusterOwner bool) (exit error) {
 	defer func() {
 		if exit == nil {
-			log.Info("starting cluster agent", "operation", "do_start_cluster", "cluster", rec.cluster.ClusterName, "owner", clusterOwner)
+			log.Info("Starting cluster agent", "operation", "do_start_cluster", "cluster", rec.cluster.ClusterName, "owner", clusterOwner)
 		}
 	}()
 
@@ -244,7 +244,7 @@ func (m *Manager) doStart(rec *record, clusterOwner bool) (exit error) {
 	go func() {
 		defer close(done)
 
-		log.Debug("creating access control for cluster", "operation", "do_start_cluster", "cluster", rec.cluster.ClusterName)
+		log.Debug("Creating access control for cluster", "operation", "do_start_cluster", "cluster", rec.cluster.ClusterName)
 		rec.accessControl = rbac.NewAccessControl(transaction, rec.cluster.ClusterName, rec.cluster.RBACw)
 
 		err := rec.cluster.Start(rec.ctx)
@@ -483,7 +483,7 @@ func (m *Manager) UserContextFromClusterReconnecting(cluster *apimgmtv3.Cluster,
 		return nil, err
 	}
 	if kubeConfig == nil {
-		log.Debug("could not get kubeconfig for cluster", "operation", "user_context_from_cluster", "cluster", cluster.Name)
+		log.Debug("Could not get kubeconfig for cluster", "operation", "user_context_from_cluster", "cluster", cluster.Name)
 		return nil, nil
 	}
 	return config.NewUserContext(m.ScaledContext, *kubeConfig, cluster.Name)

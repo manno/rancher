@@ -48,7 +48,7 @@ func (f *Factory) ClusterDialer(clusterName string, retryOnError bool) (dialer.D
 	return func(ctx context.Context, network, address string) (net.Conn, error) {
 		d, err := f.clusterDialer(clusterName, address, retryOnError)
 		if err != nil {
-			log.Debug("wait for agent error", "operation", "get_cluster_dialer", "cluster", clusterName)
+			log.Debug("Wait for agent error", "operation", "get_cluster_dialer", "cluster", clusterName)
 			return nil, err
 		}
 		return d(ctx, network, address)
@@ -157,33 +157,33 @@ func (f *Factory) clusterDialer(clusterName, address string, retryOnError bool) 
 	}
 
 	hostPort := hostPort(cluster)
-	log.Trace("dialerFactory apiEndpoint hostPort for cluster", "operation", "get_cluster_dialer", "cluster", clusterName, "hostPort", hostPort)
+	log.Trace("DialerFactory apiEndpoint hostPort for cluster", "operation", "get_cluster_dialer", "cluster", clusterName, "hostPort", hostPort)
 	if (address == hostPort || isProxyAddress(address)) && IsPublicCloudDriver(cluster) {
 		// For cloud drivers we just connect directly to the k8s API, not through the tunnel.  All other go through tunnel
 		return nativeDialer, nil
 	}
 
 	if f.TunnelServer.HasSession(cluster.Name) {
-		log.Trace("dialerFactory tunnel session found for cluster", "operation", "get_cluster_dialer", "cluster", cluster.Name)
+		log.Trace("DialerFactory tunnel session found for cluster", "operation", "get_cluster_dialer", "cluster", cluster.Name)
 		cd := f.TunnelServer.Dialer(cluster.Name)
 		return func(ctx context.Context, network, address string) (net.Conn, error) {
-			log.Trace("dialerFactory returning network and address as clusterDialer", "operation", "get_cluster_dialer", "network", network, "address", address)
+			log.Trace("DialerFactory returning network and address as clusterDialer", "operation", "get_cluster_dialer", "network", network, "address", address)
 			return cd(ctx, network, address)
 		}, nil
 	}
 
 	if !retryOnError {
-		log.Debug("no active connection for cluster, returning", "operation", "get_cluster_dialer", "cluster", cluster.Name)
+		log.Debug("No active connection for cluster, returning", "operation", "get_cluster_dialer", "cluster", cluster.Name)
 		return nil, ErrAgentDisconnected
 	}
 
-	log.Debug("no active connection for cluster, will wait for about 30 seconds", "operation", "get_cluster_dialer", "cluster", cluster.Name)
+	log.Debug("No active connection for cluster, will wait for about 30 seconds", "operation", "get_cluster_dialer", "cluster", cluster.Name)
 	for i := 0; i < 4; i++ {
 		if f.TunnelServer.HasSession(cluster.Name) {
-			log.Debug("cluster has reconnected, resuming", "operation", "get_cluster_dialer", "cluster", cluster.Name)
+			log.Debug("Cluster has reconnected, resuming", "operation", "get_cluster_dialer", "cluster", cluster.Name)
 			cd := f.TunnelServer.Dialer(cluster.Name)
 			return func(ctx context.Context, network, address string) (net.Conn, error) {
-				log.Trace("dialerFactory returning network and address as clusterDialer", "operation", "get_cluster_dialer", "network", network, "address", address)
+				log.Trace("DialerFactory returning network and address as clusterDialer", "operation", "get_cluster_dialer", "network", network, "address", address)
 				return cd(ctx, network, address)
 			}, nil
 		}
@@ -217,7 +217,7 @@ func isProxyAddress(address string) bool {
 
 	parsed, err := parseProxy(proxy)
 	if err != nil {
-		log.Warn("failed to parse http_proxy url", "operation", "get_cluster_dialer", "proxy", proxy, "error", err)
+		log.Warn("Failed to parse http_proxy url", "operation", "get_cluster_dialer", "proxy", proxy, "error", err)
 		return false
 	}
 	return parsed.Host == address

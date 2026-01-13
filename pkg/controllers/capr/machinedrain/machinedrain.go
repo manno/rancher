@@ -108,7 +108,7 @@ func (h *handler) k8sClient(machine *capi.Machine) (kubernetes.Interface, error)
 
 func (h *handler) unDrain(secret *corev1.Secret, machine *capi.Machine, drainData string) (*corev1.Secret, error) {
 	if machine.Status.NodeRef == nil || machine.Status.NodeRef.Name == "" {
-		log.Debug("unable to drain machine as there is no noderef", "operation", "undrain", "machine", machine.Name)
+		log.Debug("Unable to drain machine as there is no noderef", "operation", "undrain", "machine", machine.Name)
 		return secret, nil
 	}
 

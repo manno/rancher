@@ -45,7 +45,7 @@ func (t *TokenReviewAuth) Authenticate(req *http.Request) (user.Info, bool, erro
 
 	tokenReview, err := t.AuthClient.TokenReviews().Create(req.Context(), tokenReview, metav1.CreateOptions{})
 	if err != nil {
-		log.Debug("tokenReview failed", "operation", "authenticate", "error", err)
+		log.Debug("TokenReview failed", "operation", "authenticate", "error", err)
 		return info, false, nil
 	}
 

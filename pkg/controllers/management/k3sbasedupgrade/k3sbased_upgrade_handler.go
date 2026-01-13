@@ -41,7 +41,7 @@ func (h *handler) onClusterChange(_ string, cluster *mgmtv3.Cluster) (*mgmtv3.Cl
 		if err := healthsyncer.IsAPIUp(h.ctx, clusterCtx.K8sClient.CoreV1().Namespaces()); err != nil {
 			// skip further work if the cluster's API is not reachable,
 			// this usually happen during cattle-cluster-agent being redeployed
-			log.Debug("cluster API is not reachable, will try again", "cluster", cluster.Name)
+			log.Debug("Cluster API is not reachable, will try again", "cluster", cluster.Name)
 			h.clusterEnqueueAfter(cluster.Name, time.Second*5)
 			return cluster, nil
 		}
@@ -67,13 +67,13 @@ func (h *handler) onClusterChange(_ string, cluster *mgmtv3.Cluster) (*mgmtv3.Cl
 		// otherwise, update the cluster condition to reflect the upgrading progress
 		if mgmtv3.ClusterConditionUpgraded.IsTrue(cluster) {
 			if masterPlan.Name != "" {
-				log.Debug("removing master plan from cluster", "plan", masterPlan.Name, "cluster", cluster.Name)
+				log.Debug("Removing master plan from cluster", "plan", masterPlan.Name, "cluster", cluster.Name)
 				if err := planClient.Delete(context.TODO(), masterPlan.Name, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 					return cluster, err
 				}
 			}
 			if workerPlan.Name != "" {
-				log.Debug("removing worker plan from cluster", "plan", workerPlan.Name, "cluster", cluster.Name)
+				log.Debug("Removing worker plan from cluster", "plan", workerPlan.Name, "cluster", cluster.Name)
 				if err := planClient.Delete(context.TODO(), workerPlan.Name, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 					return cluster, err
 				}
@@ -126,13 +126,13 @@ func (h *handler) onClusterChange(_ string, cluster *mgmtv3.Cluster) (*mgmtv3.Cl
 		if !needsUpgrade {
 			// if upgrade was in progress, make sure to set the state back to true
 			if mgmtv3.ClusterConditionUpgraded.IsUnknown(cluster) {
-				log.Debug("updating the Upgraded condition to true")
+				log.Debug("Updating the Upgraded condition to true")
 				cluster = cluster.DeepCopy()
 				cluster = upgradeDone(cluster)
 				if cluster, err = h.clusterClient.Update(cluster); err != nil {
 					return nil, err
 				}
-				log.Info("finished upgrading cluster", "cluster", cluster.Name)
+				log.Info("Finished upgrading cluster", "cluster", cluster.Name)
 			}
 			return cluster, nil
 		}
@@ -140,11 +140,11 @@ func (h *handler) onClusterChange(_ string, cluster *mgmtv3.Cluster) (*mgmtv3.Cl
 
 	// Reaching this point indicates that an upgrade is required.
 	if mgmtv3.ClusterConditionUpgraded.IsTrue(cluster) {
-		log.Info("upgrading cluster version", "cluster", cluster.Name, "from_version", cluster.Status.Version.GitVersion, "to_version", updateVersion)
+		log.Info("Upgrading cluster version", "cluster", cluster.Name, "from_version", cluster.Status.Version.GitVersion, "to_version", updateVersion)
 		if isNewer {
-			log.Debug("upgrading cluster because cluster version is newer than observed version", "cluster", cluster.Name, "cluster_version", updateVersion, "observed_version", cluster.Status.Version.GitVersion)
+			log.Debug("Upgrading cluster because cluster version is newer than observed version", "cluster", cluster.Name, "cluster_version", updateVersion, "observed_version", cluster.Status.Version.GitVersion)
 		} else {
-			log.Debug("upgrading cluster because cluster version is newer than observed node version", "cluster", cluster.Name, "cluster_version", updateVersion)
+			log.Debug("Upgrading cluster because cluster version is newer than observed node version", "cluster", cluster.Name, "cluster_version", updateVersion)
 		}
 	}
 
@@ -176,7 +176,7 @@ func (h *handler) nodesNeedUpgrade(cluster *mgmtv3.Cluster, version string) (boo
 				return false, err
 			}
 			if isNewer {
-				log.Debug("cluster version is newer than observed node version", "cluster", cluster.Name, "cluster_version", version, "node", node.Name, "node_version", node.Status.InternalNodeStatus.NodeInfo.KubeletVersion)
+				log.Debug("Cluster version is newer than observed node version", "cluster", cluster.Name, "cluster_version", version, "node", node.Name, "node_version", node.Status.InternalNodeStatus.NodeInfo.KubeletVersion)
 				return true, nil
 			}
 		}

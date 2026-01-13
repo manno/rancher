@@ -100,7 +100,7 @@ func (c *Controller) sync(key string, ingress ingresswrapper.Ingress) (runtime.O
 		if err != nil {
 			return nil, err
 		}
-		log.Info("creating service for ingress", "operation", "ensure_service_for_ingress", "service_name", ingressService.serviceName, "service_type", toCreate.Spec.Type, "ingress", key, "port", ingressService.servicePort)
+		log.Info("Creating service for ingress", "operation", "ensure_service_for_ingress", "service_name", ingressService.serviceName, "service_type", toCreate.Spec.Type, "ingress", key, "port", ingressService.servicePort)
 		if _, err := c.services.Create(toCreate); err != nil {
 			return nil, err
 		}

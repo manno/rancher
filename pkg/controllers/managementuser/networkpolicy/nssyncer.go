@@ -35,12 +35,12 @@ func (nss *nsSyncer) Sync(_ string, ns *corev1.Namespace) (*corev1.Namespace, er
 		return nil, nil
 	}
 
-	log.Debug("nssyncer: sync", "operation", "sync", "namespace", ns.Name)
+	log.Debug("Nssyncer: sync", "operation", "sync", "namespace", ns.Name)
 
 	projectID := ns.Labels[nslabels.ProjectIDFieldLabel]
 	movedToNone := projectID == ""
 	if !movedToNone {
-		log.Debug("nssyncer: sync: programming network policy", "operation", "sync", "namespace", ns.Name, "project_id", projectID)
+		log.Debug("Nssyncer: sync: programming network policy", "operation", "sync", "namespace", ns.Name, "project_id", projectID)
 		// program project isolation network policy
 		if err := nss.npmgr.programNetworkPolicy(projectID, nss.clusterNamespace); err != nil {
 			return nil, fmt.Errorf("nsSyncer: Sync: error programming network policy: %v (ns=%v, projectID=%v), ", err, ns.Name, projectID)

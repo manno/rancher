@@ -84,7 +84,7 @@ func getMockEksOperatorController(t *testing.T, clusterState string) mockEksOper
 // test setInitialUpstreamSpec
 
 func (m *mockEksOperatorController) setInitialUpstreamSpec(cluster *mgmtv3.Cluster) (*mgmtv3.Cluster, error) {
-	log.Info("setting initial upstream spec on cluster", "cluster_name", cluster.Name)
+	log.Info("Setting initial upstream spec on cluster", "cluster_name", cluster.Name)
 
 	// mock
 	upstreamSpec := &v1.EKSClusterConfigSpec{}
