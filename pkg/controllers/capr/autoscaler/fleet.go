@@ -9,8 +9,8 @@ import (
 	"github.com/docker/distribution/reference"
 	fleet "github.com/rancher/fleet/pkg/apis/fleet.cattle.io/v1alpha1"
 	"github.com/rancher/rancher/pkg/buildconfig"
+	log "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -109,7 +109,7 @@ func (h *autoscalerHandler) resolveImageTagVersion(cluster *capi.Cluster) string
 	minorVersion := h.getKubernetesMinorVersion(cluster)
 	version, exists := imageTagVersions[minorVersion]
 	if !exists || version == "" {
-		logrus.Debugf("[autoscaler] no chart version found for kubernetes minor version %d - latest version of cluster-autoscaler chart will be installed", minorVersion)
+		log.Debug("[autoscaler] no chart version found for kubernetes minor version - latest version of cluster-autoscaler chart will be installed", "minorVersion", minorVersion)
 		return ""
 	}
 	return version
@@ -126,7 +126,7 @@ func (h *autoscalerHandler) getChartImageSettings(cluster *capi.Cluster) map[str
 	// parse out the image to properly set all the values in the chart
 	imageRef, err := reference.ParseNamed(autoscalerImage)
 	if err != nil {
-		logrus.Debugf("[autoscaler] failed to parse autoscaler image '%s': %v", autoscalerImage, err)
+		log.Debug("[autoscaler] failed to parse autoscaler image", "image", autoscalerImage, "error", err)
 		return map[string]any{}
 	}
 
@@ -169,14 +169,14 @@ func getChartName() string {
 // getKubernetesMinorVersion returns the k8s minor version which is looked up from the controlPlaneRef on the capi object
 func (h *autoscalerHandler) getKubernetesMinorVersion(cluster *capi.Cluster) int {
 	if !cluster.Spec.ControlPlaneRef.IsDefined() {
-		logrus.Debugf("[autoscaler] no control-plane ref found for cluster %s/%s - latest version of cluster-autoscaler chart will be installed", cluster.Namespace, cluster.Name)
+		log.Debug("[autoscaler] no control-plane ref found for cluster - latest version of cluster-autoscaler chart will be installed", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return 0
 	}
 
 	// Use CAPI's external package to get the control plane object with automatic version discovery
 	cp, err := external.GetObjectFromContractVersionedRef(h.context, h.client, cluster.Spec.ControlPlaneRef, cluster.Namespace)
 	if err != nil {
-		logrus.Debugf("[autoscaler] failed to get control-plane for cluster %s/%s: %v - latest version of cluster-autoscaler chart will be installed", cluster.Namespace, cluster.Name, err)
+		log.Debug("[autoscaler] failed to get control-plane for cluster - latest version of cluster-autoscaler chart will be installed", "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 		return 0
 	}
 
@@ -188,7 +188,7 @@ func (h *autoscalerHandler) getKubernetesMinorVersion(cluster *capi.Cluster) int
 		// For RKE control planes, the kubernetes version is in spec.kubernetesVersion
 		v, ok, err := unstructured.NestedString(cp.Object, "spec", "kubernetesVersion")
 		if !ok || err != nil {
-			logrus.Debugf("[autoscaler] failed to get kubernetesVersion field from RKE control plane for cluster %s/%s: ok=%v, err=%v", cluster.Namespace, cluster.Name, ok, err)
+			log.Debug("[autoscaler] failed to get kubernetesVersion field from RKE control plane for cluster", "namespace", cluster.Namespace, "cluster", cluster.Name, "ok", ok, "error", err)
 			return 0
 		}
 		k8sVersionStr = v
@@ -196,7 +196,7 @@ func (h *autoscalerHandler) getKubernetesMinorVersion(cluster *capi.Cluster) int
 		// For CAPI control planes, the kubernetes version is in spec.version
 		v, ok, err := unstructured.NestedString(cp.Object, "spec", "version")
 		if !ok || err != nil {
-			logrus.Debugf("[autoscaler] failed to get CAPI version field from unstructured object for cluster %s/%s: ok=%v, err=%v", cluster.Namespace, cluster.Name, ok, err)
+			log.Debug("[autoscaler] failed to get CAPI version field from unstructured object for cluster", "namespace", cluster.Namespace, "cluster", cluster.Name, "ok", ok, "error", err)
 			return 0
 		}
 		k8sVersionStr = v
@@ -204,7 +204,7 @@ func (h *autoscalerHandler) getKubernetesMinorVersion(cluster *capi.Cluster) int
 
 	version, err := semver.NewVersion(k8sVersionStr)
 	if err != nil {
-		logrus.Debugf("[autoscaler] failed to parse kubernetes version '%s' for cluster %s/%s: %v", k8sVersionStr, cluster.Namespace, cluster.Name, err)
+		log.Debug("[autoscaler] failed to parse kubernetes version for cluster", "version", k8sVersionStr, "namespace", cluster.Namespace, "cluster", cluster.Name, "error", err)
 		return 0
 	}
 

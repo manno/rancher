@@ -11,11 +11,11 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/capr"
 	managementcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/remotedialer"
 	"github.com/rancher/wrangler/v3/pkg/condition"
 	"github.com/rancher/wrangler/v3/pkg/ticker"
-	"github.com/sirupsen/logrus"
 	apierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -35,7 +35,7 @@ func Register(ctx context.Context, wrangler *wrangler.Context) {
 	go func() {
 		for range ticker.Context(ctx, 15*time.Second) {
 			if err := c.check(); err != nil {
-				logrus.Errorf("failed to check cluster connectivity: %v", err)
+				log.Error("Failed to check cluster connectivity", "operation", "register_cluster_connectivity_checker", "error", err)
 			}
 		}
 	}()
@@ -55,7 +55,7 @@ func (c *checker) check() error {
 
 	for _, cluster := range clusters {
 		if err := c.checkCluster(cluster); err != nil {
-			logrus.Errorf("failed to check connectivity of cluster [%s]: %v", cluster.Name, err)
+			log.Error("Failed to check connectivity of cluster", "operation", "check_cluster_connectivity", "cluster", cluster.Name, "error", err)
 		}
 	}
 	return nil
@@ -109,7 +109,7 @@ func (c *checker) checkCluster(cluster *v3.Cluster) error {
 		cluster.Annotations["provisioning.cattle.io/administrated"] == "true" &&
 		cluster.Name != "local" {
 		// overriding it to be disconnected until bootstrapping is done
-		logrus.Debugf("[pre-bootstrap][%v] Waiting for cluster to be pre-bootstrapped - not marking agent connected", cluster.Name)
+		log.Debug("Waiting for cluster to be pre-bootstrapped, not marking agent connected", "operation", "check_cluster", "cluster", cluster.Name)
 		return c.updateClusterConnectedCondition(cluster, false)
 	}
 
@@ -128,7 +128,7 @@ func (c *checker) updateClusterConnectedCondition(cluster *v3.Cluster, connected
 			v3.ClusterConditionReady.Reason(cluster, "Disconnected")
 			v3.ClusterConditionReady.Message(cluster, "Cluster agent is not connected")
 		}
-		logrus.Tracef("[clusterConnectedCondition] update cluster %v", cluster.Name)
+		log.Trace("Updating cluster connected condition", "operation", "update_cluster_connected_condition", "cluster", cluster.Name)
 		_, err := c.clusters.Update(cluster)
 		if apierror.IsConflict(err) {
 			cluster, err = c.clusters.Get(cluster.Name, metav1.GetOptions{})

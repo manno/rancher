@@ -3,6 +3,7 @@ package namespace
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"slices"
 
@@ -24,9 +25,9 @@ type Deployer struct {
 }
 
 // NewDeployer creates a new NamespaceDeployer
-func NewDeployer(log log.StructuredLogger, namespaces v1core.NamespaceController) *Deployer {
+func NewDeployer(logger log.StructuredLogger, namespaces v1core.NamespaceController) *Deployer {
 	return &Deployer{
-		log:        log.WithField("deployer", "namespace"),
+		log:        logger.With(slog.String("deployer", "namespace")),
 		namespaces: namespaces,
 	}
 }
@@ -61,21 +62,21 @@ func (d *Deployer) Ensure(ctx context.Context, labels map[string]string) error {
 	// If namespace doesn't exist, create it
 	if err != nil && errors.IsNotFound(err) {
 		_, err = d.namespaces.Create(desiredSccNs)
-		d.log.Infof("Created namespace: %s", consts.DefaultSCCNamespace)
+		d.log.Info("Created namespace", "namespace", consts.DefaultSCCNamespace)
 		return err
 	}
 
 	// Check if namespace is marked for deletion
 	if existingSccNs.DeletionTimestamp != nil {
-		d.log.Infof("Namespace %s is marked for deletion, cleaning up and recreating", consts.DefaultSCCNamespace)
+		d.log.Info("Namespace is marked for deletion, cleaning up and recreating", "namespace", consts.DefaultSCCNamespace)
 
 		// Try to remove finalizers to speed up deletion
 		finalizerIndex := slices.Index(existingSccNs.Finalizers, consts.FinalizerSccNamespace)
 		if len(existingSccNs.Finalizers) > 0 && finalizerIndex != -1 {
-			d.log.Infof("Removing finalizers from namespace %s to speed up deletion", consts.DefaultSCCNamespace)
+			d.log.Info("Removing finalizers from namespace to speed up deletion", "namespace", consts.DefaultSCCNamespace)
 			existingSccNs.Finalizers = slices.Delete(existingSccNs.Finalizers, finalizerIndex, 1)
 			if _, err := d.namespaces.Update(existingSccNs); err != nil {
-				d.log.Warnf("Failed to remove finalizers from namespace %s: %v", consts.DefaultSCCNamespace, err)
+				d.log.Warn("Failed to remove finalizers from namespace", "namespace", consts.DefaultSCCNamespace, "error", err)
 			}
 		}
 
@@ -103,12 +104,12 @@ func (d *Deployer) Ensure(ctx context.Context, labels map[string]string) error {
 
 		if getErr != nil && errors.IsNotFound(getErr) {
 			// Namespace is gone, create a new one
-			d.log.Infof("Namespace %s is deleted, creating new one", consts.DefaultSCCNamespace)
+			d.log.Info("Namespace is deleted, creating new one", "namespace", consts.DefaultSCCNamespace)
 			_, err = d.namespaces.Create(desiredSccNs)
 			if err != nil {
 				return fmt.Errorf("failed to create namespace %s after deletion: %w", consts.DefaultSCCNamespace, err)
 			}
-			d.log.Infof("Created namespace: %s after deletion", consts.DefaultSCCNamespace)
+			d.log.Info("Created namespace after deletion", "namespace", consts.DefaultSCCNamespace)
 			return nil
 		}
 
@@ -124,17 +125,17 @@ func (d *Deployer) Ensure(ctx context.Context, labels map[string]string) error {
 
 	// Check if update is needed
 	if reflect.DeepEqual(existingSccNs, patchUpdatedNs) {
-		d.log.Debugf("Namespace %s is up to date", consts.DefaultSCCNamespace)
+		d.log.Debug("Namespace is up to date", "namespace", consts.DefaultSCCNamespace)
 		return nil
 	}
 
 	// Update the namespace
-	d.log.Infof("Updating namespace: %s", consts.DefaultSCCNamespace)
+	d.log.Info("Updating namespace", "namespace", consts.DefaultSCCNamespace)
 	if _, err := d.namespaces.Update(patchUpdatedNs); err != nil {
 		return fmt.Errorf("failed to update namespace %s: %w", consts.DefaultSCCNamespace, err)
 	}
 
-	d.log.Infof("Updated namespace: %s", consts.DefaultSCCNamespace)
+	d.log.Info("Updated namespace", "namespace", consts.DefaultSCCNamespace)
 
 	return nil
 }

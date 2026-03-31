@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/clustermanager"
@@ -9,11 +10,11 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/management/auth/project_cluster"
 	"github.com/rancher/rancher/pkg/controllers/management/auth/roletemplates"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
@@ -128,7 +129,7 @@ func isFeatureAggregation(obj runtime.Object) bool {
 	}
 	feature, ok := obj.(*v3.Feature)
 	if !ok {
-		logrus.Errorf("unable to convert object: %[1]v, type: %[1]T to a feature", obj)
+		log.Error("Unable to convert object to feature", "object", obj, "type", fmt.Sprintf("%T", obj))
 		return false
 	}
 	return feature.Name == "aggregated-roletemplates"

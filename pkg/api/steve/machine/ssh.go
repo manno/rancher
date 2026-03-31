@@ -20,9 +20,9 @@ import (
 	"github.com/rancher/apiserver/pkg/types"
 	"github.com/rancher/rancher/pkg/capr"
 	capicontrollers "github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io/v1beta2"
+	log "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/utils"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -98,7 +98,7 @@ func getAccessibleAddress(machineInfo *machineInfo) (string, error) {
 			_ = conn.Close()
 			return addrWithPort, nil
 		}
-		logrus.Debugf("[ssh] Failed to probe machine %s at address %s: %v", name, addrWithPort, err)
+		log.Debug("Failed to probe machine at address", "operation", "get_accessible_address", "machine", name, "address", addrWithPort, "error", err)
 	}
 
 	return "", fmt.Errorf("failed to find an accessible IP address for machine %s", name)
@@ -132,7 +132,7 @@ func (s *sshClient) shell(apiRequest *types.APIRequest) error {
 		return err
 	}
 
-	logrus.Debugf("[ssh] Attempting to connect to machine %s via SSH at %s", apiRequest.Name, addrWithPort)
+	log.Debug("Attempting to connect to machine via ssh", "operation", "shell", "machine", apiRequest.Name, "address", addrWithPort)
 	client, err := ssh.Dial("tcp", addrWithPort, &ssh.ClientConfig{
 		User: machineInfo.Driver.SSHUser,
 		Auth: []ssh.AuthMethod{

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	auditlogv1 "github.com/rancher/rancher/pkg/apis/auditlog.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -65,7 +65,7 @@ func (lh *LoggingHandler) Write(entry *logEntry) {
 		// This is to prevent the rancher logs from being flooded with error messages
 		// when the log path is invalid or any other error that will always cause a write to fail.
 		if lastSeen, ok := lh.errMap[err.Error()]; !ok || time.Since(lastSeen) > errorDebounceTime {
-			logrus.Warnf("Failed to write audit logEntry: %s", err)
+			log.Warn("Failed to write audit log entry", "error", err)
 			lh.errMap[err.Error()] = time.Now()
 		}
 	}
@@ -115,7 +115,7 @@ func (w *wrapWriter) CloseNotify() <-chan bool {
 	if cn, ok := w.ResponseWriter.(http.CloseNotifier); ok {
 		return cn.CloseNotify()
 	}
-	logrus.Errorf("Upstream ResponseWriter of type %v does not implement http.CloseNotifier", reflect.TypeOf(w.ResponseWriter))
+	log.Error("Upstream ResponseWriter did not implement http.CloseNotifier", "type", reflect.TypeOf(w.ResponseWriter))
 	return make(<-chan bool)
 }
 
@@ -127,7 +127,7 @@ func (w *wrapWriter) Flush() {
 		flusher.Flush()
 		return
 	}
-	logrus.Errorf("Upstream ResponseWriter of type %v does not implement http.Flusher", reflect.TypeOf(w.ResponseWriter))
+	log.Error("Upstream ResponseWriter did not implement http.Flusher", "type", reflect.TypeOf(w.ResponseWriter))
 }
 
 var _ http.ResponseWriter = (*wrapWriter)(nil)

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	authutil "github.com/rancher/rancher/pkg/auth/util"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 const (
@@ -50,7 +50,7 @@ func locationURL(r *http.Request, provider, resourceType, id string) string {
 	host := "https://" + authutil.GetHost(r)
 	location, err := url.JoinPath(host, URLPrefix, provider, resourceType, id)
 	if err != nil {
-		logrus.Errorf("scim::locationURL: failed to join URL path: %s", err)
+		log.Error("failed to join URL path", "error", err)
 		return "" // TODO: Revisit this.
 	}
 	return location

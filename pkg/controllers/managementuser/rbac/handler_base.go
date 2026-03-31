@@ -14,13 +14,13 @@ import (
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/impersonation"
+	"github.com/rancher/rancher/pkg/log"
 	nsutils "github.com/rancher/rancher/pkg/namespace"
 	pkgrbac "github.com/rancher/rancher/pkg/rbac"
 	"github.com/rancher/rancher/pkg/types/config"
 	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	wrbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -249,7 +249,7 @@ func (m *manager) compareAndUpdateClusterRole(clusterRole *rbacv1.ClusterRole, r
 	}
 	clusterRole = clusterRole.DeepCopy()
 	clusterRole.Rules = rt.Rules
-	logrus.Infof("Updating clusterRole %v because of rules difference with roleTemplate %v (%v).", clusterRole.Name, rt.DisplayName, rt.Name)
+	log.Info("Updating clusterrole due to rules difference", "operation", "ensure_cluster_role", "cluster_role", clusterRole.Name, "role_template", rt.Name, "display_name", rt.DisplayName)
 	_, err := m.clusterRoles.Update(clusterRole)
 	if err != nil {
 		return errors.Wrapf(err, "couldn't update clusterRole %v", rt.Name)
@@ -258,7 +258,7 @@ func (m *manager) compareAndUpdateClusterRole(clusterRole *rbacv1.ClusterRole, r
 }
 
 func (m *manager) createClusterRole(rt *v3.RoleTemplate) error {
-	logrus.Infof("Creating clusterRole for roleTemplate %v (%v).", rt.DisplayName, rt.Name)
+	log.Info("Creating clusterrole for roletemplate", "operation", "create_cluster_role", "role_template", rt.Name, "display_name", rt.DisplayName)
 	_, err := m.clusterRoles.Create(&rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        rt.Name,
@@ -304,7 +304,7 @@ func ToLowerRoleTemplates(roleTemplates map[string]*v3.RoleTemplate) {
 
 func (m *manager) gatherRoles(rt *v3.RoleTemplate, roleTemplates map[string]*v3.RoleTemplate, depthCounter int) error {
 	if depthCounter == rolesCircularSoftLimit {
-		logrus.Warnf("roletemplate has caused %v recursive function calls", rolesCircularSoftLimit)
+		log.Warn("Roletemplate has caused many recursive function calls", "operation", "gather_roles", "depth", rolesCircularSoftLimit)
 	}
 	if depthCounter >= rolesCircularHardLimit {
 		return fmt.Errorf("roletemplate '%s' has caused %d recursive function calls, possible circular dependency", rt.Name, rolesCircularHardLimit)
@@ -361,7 +361,7 @@ func (m *manager) ensureClusterBindings(roles map[string]*v3.RoleTemplate, bindi
 	}
 
 	deleteFunc := func(name string) error {
-		logrus.Infof("Deleting clusterRoleBinding %v", name)
+		log.Info("Deleting clusterrolebinding", "operation", "ensure_cluster_bindings", "name", name)
 		err := m.workload.RBACw.ClusterRoleBinding().Delete(name, &metav1.DeleteOptions{})
 		return client.IgnoreNotFound(err)
 	}
@@ -398,7 +398,7 @@ func (m *manager) ensureProjectRoleBindings(ns string, roles map[string]*v3.Role
 	}
 
 	deleteFunc := func(name string) error {
-		logrus.Infof("Deleting roleBinding %v", name)
+		log.Info("Deleting rolebinding", "operation", "ensure_project_bindings", "name", name, "namespace", ns)
 		err := m.workload.RBACw.RoleBinding().Delete(ns, name, &metav1.DeleteOptions{})
 		return client.IgnoreNotFound(err)
 	}
@@ -459,7 +459,7 @@ func (m *manager) ensureBindings(ns string, roles map[string]*v3.RoleTemplate, b
 		case *rbacv1.RoleBinding:
 			_, err := m.rbLister.Get(ns, roleBinding.Name)
 			if apierrors.IsNotFound(err) {
-				logrus.Infof("Creating roleBinding %v in %s", key, ns)
+				log.Info("Creating rolebinding", "operation", "ensure_bindings", "key", key, "namespace", ns)
 				_, err := m.roleBindings.Create(roleBinding)
 				if err != nil && !apierrors.IsAlreadyExists(err) {
 					return err
@@ -468,7 +468,7 @@ func (m *manager) ensureBindings(ns string, roles map[string]*v3.RoleTemplate, b
 				return err
 			}
 		case *rbacv1.ClusterRoleBinding:
-			logrus.Infof("Creating clusterRoleBinding %v", key)
+			log.Info("Creating clusterrolebinding", "operation", "ensure_bindings", "key", key)
 			_, err := m.workload.RBACw.ClusterRoleBinding().Create(roleBinding)
 			if err != nil && !apierrors.IsAlreadyExists(err) {
 				return err

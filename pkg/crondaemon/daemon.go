@@ -6,8 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/robfig/cron"
-	"github.com/sirupsen/logrus"
 )
 
 // runner defines the cron runner.
@@ -62,7 +62,7 @@ func (d *Daemon) Schedule(exp string) error {
 
 	if (!d.everScheduled || d.running) && exp == "" {
 		d.everScheduled = true
-		logrus.Info(d.withPrefix("daemon is disabled"))
+		log.Info(d.withPrefix("daemon is disabled"))
 	}
 
 	if d.running && exp == d.lastExp ||
@@ -89,7 +89,7 @@ func (d *Daemon) Schedule(exp string) error {
 	d.lastExp = exp
 	d.everScheduled = true
 
-	logrus.Info(d.withPrefix("daemon is scheduled with '" + exp + "'"))
+	log.Info(d.withPrefix("daemon is scheduled with '" + exp + "'"))
 
 	if d.runner != nil {
 		d.runner.Stop()
@@ -103,7 +103,7 @@ func (d *Daemon) Schedule(exp string) error {
 		defer d.runInProgress.Store(false)
 
 		if err := d.run(d.ctx); err != nil {
-			logrus.Error(d.withPrefix(err.Error()))
+			log.Error(d.withPrefix(err.Error()))
 		}
 	}))
 	d.runner.Start()
@@ -115,7 +115,7 @@ func (d *Daemon) Schedule(exp string) error {
 			case <-d.done:
 				return
 			case <-d.ctx.Done():
-				logrus.Info(d.withPrefix("context cancelled, stopping daemon"))
+				log.Info(d.withPrefix("context cancelled, stopping daemon"))
 
 				d.mu.Lock()
 				defer d.mu.Unlock()

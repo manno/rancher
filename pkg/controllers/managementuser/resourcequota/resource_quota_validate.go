@@ -6,8 +6,8 @@ import (
 
 	apiv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	wmgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientcache "k8s.io/client-go/tools/cache"
@@ -40,13 +40,13 @@ func (r *reconcileController) reconcileNamespaces(_ string, p *apiv3.Project) (r
 		p.Spec.ResourceQuota != nil &&
 		!isEmpty(&p.Spec.ResourceQuota.UsedLimit) {
 
-		logrus.Warnf("project %q, clearing bogus used-limit", p.Name)
+		log.Warn("Project clearing bogus used-limit", "operation", "projectOnChange", "project_name", p.Name)
 
 		newP := p.DeepCopy()
 		newP.Spec.ResourceQuota.UsedLimit = apiv3.ResourceQuotaLimit{}
 		_, err := r.projects.Update(newP)
 		if err != nil {
-			logrus.Errorf("project %q, clearing bogus used-limit failed: %q", p.Name, err)
+			log.Error("Project clearing bogus used-limit failed", "operation", "projectOnChange", "project_name", p.Name, "error", err)
 			return nil, err
 		}
 	}

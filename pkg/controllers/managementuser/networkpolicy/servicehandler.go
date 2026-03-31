@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	knetworkingv1 "k8s.io/api/networking/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +36,7 @@ func (sh *serviceHandler) Sync(_ string, service *corev1.Service) (*corev1.Servi
 	if moved {
 		return nil, nil
 	}
-	logrus.Debugf("serviceHandler: Sync: %+v", *service)
+	log.Debug("Servicehandler: sync", "operation", "sync", "service", service.Name, "namespace", service.Namespace)
 	return nil, sh.npmgr.nodePortsUpdateHandler(service, sh.clusterNamespace)
 }
 
@@ -70,7 +70,7 @@ func (npmgr *netpolMgr) nodePortsUpdateHandler(service *corev1.Service, clusterN
 		return portToString(np.Spec.Ingress[0].Ports[i]) < portToString(np.Spec.Ingress[0].Ports[j])
 	})
 	if hasNodePorts {
-		logrus.Debugf("netpolMgr: nodePortsUpdateHandler: service=%+v has node ports, hence programming np=%+v", *service, *np)
+		log.Debug("Netpolmgr: nodeportsupdatehandler: service has node ports, programming network policy", "operation", "node_ports_update_handler", "service", service.Name, "namespace", service.Namespace, "network_policy", np.Name)
 		return npmgr.program(np)
 	}
 

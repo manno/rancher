@@ -13,8 +13,8 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/management/drivers/nodedriver"
 	"github.com/rancher/rancher/pkg/features"
 	normanv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -251,7 +251,7 @@ func AddHarvesterMachineDriver(mgmt *config.ManagementContext) error {
 
 	harvesterDriverChecksum, ok := harvesterDriverChecksums[runtime.GOARCH]
 	if !ok {
-		logrus.Warnf("machine driver %v does not support GOARCH %v", HarvesterDriver, runtime.GOARCH)
+		log.Warn("Machine driver does not support goarch", "operation", "add_machine_drivers", "driver", HarvesterDriver, "goarch", runtime.GOARCH)
 		harvesterEnabled = false
 	}
 
@@ -294,14 +294,14 @@ func addMachineDriver(name, url, uiURL, checksum string, whitelist []string, cre
 		n.Spec.DisplayName = name
 		n.Spec.WhitelistDomains = whitelist
 		if !reflect.DeepEqual(m, n) {
-			logrus.Infof("Updating node driver %v", name)
+			log.Info("Updating node driver", "name", name)
 			_, err := cli.Update(n)
 			return err
 		}
 		return nil
 	}
 
-	logrus.Infof("Creating node driver %v", name)
+	log.Info("Creating node driver", "name", name)
 	_, err = cli.Create(&v3.NodeDriver{
 		ObjectMeta: v1.ObjectMeta{
 			Name:        name,
@@ -371,7 +371,7 @@ func deleteMachineDriver(name, urlPrefix string, ndClient normanv3.NodeDriverInt
 	driver, err := ndClient.Get(name, v1.GetOptions{})
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			logrus.Warnf("Error getting node driver %s for deletion: %v", name, err)
+			log.Warn("Error getting node driver for deletion", "name", name, "error", err)
 		}
 		return
 	}
@@ -379,13 +379,13 @@ func deleteMachineDriver(name, urlPrefix string, ndClient normanv3.NodeDriverInt
 	// Don't delete if the driver is active or if the url is not the expected invalid one,
 	// as it was likely modified.
 	if driver.Spec.Active || !strings.HasPrefix(driver.Spec.URL, urlPrefix) {
-		logrus.Infof("Not deleting active or modified node driver %s", name)
+		log.Info("Not deleting active or modified node driver", "name", name)
 		return
 	}
 
-	logrus.Infof("Deleting node driver %s", name)
+	log.Info("Deleting node driver", "name", name)
 	if err := ndClient.Delete(name, &v1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
-		logrus.Warnf("Error deleting node driver %s: %v", name, err)
+		log.Warn("Error deleting node driver", "name", name, "error", err)
 	}
 }
 

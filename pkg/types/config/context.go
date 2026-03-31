@@ -33,6 +33,7 @@ import (
 	projectv3 "github.com/rancher/rancher/pkg/generated/norman/project.cattle.io/v3"
 	rbacv1 "github.com/rancher/rancher/pkg/generated/norman/rbac.authorization.k8s.io/v1"
 	storagev1 "github.com/rancher/rancher/pkg/generated/norman/storage.k8s.io/v1"
+	log "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/peermanager"
 	clusterSchema "github.com/rancher/rancher/pkg/schemas/cluster.cattle.io/v3"
@@ -47,7 +48,6 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/generated/controllers/core"
 	"github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -170,7 +170,7 @@ func NewScaledContext(config rest.Config, opts *ScaleContextOptions) (*ScaledCon
 }
 
 func (c *ScaledContext) Start(ctx context.Context) error {
-	logrus.Info("Starting API controllers")
+	log.Info("Starting API controllers", "operation", "start_scaled_context")
 	ctx = metrics.WithContextID(ctx, "scaledcontext")
 	return c.ControllerFactory.Start(ctx, 50)
 }
@@ -468,7 +468,7 @@ func (w *UserContext) Start(pctx context.Context) error {
 	w.extraControllerFactoriesMutex.Lock()
 	defer w.extraControllerFactoriesMutex.Unlock()
 
-	logrus.Info("Starting cluster controllers for ", w.ClusterName)
+	log.Info("Starting cluster controllers", "operation", "start_user_context", "cluster", w.ClusterName)
 	if err := w.Management.ControllerFactory.Start(w.runContext, 50); err != nil {
 		return err
 	}
@@ -552,7 +552,7 @@ func NewUserOnlyContext(config *wrangler.Context) (*UserOnlyContext, error) {
 }
 
 func (w *UserOnlyContext) Start(ctx context.Context) error {
-	logrus.Info("Starting workload controllers")
+	log.Info("Starting workload controllers", "operation", "start_user_only_context", "cluster", w.ClusterName)
 	ctx = metrics.WithContextID(ctx, fmt.Sprintf("useronlycontext_%s", w.ClusterName))
 	return w.ControllerFactory.Start(ctx, 5)
 }

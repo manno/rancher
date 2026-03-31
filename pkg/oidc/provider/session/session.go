@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rancher/rancher/pkg/log"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -148,19 +148,19 @@ func (m *SecretSessionStore) cleanUpExpiredSessions(ctx context.Context, c <-cha
 			m.mu.Lock()
 			secrets, err := m.secretCache.List(namespace, labels.Set{secretLabel: "true"}.AsSelector())
 			if err != nil {
-				logrus.Errorf("[OIDC provider] error listing secrets: %v", err)
+				log.Error("Oidc provider: error listing secrets", "operation", "cleanup_sessions", "error", err)
 				return
 			}
 			for _, secret := range secrets {
 				var session Session
 				err = json.Unmarshal(secret.Data[secretKey], &session)
 				if err != nil {
-					logrus.Errorf("[OIDC provider] error unmarshalling session: %v", err)
+					log.Error("Oidc provider: error unmarshalling session", "operation", "cleanup_sessions", "error", err)
 				}
 				if time.Since(session.CreatedAt) > m.expiryTime {
 					err := m.secretClient.Delete(namespace, secret.Name, &metav1.DeleteOptions{})
 					if err != nil {
-						logrus.Errorf("[OIDC provider] error deleting secret: %v", err)
+						log.Error("Oidc provider: error deleting secret", "operation", "cleanup_sessions", "error", err)
 					}
 				}
 			}

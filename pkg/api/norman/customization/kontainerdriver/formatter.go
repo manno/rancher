@@ -7,9 +7,9 @@ import (
 	"github.com/rancher/norman/types"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -77,7 +77,7 @@ func (f *Format) Formatter(request *types.APIContext, resource *types.RawResourc
 	if resName != nil {
 		clustersWithKontainerDriver, err := f.ClusterIndexer.ByIndex(clusterByGenericEngineConfigKey, resName.(string))
 		if err != nil {
-			logrus.Warnf("failed to determine if kontainer driver %v was in use by a cluster : %v", resName.(string), err)
+			log.Warn("Failed to determine if kontainer driver was in use by a cluster", "operation", "formatter", "driver_name", resName.(string), "error", err)
 		} else if len(clustersWithKontainerDriver) != 0 {
 			// if cluster driver in use, delete removal link from UI
 			delete(resource.Links, "remove")

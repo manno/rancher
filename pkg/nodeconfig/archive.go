@@ -16,8 +16,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/rancher/pkg/jailer"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
 )
 
 type TLSConfig struct {
@@ -168,7 +168,7 @@ func extractConfig(baseDir, extractedConfig string) error {
 
 		filename := header.Name
 		filePath := filepath.Join(baseDir, filename)
-		logrus.Debugf("Extracting %v", filePath)
+		log.Debug("Extracting file", "operation", "restore", "file_path", filePath)
 
 		info := header.FileInfo()
 		if info.IsDir() {

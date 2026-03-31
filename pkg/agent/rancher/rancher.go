@@ -9,13 +9,13 @@ import (
 	"github.com/rancher/rancher/pkg/agent/cluster"
 	"github.com/rancher/rancher/pkg/controllers/managementuser/cavalidator"
 	"github.com/rancher/rancher/pkg/features"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/rancher"
 	"github.com/rancher/wrangler/v3/pkg/apply"
 	corefactory "github.com/rancher/wrangler/v3/pkg/generated/controllers/core"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/kubeconfig"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,7 +71,7 @@ type handler struct {
 
 func (h *handler) startRancher() {
 	if features.ProvisioningPreBootstrap.Enabled() {
-		logrus.Debugf("not starting embedded rancher due to pre-bootstrap...")
+		log.Debug("Not starting embedded rancher due to pre-bootstrap")
 		return
 	}
 
@@ -85,7 +85,7 @@ func (h *handler) startRancher() {
 		RancherNamespaceOptions: os.Getenv("RANCHER_NAMESPACE_OPTIONS"),
 	})
 	if err != nil {
-		logrus.Fatalf("Embedded rancher failed to initialize: %v", err)
+		log.Fatal("Embedded rancher failed to initialize", "error", err)
 	}
 	go func() {
 		err = server.ListenAndServe(h.ctx)
@@ -94,9 +94,9 @@ func (h *handler) startRancher() {
 				// context cancellation would happen when cancel() corresponding to h.ctx gets called;
 				// since h.ctx is a signal context registered for SIGINT and SIGTERM, cancel() would be called upon
 				// receiving one of these signals
-				logrus.Infof("Embedded rancher exited due to context cancellation: %v", err)
+				log.Info("Embedded rancher exited due to context cancellation", "error", err)
 			} else {
-				logrus.Fatalf("Embedded rancher failed to start or exited abnormally: %v", err)
+				log.Fatal("Embedded rancher failed to start or exited abnormally", "error", err)
 			}
 		}
 	}()
@@ -119,11 +119,11 @@ func (h *handler) OnChange(key string, service *corev1.Service) (*corev1.Service
 
 	if service == nil {
 		if key == namespace.System+"/rancher" {
-			logrus.Info("Rancher has been uninstalled, restarting")
+			log.Info("Rancher has been uninstalled, restarting")
 			os.Exit(0)
 		}
 	} else if service.Namespace == namespace.System && service.Name == "rancher" && *h.rancherNotFound {
-		logrus.Info("Rancher has been installed, restarting")
+		log.Info("Rancher has been installed, restarting")
 		os.Exit(0)
 	}
 

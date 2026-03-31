@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rancher/rancher/pkg/log"
 	wranglerapiregistrationv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/apiregistration.k8s.io/v1"
 	wranglercorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -199,7 +199,7 @@ func (p *rotatingSNIProvider) CurrentCertKeyContent() ([]byte, []byte) {
 }
 
 func (p *rotatingSNIProvider) Run(stopChan <-chan struct{}) error {
-	logrus.Info("starting imperative api cert rotator")
+	log.Info("Starting imperative api cert rotator")
 
 	req, err := labels.NewRequirement(SecretLabelProvider, selection.Equals, []string{p.name})
 	if err != nil {
@@ -215,7 +215,7 @@ func (p *rotatingSNIProvider) Run(stopChan <-chan struct{}) error {
 	defer watcher.Stop()
 
 	if err := p.handleCert(); err != nil {
-		logrus.Error(err)
+		log.Error("Failed to handle cert", "error", err)
 	}
 
 	ticker := time.NewTicker(certCheckInterval)
@@ -223,33 +223,33 @@ func (p *rotatingSNIProvider) Run(stopChan <-chan struct{}) error {
 	for {
 		select {
 		case <-stopChan:
-			logrus.Info("stopping imperative api cert rotator")
+			log.Info("Stopping imperative api cert rotator")
 
 			if err := p.secrets.Delete(Namespace, p.secretName, &metav1.DeleteOptions{}); client.IgnoreNotFound(err) != nil {
-				logrus.Error(err)
+				log.Error("Failed to delete secret", "error", err)
 			}
 
 			return nil
 		case <-ticker.C:
 			if err := p.handleCert(); err != nil {
-				logrus.Error(err)
+				log.Error("Failed to handle cert", "error", err)
 			}
 		case event, ok := <-watcher.ResultChan():
 			if !ok {
-				logrus.Errorf("watcher channel closed")
+				log.Error("Watcher channel closed")
 				return nil
 			} else if event.Type == watch.Error {
 				switch obj := event.Object.(type) {
 				case *metav1.Status:
-					logrus.Errorf("watcher channel closed: %s", obj.Message)
+					log.Error("Watcher channel closed", "status_message", obj.Message)
 				default:
-					logrus.Errorf("watcher channel closed: %v", obj)
+					log.Error("Watcher channel closed", "object", obj)
 				}
 
 				return nil
 			} else {
 				if err := p.handleCertEvent(event); err != nil {
-					logrus.Error(err)
+					log.Error("Failed to handle cert event", "error", err)
 				}
 			}
 		}
@@ -281,7 +281,7 @@ func (p *rotatingSNIProvider) createOrUpdateCerts(secret *corev1.Secret) error {
 			return fmt.Errorf("failed to create secret: %w", err)
 		}
 
-		logrus.Info("created imperative api cert secret")
+		log.Info("Created imperative api cert secret")
 	} else {
 		secret.Data[corev1.TLSCertKey] = cert
 		secret.Data[corev1.TLSPrivateKeyKey] = key
@@ -290,7 +290,7 @@ func (p *rotatingSNIProvider) createOrUpdateCerts(secret *corev1.Secret) error {
 			return fmt.Errorf("failed to update secret: %w", err)
 		}
 
-		logrus.Info("updated imperative api cert secret")
+		log.Info("Updated imperative api cert secret")
 	}
 
 	p.contentMu.Lock()
@@ -345,7 +345,7 @@ func (p *rotatingSNIProvider) handleCert() error {
 	}
 
 	if willExpire {
-		logrus.Infof("imperative api cabundle will expire within '%s', regenerating", maxRemainingCertLifetime)
+		log.Info("Imperative api cabundle will expire, regenerating", "maxRemainingCertLifetime", maxRemainingCertLifetime)
 		if err := p.createOrUpdateCerts(secret); err != nil {
 			return fmt.Errorf("failed to update expired cert: %w", err)
 		}
@@ -391,11 +391,11 @@ func (f listenerFunc) Enqueue() {
 
 func ApiServiceCertListener(provider dynamiccertificates.SNICertKeyContentProvider, apiservice wranglerapiregistrationv1.APIServiceController) dynamiccertificates.Listener {
 	return listenerFunc(func() {
-		logrus.Info("imperative api APIService cert updated")
+		log.Info("Imperative api APIService cert updated")
 
 		caBundle, _ := provider.CurrentCertKeyContent()
 		if err := CreateOrUpdateAPIService(apiservice, caBundle); err != nil {
-			logrus.WithError(err).Error("failed to update api service")
+			log.Error("Failed to update api service")
 		}
 	})
 }

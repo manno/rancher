@@ -24,10 +24,10 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rancher/pkg/auth/util"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/ref"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -78,7 +78,7 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	if credID := req.URL.Query().Get("cloudCredentialId"); credID != "" {
 		cc, statusCode, err := h.getCloudCredential(req, credID)
 		if err != nil {
-			logrus.Debugf("[alibaba-handler] error accessing cloud credential %s:%s", credID, err.Error())
+			log.Debug("Alibaba-handler: error accessing cloud credential", "operation", "handle", "cred_id", credID, "error", err)
 			handleErr(writer, statusCode, fmt.Errorf("error accessing cloud credential %s", credID))
 			return
 		}
@@ -106,77 +106,77 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch resourceType {
 	case "alibabaRegions":
 		if serialized, errCode, err = describeRegions(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeRegions: %v", err)
+			log.Debug("Alibaba-handler: error call describeRegions", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaZones":
 		if serialized, errCode, err = describeZones(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeZones: %v", err)
+			log.Debug("Alibaba-handler: error call describeZones", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaClusters":
 		if serialized, errCode, err = describeClusters(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeClusters: %v", err)
+			log.Debug("Alibaba-handler: error call describeClusters", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaResourceGroups":
 		if serialized, errCode, err = describeResourceGroups(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeResourceGroups: %v", err)
+			log.Debug("Alibaba-handler: error call describeResourceGroups", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaInstanceTypes":
 		if serialized, errCode, err = describeInstanceTypes(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeInstanceTypes: %v", err)
+			log.Debug("Alibaba-handler: error call describeInstanceTypes", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaKeyPairs":
 		if serialized, errCode, err = describeKeyPairs(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeKeyPairs: %v", err)
+			log.Debug("Alibaba-handler: error call describeKeyPairs", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaVpcs":
 		if serialized, errCode, err = describeVpcs(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeVpcs: %v", err)
+			log.Debug("Alibaba-handler: error call describeVpcs", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaVSwitches":
 		if serialized, errCode, err = describeVSwitches(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeVSwitches: %v", err)
+			log.Debug("Alibaba-handler: error call describeVSwitches", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaAvailableResources":
 		if serialized, errCode, err = describeAvailableResource(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeAvailableResource: %v", err)
+			log.Debug("Alibaba-handler: error call describeAvailableResource", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaKubernetesVersions":
 		if serialized, errCode, err = describeKubernetesMetadata(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeKubernetesMetadata: %v", err)
+			log.Debug("Alibaba-handler: error call describeKubernetesMetadata", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "alibabaImageSupportedInstanceTypes":
 		if serialized, errCode, err = describeImageSupportedInstanceTypes(capabilities, req); err != nil {
-			logrus.Debugf("[alibaba-handler] error call describeImageSupportedInstanceTypes: %v", err)
+			log.Debug("Alibaba-handler: error call describeImageSupportedInstanceTypes", "operation", "handle", "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
@@ -220,7 +220,7 @@ func (h *handler) checkCredentials(req *http.Request) (int, error) {
 	_, err = client.DescribeRegionsWithContext(req.Context(), request, &dara.RuntimeOptions{})
 	if err != nil {
 
-		logrus.Debugf("[alibaba-handler] error call describeRegions: %v", err)
+		log.Debug("Alibaba-handler: error call describeRegions", "operation", "handle", "error", err)
 		return handleSDKError(err)
 	}
 
@@ -326,7 +326,7 @@ func handleErr(writer http.ResponseWriter, errorCode int, originalErr error) {
 	payload["error"] = originalErr.Error()
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil { // This should not happen given fixed types on the payload - https://stackoverflow.com/a/33964549
-		logrus.Errorf("[alibaba-handler] Failed to write payload JSON: %v", err)
+		log.Error("Alibaba-handler: failed to write payload JSON", "operation", "encode_payload", "error", err)
 		return
 	}
 	writer.Write(payloadJSON)
@@ -344,7 +344,7 @@ func (h *handler) generateAPIContext(req *http.Request) *types.APIContext {
 func (h *handler) getCloudCredential(req *http.Request, credID string) (*corev1.Secret, int, error) {
 	ns, name := ref.Parse(credID)
 	if ns == "" || name == "" {
-		logrus.Errorf("[alibaba-handler] invalid cloud credential ID %s", credID)
+		log.Error("Alibaba-handler: invalid cloud credential ID", "operation", "get_credentials", "cred_id", credID)
 		return nil, http.StatusBadRequest, fmt.Errorf("invalid cloud credential ID %s", credID)
 	}
 
@@ -364,7 +364,7 @@ func (h *handler) getCloudCredential(req *http.Request, credID string) (*corev1.
 
 	cc, err := h.secretsLister.Get(ns, name)
 	if err != nil {
-		logrus.Errorf("[alibaba-handler] error accessing cloud credential %s", credID)
+		log.Error("Alibaba-handler: error accessing cloud credential", "operation", "get_credentials", "cred_id", credID)
 		return nil, httperror.InvalidBodyContent.Status, fmt.Errorf("error accessing cloud credential %s", credID)
 	}
 

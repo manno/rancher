@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/types/set"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/peermanager"
 	"github.com/rancher/rancher/pkg/serviceaccounttoken"
 	"github.com/rancher/rancher/pkg/settings"
@@ -18,7 +19,6 @@ import (
 	"github.com/rancher/remotedialer"
 	"github.com/rancher/wrangler/v3/pkg/data"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/net"
@@ -87,7 +87,7 @@ func getTokenFromToken(ctx context.Context, tokenBytes []byte) ([]byte, error) {
 func startPeerManager(ctx context.Context, endpoints corecontrollers.EndpointsController, server *remotedialer.Server) (peermanager.PeerManager, error) {
 	tokenBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
 	if os.IsNotExist(err) || settings.Namespace.Get() == "" || settings.PeerServices.Get() == "" {
-		logrus.Infof("Running in single server mode, will not peer connections")
+		log.Info("Running in single server mode, will not peer connections", "operation", "start_peer_manager")
 		return nil, nil
 	} else if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func startPeerManager(ctx context.Context, endpoints corecontrollers.EndpointsCo
 		return nil, errors.Wrap(err, "choosing interface IP")
 	}
 
-	logrus.Infof("Running in clustered mode with ID %s, monitoring endpoint %s/%s", ip, settings.Namespace.Get(), settings.PeerServices.Get())
+	log.Info("Running in clustered mode", "operation", "start_peer_manager", "peer_id", ip, "namespace", settings.Namespace.Get(), "peer_service", settings.PeerServices.Get())
 
 	server.PeerID = ip.String()
 	server.PeerToken = string(tokenBytes)

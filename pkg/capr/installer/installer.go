@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/rancher/rancher/pkg/capr"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/systemtemplate"
 	"github.com/rancher/rancher/pkg/tls"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -38,13 +38,13 @@ func installScript(setting settings.Setting, files []string) ([]byte, error) {
 			script, err := os.ReadFile(f)
 			if err != nil {
 				if !os.IsNotExist(err) {
-					logrus.Debugf("error pulling system agent installation script %s: %s", f, err)
+					log.Debug("Error pulling system agent installation script", "operation", "install_script", "file", f, "error", err)
 				}
 				continue
 			}
 			return script, err
 		}
-		logrus.Debugf("no local installation script found, moving on to url: %s", setting.Get())
+		log.Debug("No local installation script found, moving on to url", "operation", "install_script", "url", setting.Get())
 	}
 
 	resp, err := http.Get(setting.Get())

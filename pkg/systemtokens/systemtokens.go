@@ -7,10 +7,10 @@ import (
 
 	"github.com/rancher/rancher/pkg/auth/tokens"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/types/config/systemtokens"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -105,7 +105,7 @@ func (t *systemTokens) createOrUpdateSystemToken(tokenName, description, kind, u
 	if err != nil {
 		return "", err
 	}
-	logrus.Infof("Creating system token for %v, token: %v", userName, tokenName)
+	log.Info("Creating system token", "operation", "create_or_update_system_token", "user", userName, "token_name", tokenName)
 	token, err = t.tokenClient.Create(token)
 	if err != nil {
 		return "", err

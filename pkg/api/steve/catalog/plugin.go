@@ -13,7 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rancher/rancher/pkg/controllers/dashboard/plugin"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apiserver/pkg/endpoints/request"
 )
 
@@ -34,34 +34,34 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	index, err := json.Marshal(in)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		logrus.Error(err)
+		log.Error("Failed to marshal index", "operation", "index_handler", "error", err)
 	}
 	w.Write(index)
 }
 
 func pluginHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	logrus.Debugf("http request vars %s", vars)
+	log.Debug("Processing http request for plugin", "operation", "plugin_handler", "vars", fmt.Sprintf("%v", vars))
 	authed := isAuthenticated(r)
 	entry, ok := plugin.Index.Entries[vars["name"]]
 	// Checks if the requested plugin exists and if the user has authorization to see it
 	if (!ok || entry.Version != vars["version"]) || (!authed && !entry.NoAuth) {
 		msg := fmt.Sprintf("plugin [name: %s version: %s] does not exist in index", vars["name"], vars["version"])
 		http.Error(w, msg, http.StatusNotFound)
-		logrus.Debug(msg)
+		log.Debug(msg, "operation", "plugin_handler")
 		return
 	}
 
 	if entry.NoCache || entry.CacheState == plugin.Pending {
 		if entry.Endpoint != "" {
-			logrus.Debugf("[noCache: %v] proxying request to [endpoint: %v]\n", entry.NoCache, entry.Endpoint)
+			log.Debug("Proxying request to endpoint", "operation", "plugin_handler", "noCache", entry.NoCache, "endpoint", entry.Endpoint)
 			proxyRequest(entry.Endpoint, vars["rest"], w, r, denylist)
 		} else {
-			logrus.Errorf("[noCache: %v] caching still in progress for [endpoint: %v]\n", entry.NoCache, entry.Endpoint)
+			log.Error("Caching still in progress", "operation", "plugin_handler", "noCache", entry.NoCache, "endpoint", entry.Endpoint)
 			http.Error(w, "caching still in progress", http.StatusTooEarly)
 		}
 	} else {
-		logrus.Debugf("[noCache: %v] serving plugin files from filesystem cache\n", entry.NoCache)
+		log.Debug("Serving plugin files from filesystem cache", "operation", "plugin_handler", "noCache", entry.NoCache)
 		r.URL.Path = fmt.Sprintf("/%s/%s/%s", vars["name"], vars["version"], vars["rest"])
 		http.FileServer(http.Dir(plugin.FSCacheRootDir)).ServeHTTP(w, r)
 	}

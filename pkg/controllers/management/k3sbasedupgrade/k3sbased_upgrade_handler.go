@@ -9,8 +9,8 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/managementuser/healthsyncer"
 	"github.com/rancher/rancher/pkg/controllers/managementuser/nodesyncer"
 	planClientset "github.com/rancher/rancher/pkg/generated/clientset/versioned/typed/upgrade.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	planv1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,7 +41,7 @@ func (h *handler) onClusterChange(_ string, cluster *mgmtv3.Cluster) (*mgmtv3.Cl
 		if err := healthsyncer.IsAPIUp(h.ctx, clusterCtx.K8sClient.CoreV1().Namespaces()); err != nil {
 			// skip further work if the cluster's API is not reachable,
 			// this usually happen during cattle-cluster-agent being redeployed
-			logrus.Debugf("[k3s-based-upgrader] [%s] cluster API is not reachable, will try again", cluster.Name)
+			log.Debug("Cluster API is not reachable, will try again", "cluster", cluster.Name)
 			h.clusterEnqueueAfter(cluster.Name, time.Second*5)
 			return cluster, nil
 		}
@@ -67,13 +67,13 @@ func (h *handler) onClusterChange(_ string, cluster *mgmtv3.Cluster) (*mgmtv3.Cl
 		// otherwise, update the cluster condition to reflect the upgrading progress
 		if mgmtv3.ClusterConditionUpgraded.IsTrue(cluster) {
 			if masterPlan.Name != "" {
-				logrus.Debugf("[k3s-based-upgrader] removing master plan %s from cluster %s", masterPlan.Name, cluster.Name)
+				log.Debug("Removing master plan from cluster", "plan", masterPlan.Name, "cluster", cluster.Name)
 				if err := planClient.Delete(context.TODO(), masterPlan.Name, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 					return cluster, err
 				}
 			}
 			if workerPlan.Name != "" {
-				logrus.Debugf("[k3s-based-upgrader] removing worker plan %s from cluster %s", workerPlan.Name, cluster.Name)
+				log.Debug("Removing worker plan from cluster", "plan", workerPlan.Name, "cluster", cluster.Name)
 				if err := planClient.Delete(context.TODO(), workerPlan.Name, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
 					return cluster, err
 				}
@@ -126,13 +126,13 @@ func (h *handler) onClusterChange(_ string, cluster *mgmtv3.Cluster) (*mgmtv3.Cl
 		if !needsUpgrade {
 			// if upgrade was in progress, make sure to set the state back to true
 			if mgmtv3.ClusterConditionUpgraded.IsUnknown(cluster) {
-				logrus.Debug("[k3s-based-upgrader] updating the Upgraded condition to true")
+				log.Debug("Updating the Upgraded condition to true")
 				cluster = cluster.DeepCopy()
 				cluster = upgradeDone(cluster)
 				if cluster, err = h.clusterClient.Update(cluster); err != nil {
 					return nil, err
 				}
-				logrus.Infof("[k3s-based-upgrader] finished upgrading cluster [%s]", cluster.Name)
+				log.Info("Finished upgrading cluster", "cluster", cluster.Name)
 			}
 			return cluster, nil
 		}
@@ -140,14 +140,11 @@ func (h *handler) onClusterChange(_ string, cluster *mgmtv3.Cluster) (*mgmtv3.Cl
 
 	// Reaching this point indicates that an upgrade is required.
 	if mgmtv3.ClusterConditionUpgraded.IsTrue(cluster) {
-		logrus.Infof("[k3s-based-upgrader] upgrading cluster [%s] version from [%s] to [%s]",
-			cluster.Name, cluster.Status.Version.GitVersion, updateVersion)
+		log.Info("Upgrading cluster version", "cluster", cluster.Name, "from_version", cluster.Status.Version.GitVersion, "to_version", updateVersion)
 		if isNewer {
-			logrus.Debugf("[k3s-based-upgrader] upgrading cluster [%s] because cluster version [%s] is newer than observed version [%s]",
-				cluster.Name, updateVersion, cluster.Status.Version.GitVersion)
+			log.Debug("Upgrading cluster because cluster version is newer than observed version", "cluster", cluster.Name, "cluster_version", updateVersion, "observed_version", cluster.Status.Version.GitVersion)
 		} else {
-			logrus.Debugf("[k3s-based-upgrader] upgrading cluster [%s] because cluster version [%s] is newer than observed node version",
-				cluster.Name, updateVersion)
+			log.Debug("Upgrading cluster because cluster version is newer than observed node version", "cluster", cluster.Name, "cluster_version", updateVersion)
 		}
 	}
 
@@ -179,8 +176,7 @@ func (h *handler) nodesNeedUpgrade(cluster *mgmtv3.Cluster, version string) (boo
 				return false, err
 			}
 			if isNewer {
-				logrus.Debugf("[k3s-based-upgrader] cluster [%s] version [%s] is newer than observed node [%s] version [%s]",
-					cluster.Name, version, node.Name, node.Status.InternalNodeStatus.NodeInfo.KubeletVersion)
+				log.Debug("Cluster version is newer than observed node version", "cluster", cluster.Name, "cluster_version", version, "node", node.Name, "node_version", node.Status.InternalNodeStatus.NodeInfo.KubeletVersion)
 				return true, nil
 			}
 		}

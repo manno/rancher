@@ -17,8 +17,8 @@ import (
 	"github.com/pkg/errors"
 	util "github.com/rancher/rancher/pkg/controllers/managementagent/workload"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -127,7 +127,7 @@ func getServiceWorkloadIDs(obj *corev1.Service) []string {
 	err := json.Unmarshal([]byte(value), &workloadIDs)
 	if err != nil {
 		// just log the error, can't really do anything here.
-		logrus.Debugf("Failed to unmarshal targetWorkloadIds, error: %v", err)
+		log.Debug("Failed to unmarshal targetWorkloadIds", "operation", "extract_workload_ids", "error", err)
 	}
 	return workloadIDs
 }
@@ -135,7 +135,7 @@ func getServiceWorkloadIDs(obj *corev1.Service) []string {
 func (c *Controller) fetchWorkload(workloadID string) (*util.Workload, error) {
 	workload, err := c.workloadLister.GetByWorkloadIDRetryAPIIfNotFound(workloadID)
 	if err != nil && apierrors.IsNotFound(err) {
-		logrus.Warnf("Failed to fetch workload [%s]: [%v]", workloadID, err)
+		log.Warn("Failed to fetch workload", "operation", "fetch_workload", "workload_id", workloadID, "error", err)
 		return nil, nil
 	}
 
@@ -283,7 +283,7 @@ func (c *PodController) sync(key string, obj *corev1.Pod) (runtime.Object, error
 			return nil, err
 		}
 		if workloadService == nil {
-			logrus.Warnf("Failed to fetch service [%s]: [%v]", workloadServiceUUID, err)
+			log.Warn("Failed to fetch service", "operation", "reconcile_services", "service_uuid", workloadServiceUUID, "error", err)
 			workloadServiceUUIDToWorkloadIDs.Delete(workloadServiceUUID)
 			continue
 		}

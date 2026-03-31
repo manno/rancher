@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -50,7 +50,7 @@ func addDefaultPodSecurityAdmissionConfigurationTemplates(management *config.Man
 			if !errors.IsAlreadyExists(err) {
 				return fmt.Errorf("failed to create default '%s' pod security admission configuration: %w", t.Name, err)
 			}
-			logrus.Tracef("updating default '%s' pod security admission configuration", t.Name)
+			log.Trace("Updating default pod security admission configuration", "name", t.Name)
 			err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 				// get the latest version of the object from the k8s API directly
 				existing, err := psactClient.Get(t.Name, metav1.GetOptions{})

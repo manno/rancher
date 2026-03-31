@@ -5,9 +5,9 @@ import (
 
 	v1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
 	fleetv1alpha1 "github.com/rancher/rancher/pkg/generated/controllers/fleet.cattle.io/v1alpha1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
 )
 
 type Retriever struct {
@@ -38,7 +38,7 @@ func (r *Retriever) GetSystemPodLabelSelectors(controlPlane *v1.RKEControlPlane)
 
 	fc, err := r.fleetClusterCache.Get(controlPlane.Namespace, controlPlane.Name)
 	if err != nil {
-		logrus.Errorf("error retrieving fleet cluster %s/%s: %v", controlPlane.Namespace, controlPlane.Name, err)
+		log.Error("Error retrieving fleet cluster", "operation", "get_fleet_cluster", "namespace", controlPlane.Namespace, "cluster", controlPlane.Name, "error", err)
 		// Don't return here so we don't erroneously block pod cleanup
 	} else {
 		cfsNamespace := "cattle-fleet-system"

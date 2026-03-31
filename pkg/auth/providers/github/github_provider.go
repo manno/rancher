@@ -18,11 +18,11 @@ import (
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	publicclient "github.com/rancher/rancher/pkg/client/generated/management/v3public"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -192,7 +192,7 @@ func (g *Provider) LoginUser(host string, githubCredential *apiv3.GithubLogin, c
 
 	accessToken, err := g.githubClient.getAccessToken(securityCode, config)
 	if err != nil {
-		logrus.Infof("Error generating accessToken from github %v", err)
+		log.Info("Error generating access token from github", "provider", "github", "operation", "login_user", "error", err)
 		return apiv3.Principal{}, nil, "", err
 	}
 
@@ -291,7 +291,7 @@ func (g *Provider) SearchPrincipals(searchKey, principalType string, token acces
 
 	accts, err := g.githubClient.searchUsers(searchKey, principalType, accessToken, config)
 	if err != nil {
-		logrus.Errorf("problem searching github: %v", err)
+		log.Error("Problem searching github", "provider", "github", "operation", "search_principals", "search_key", searchKey, "principal_type", principalType, "error", err)
 	}
 
 	for _, acct := range accts {
@@ -404,7 +404,7 @@ func (g *Provider) toPrincipal(principalType string, acct common.GitHubAccount, 
 func (g *Provider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []apiv3.Principal) (bool, error) {
 	config, err := g.getConfig()
 	if err != nil {
-		logrus.Errorf("Error fetching github config: %v", err)
+		log.Error("Error fetching github config", "provider", "github", "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 

@@ -6,11 +6,11 @@ import (
 
 	apiv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	wmgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	namespaceutil "github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/ref"
 	validate "github.com/rancher/rancher/pkg/resourcequota"
 	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,7 +73,7 @@ func (c *calculateLimitController) calculateResourceQuotaUsed(_ string, ns *core
 	if projectNowID == "" {
 		// 3 unassigned
 		if err := c.calculateProjectResourceQuota(projectOldID); err != nil {
-			logrus.Errorf("quota calculation failed for %q: %v", projectOldID, err)
+			log.Error("Quota calculation failed", "project", projectOldID, "error", err)
 			return nil, err
 		}
 		updatedNs := ns.DeepCopy()
@@ -84,7 +84,7 @@ func (c *calculateLimitController) calculateResourceQuotaUsed(_ string, ns *core
 	if projectOldID != projectNowID {
 		// 4 move
 		if err := c.calculateProjectResourceQuota(projectOldID); err != nil {
-			logrus.Errorf("quota calculation failed for %q: %v", projectOldID, err)
+			log.Error("Quota calculation failed", "project", projectOldID, "error", err)
 			return nil, err
 		}
 		updatedNs := ns.DeepCopy()
@@ -93,7 +93,7 @@ func (c *calculateLimitController) calculateResourceQuotaUsed(_ string, ns *core
 	}
 	// 5 other
 	if err := c.calculateProjectResourceQuota(projectNowID); err != nil {
-		logrus.Errorf("quota calculation failed for %q: %v", projectNowID, err)
+		log.Error("Quota calculation failed", "project", projectNowID, "error", err)
 		return nil, err
 	}
 	return nil, nil

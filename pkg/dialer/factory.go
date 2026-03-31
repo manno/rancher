@@ -13,11 +13,11 @@ import (
 
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/types/config/dialer"
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/remotedialer"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/transport"
 )
@@ -48,7 +48,7 @@ func (f *Factory) ClusterDialer(clusterName string, retryOnError bool) (dialer.D
 	return func(ctx context.Context, network, address string) (net.Conn, error) {
 		d, err := f.clusterDialer(clusterName, address, retryOnError)
 		if err != nil {
-			logrus.Debugf(WaitForAgentError, clusterName)
+			log.Debug("Wait for agent error", "operation", "get_cluster_dialer", "cluster", clusterName)
 			return nil, err
 		}
 		return d(ctx, network, address)
@@ -157,33 +157,33 @@ func (f *Factory) clusterDialer(clusterName, address string, retryOnError bool) 
 	}
 
 	hostPort := hostPort(cluster)
-	logrus.Tracef("dialerFactory: apiEndpoint hostPort for cluster [%s] is [%s]", clusterName, hostPort)
+	log.Trace("DialerFactory apiEndpoint hostPort for cluster", "operation", "get_cluster_dialer", "cluster", clusterName, "hostPort", hostPort)
 	if (address == hostPort || isProxyAddress(address)) && IsPublicCloudDriver(cluster) {
 		// For cloud drivers we just connect directly to the k8s API, not through the tunnel.  All other go through tunnel
 		return nativeDialer, nil
 	}
 
 	if f.TunnelServer.HasSession(cluster.Name) {
-		logrus.Tracef("dialerFactory: tunnel session found for cluster [%s]", cluster.Name)
+		log.Trace("DialerFactory tunnel session found for cluster", "operation", "get_cluster_dialer", "cluster", cluster.Name)
 		cd := f.TunnelServer.Dialer(cluster.Name)
 		return func(ctx context.Context, network, address string) (net.Conn, error) {
-			logrus.Tracef("dialerFactory: returning network [%s] and address [%s] as clusterDialer", network, address)
+			log.Trace("DialerFactory returning network and address as clusterDialer", "operation", "get_cluster_dialer", "network", network, "address", address)
 			return cd(ctx, network, address)
 		}, nil
 	}
 
 	if !retryOnError {
-		logrus.Debugf("No active connection for cluster [%s], returning", cluster.Name)
+		log.Debug("No active connection for cluster, returning", "operation", "get_cluster_dialer", "cluster", cluster.Name)
 		return nil, ErrAgentDisconnected
 	}
 
-	logrus.Debugf("No active connection for cluster [%s], will wait for about 30 seconds", cluster.Name)
+	log.Debug("No active connection for cluster, will wait for about 30 seconds", "operation", "get_cluster_dialer", "cluster", cluster.Name)
 	for i := 0; i < 4; i++ {
 		if f.TunnelServer.HasSession(cluster.Name) {
-			logrus.Debugf("Cluster [%s] has reconnected, resuming", cluster.Name)
+			log.Debug("Cluster has reconnected, resuming", "operation", "get_cluster_dialer", "cluster", cluster.Name)
 			cd := f.TunnelServer.Dialer(cluster.Name)
 			return func(ctx context.Context, network, address string) (net.Conn, error) {
-				logrus.Tracef("dialerFactory: returning network [%s] and address [%s] as clusterDialer", network, address)
+				log.Trace("DialerFactory returning network and address as clusterDialer", "operation", "get_cluster_dialer", "network", network, "address", address)
 				return cd(ctx, network, address)
 			}, nil
 		}
@@ -217,7 +217,7 @@ func isProxyAddress(address string) bool {
 
 	parsed, err := parseProxy(proxy)
 	if err != nil {
-		logrus.Warnf("Failed to parse http_proxy url %s: %v", proxy, err)
+		log.Warn("Failed to parse http_proxy url", "operation", "get_cluster_dialer", "proxy", proxy, "error", err)
 		return false
 	}
 	return parsed.Host == address

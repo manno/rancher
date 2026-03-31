@@ -20,12 +20,12 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/management/secretmigrator"
 	"github.com/rancher/rancher/pkg/dialer"
 	"github.com/rancher/rancher/pkg/kontainer-engine/drivers/util"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/systemaccount"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -122,7 +122,7 @@ func (e *aksOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 
 	// check for changes between aks spec on cluster and the aks spec on the aksClusterConfig object
 	if !reflect.DeepEqual(aksClusterConfigMap, aksClusterConfigDynamic.Object["spec"]) {
-		logrus.Infof("change detected for cluster [%s], updating AKSClusterConfig", cluster.Name)
+		log.Info("Change detected for cluster, updating AKSClusterConfig", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		return e.updateAKSClusterConfig(cluster, aksClusterConfigDynamic, aksClusterConfigMap)
 	}
 
@@ -139,10 +139,10 @@ func (e *aksOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			logrus.Infof("waiting for cluster AKS [%s] to finish creating", cluster.Name)
+			log.Info("Waiting for cluster to finish creating", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		logrus.Infof("waiting for cluster AKS [%s] create failure to be resolved", cluster.Name)
+		log.Info("Waiting for cluster create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	case "active":
 		if cluster.Status.AKSStatus.UpstreamSpec == nil {
@@ -192,7 +192,7 @@ func (e *aksOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 						return cluster, err
 					}
 					if secret == nil {
-						logrus.Debugf("Empty service account token secret returned for cluster [%s]", cluster.Name)
+						log.Debug("Empty service account token secret returned for cluster", "operation", "onClusterChange", "cluster_name", cluster.Name)
 						return cluster, fmt.Errorf("failed to create or update service account token secret, secret can't be empty")
 					}
 					cluster.Status.ServiceAccountTokenSecret = secret.Name
@@ -236,10 +236,10 @@ func (e *aksOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			logrus.Infof("waiting for cluster AKS [%s] to update", cluster.Name)
+			log.Info("Waiting for cluster to update", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionUpdated, "")
 		}
-		logrus.Infof("waiting for cluster AKS [%s] update failure to be resolved", cluster.Name)
+		log.Info("Waiting for cluster update failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionUpdated, failureMessage)
 	default:
 		if cluster.Spec.AKSConfig.Imported {
@@ -247,9 +247,9 @@ func (e *aksOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 			if err != nil {
 				return cluster, err
 			}
-			logrus.Infof("waiting for cluster import [%s] to start", cluster.Name)
+			log.Info("Waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		} else {
-			logrus.Infof("waiting for cluster create [%s] to start", cluster.Name)
+			log.Info("Waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		}
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
@@ -259,19 +259,19 @@ func (e *aksOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 				if err != nil {
 					return cluster, err
 				}
-				logrus.Infof("waiting for cluster import [%s] to start", cluster.Name)
+				log.Info("Waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 			} else {
-				logrus.Infof("waiting for cluster create [%s] to start", cluster.Name)
+				log.Info("Waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 			}
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		logrus.Infof("waiting for cluster AKS [%s] pre-create failure to be resolved", cluster.Name)
+		log.Info("Waiting for cluster pre-create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	}
 }
 
 func (e *aksOperatorController) setInitialUpstreamSpec(cluster *apimgmtv3.Cluster) (*apimgmtv3.Cluster, error) {
-	logrus.Infof("setting initial upstreamSpec on cluster [%s]", cluster.Name)
+	log.Info("Setting initial upstreamSpec on cluster", "operation", "setInitialUpstreamSpec", "cluster_name", cluster.Name)
 	upstreamSpec, err := clusterupstreamrefresher.BuildAKSUpstreamSpec(e.SecretsCache, e.secretClient, cluster)
 	if err != nil {
 		return cluster, err

@@ -10,10 +10,10 @@ import (
 	rkev1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/capr"
 	capicontrollers "github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io/v1beta2"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -108,7 +108,7 @@ func (h *handler) k8sClient(machine *capi.Machine) (kubernetes.Interface, error)
 
 func (h *handler) unDrain(secret *corev1.Secret, machine *capi.Machine, drainData string) (*corev1.Secret, error) {
 	if !machine.Status.NodeRef.IsDefined() {
-		logrus.Debugf("unable to drain machine %s as there is no noderef", machine.Name)
+		log.Debug("Unable to drain machine as there is no noderef", "machine", machine.Name)
 		return secret, nil
 	}
 

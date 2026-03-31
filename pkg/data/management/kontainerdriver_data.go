@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/management/drivers/kontainerdriver"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -94,7 +94,7 @@ type driverCreator struct {
 }
 
 func (c *driverCreator) addCustomDriver(name, url, checksum, uiURL string, active bool, domains ...string) error {
-	logrus.Infof("adding kontainer driver %v", name)
+	log.Info("Adding kontainer driver", "driver", name)
 	_, err := c.driversLister.Get("", name)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -130,7 +130,7 @@ func (c *driverCreator) deleteKontainerDriver(name, urlPrefix string) {
 	driver, err := c.drivers.Get(name, v1.GetOptions{})
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			logrus.Warnf("Error getting kontainer driver %s for deletion: %v", name, err)
+			log.Warn("Error getting kontainer driver for deletion", "driver", name, "error", err)
 		}
 		return
 	}
@@ -138,19 +138,19 @@ func (c *driverCreator) deleteKontainerDriver(name, urlPrefix string) {
 	// Don't delete if the driver is active or if the url is not the expected invalid one,
 	// as it was likely modified.
 	if driver.Spec.Active || !strings.HasPrefix(driver.Spec.URL, urlPrefix) {
-		logrus.Infof("Not deleting active or modified kontainer driver %s", name)
+		log.Info("Not deleting active or modified kontainer driver", "driver", name)
 		return
 	}
 
-	logrus.Infof("Deleting kontainer driver %s", name)
+	log.Info("Deleting kontainer driver", "driver", name)
 	if err := c.drivers.Delete(name, &v1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
-		logrus.Warnf("Error deleting node driver %s: %v", name, err)
+		log.Warn("Error deleting node driver", "driver", name, "error", err)
 	}
 }
 
 func (c *driverCreator) deleteRKEKontainerDriver() {
 	if err := c.drivers.Delete("rancherKubernetesEngine", &v1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
-		logrus.Warnf("Error deleting rke kontainer driver : %s", err.Error())
+		log.Warn("Error deleting rke kontainer driver", "error", err)
 	}
 }
 
@@ -158,6 +158,6 @@ func (c *driverCreator) deleteRKEKontainerDriver() {
 // Note: even if the drivers are active they are deleted.
 func (c *driverCreator) deleteBuiltInKontainerDriver(driverName string) {
 	if err := c.drivers.Delete(driverName, &v1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
-		logrus.Warnf("Error deleting %s kontainer driver : %s", driverName, err.Error())
+		log.Warn("Error deleting kontainer driver", "driver", driverName, "error", err)
 	}
 }

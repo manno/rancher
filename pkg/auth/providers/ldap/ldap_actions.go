@@ -13,8 +13,8 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers/common/ldap"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	managementschema "github.com/rancher/rancher/pkg/schemas/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -196,7 +196,7 @@ func (p *ldapProvider) saveLDAPConfig(config *v3.LdapConfig) error {
 
 	config.ServiceAccountPassword = name
 
-	logrus.Debugf("updating %s config", p.providerName)
+	log.Debug("Updating config", "provider", p.providerName, "operation", "save_ldap_config")
 	_, err = p.authConfigs.ObjectClient().Update(config.ObjectMeta.Name, config)
 	if err != nil {
 		return err

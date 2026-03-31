@@ -22,8 +22,8 @@ import (
 	msgraphusers "github.com/microsoftgraph/msgraph-sdk-go/users"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/providers/common"
+	"github.com/rancher/rancher/pkg/log"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -70,19 +70,19 @@ func NewMSGraphClient(config *v3.AzureADConfig, secrets wcorev1.SecretController
 	ctx := context.Background()
 	ar, err = confidentialClient.AcquireTokenSilent(ctx, []string{graphEndpoint})
 	if err != nil {
-		logrus.Debugf("[%s] failed to get the access token from cache: %s", providerLogPrefix, err)
-		logrus.Debugf("[%s] attempting to acquire the access token by credential", providerLogPrefix)
+		log.Debug("Failed to get access token from cache", "provider", providerLogPrefix, "error", err)
+		log.Debug("Attempting to acquire access token by credential", "provider", providerLogPrefix)
 		ar, err = confidentialClient.AcquireTokenByCredential(ctx, []string{graphEndpoint})
 		if err != nil {
 			return nil, fmt.Errorf("acquiring token by credential: %w", err)
 		}
 	} else {
-		logrus.Debugf("[%s] acquired token from cache", providerLogPrefix)
+		log.Debug("Acquired token from cache", "provider", providerLogPrefix)
 	}
 
 	authResult := getCustomAuthResult(ar)
 
-	logrus.Debugf("[%s] connecting to graph endpoint: %s", providerLogPrefix, graphEndpoint)
+	log.Debug("Connecting to graph endpoint", "provider", providerLogPrefix, "endpoint", graphEndpoint)
 	graphClient, err := msgraphsdk.NewGraphServiceClientWithCredentials(
 		authResult, []string{graphEndpoint})
 	if err != nil {
@@ -93,7 +93,7 @@ func NewMSGraphClient(config *v3.AzureADConfig, secrets wcorev1.SecretController
 	if err != nil {
 		return nil, fmt.Errorf("making graph base url for %s: %w", config.GraphEndpoint, err)
 	}
-	logrus.Debugf("[%s] graph base url: %s", providerLogPrefix, graphBaseURL)
+	log.Debug("Graph base url", "provider", providerLogPrefix, "url", graphBaseURL)
 	graphClient.GetAdapter().SetBaseUrl(graphBaseURL)
 
 	return &AzureMSGraphClient{
@@ -117,7 +117,7 @@ type AzureMSGraphClient struct {
 
 // GetUser takes a user ID and fetches the user principal from the Microsoft Graph API.
 func (c AzureMSGraphClient) GetUser(userID string) (v3.Principal, error) {
-	logrus.Debugf("[%s] GetUser %s", providerLogPrefix, userID)
+	log.Debug("Getting user", "provider", providerLogPrefix, "operation", "get_user", "user_id", userID)
 	result, err := c.GraphClient.Users().ByUserId(userID).Get(context.Background(), nil)
 	if err != nil {
 		return v3.Principal{}, fmt.Errorf("getting user by ID: %w", getMSGraphErrorData(err))
@@ -128,7 +128,7 @@ func (c AzureMSGraphClient) GetUser(userID string) (v3.Principal, error) {
 
 // ListUsers fetches all user principals in a directory from the Microsoft Graph API.
 func (c AzureMSGraphClient) ListUsers(filter string) ([]v3.Principal, error) {
-	logrus.Debugf("[%s] ListUsers %s", providerLogPrefix, filter)
+	log.Debug("Listing users", "provider", providerLogPrefix, "operation", "list_users", "filter", filter)
 	result, err := c.GraphClient.Users().Get(context.Background(), &msgraphusers.UsersRequestBuilderGetRequestConfiguration{
 		QueryParameters: &msgraphusers.UsersRequestBuilderGetQueryParameters{
 			Filter: &filter,
@@ -154,7 +154,7 @@ func (c AzureMSGraphClient) ListUsers(filter string) ([]v3.Principal, error) {
 
 // GetGroup takes a group ID and fetches the group principal from the Microsoft Graph API.
 func (c AzureMSGraphClient) GetGroup(groupID string) (v3.Principal, error) {
-	logrus.Debugf("[%s] GetGroup %s", providerLogPrefix, groupID)
+	log.Debug("Getting group", "provider", providerLogPrefix, "operation", "get_group", "group_id", groupID)
 	result, err := c.GraphClient.Groups().ByGroupId(groupID).Get(context.Background(), nil)
 	if err != nil {
 		return v3.Principal{}, fmt.Errorf("getting group by ID: %w", getMSGraphErrorData(err))
@@ -165,7 +165,7 @@ func (c AzureMSGraphClient) GetGroup(groupID string) (v3.Principal, error) {
 
 // ListGroups fetches all group principals in a directory from the Microsoft Graph API.
 func (c AzureMSGraphClient) ListGroups(filter string) ([]v3.Principal, error) {
-	logrus.Debugf("[%s] ListGroups %s", providerLogPrefix, filter)
+	log.Debug("Listing groups", "provider", providerLogPrefix, "operation", "list_groups", "filter", filter)
 	result, err := c.GraphClient.Groups().Get(context.Background(), &msgraphgroups.GroupsRequestBuilderGetRequestConfiguration{
 		QueryParameters: &msgraphgroups.GroupsRequestBuilderGetQueryParameters{
 			Filter: &filter,
@@ -192,7 +192,7 @@ func (c AzureMSGraphClient) ListGroups(filter string) ([]v3.Principal, error) {
 
 // ListGroupMemberships takes a user ID and fetches the user's group principals as string IDs from the Microsoft Graph API.
 func (c AzureMSGraphClient) ListGroupMemberships(userID string, filter string) ([]string, error) {
-	logrus.Debugf("[%s] ListGroupMemberships %s", providerLogPrefix, userID)
+	log.Debug("Listing group memberships", "provider", providerLogPrefix, "operation", "list_group_memberships", "user_id", userID)
 	var groupIDs []string
 
 	err := c.listGroupMemberships(context.Background(), userID, filter, func(g *models.Group) {
@@ -237,7 +237,7 @@ func (c AzureMSGraphClient) listGroupMemberships(ctx context.Context, userID str
 		group, ok := do.(*models.Group)
 		if !ok {
 			if _, ok := do.(*models.DirectoryRole); !ok {
-				logrus.Debugf("[%s] Groups Iterator received unexpected value of type %T: %#v", providerLogPrefix, do, do)
+				log.Debug("Groups iterator received unexpected value", "provider", providerLogPrefix, "type", fmt.Sprintf("%T", do))
 			}
 			return true
 		}
@@ -252,22 +252,22 @@ func (c AzureMSGraphClient) listGroupMemberships(ctx context.Context, userID str
 // LoginUser verifies the user and fetches the user principal, user's group principals. It deliberately does not return
 // the provider access token because the client itself handles its caching and does not need to return it.
 func (c AzureMSGraphClient) LoginUser(config *v3.AzureADConfig, credential *v3.AzureADLogin) (v3.Principal, []v3.Principal, string, error) {
-	logrus.Debugf("[%s] Started token swap with AzureAD", providerLogPrefix)
+	log.Debug("Started token swap with AzureAD", "provider", providerLogPrefix, "operation", "token_swap")
 
 	oid, err := c.getOIDFromLogin(config, credential)
 	if err != nil {
 		return v3.Principal{}, nil, "", err
 	}
 
-	logrus.Debugf("[%s] Completed token swap with AzureAD", providerLogPrefix)
+	log.Debug("Completed token swap with AzureAD", "provider", providerLogPrefix, "operation", "token_swap")
 
-	logrus.Debugf("[%s] Started getting user info from AzureAD", providerLogPrefix)
+	log.Debug("Started getting user info from AzureAD", "provider", providerLogPrefix, "operation", "get_user_info")
 	userPrincipal, err := c.GetUser(oid)
 	if err != nil {
 		return v3.Principal{}, nil, "", fmt.Errorf("getting UserInfo from Azure: %w", err)
 	}
 	userPrincipal.Me = true
-	logrus.Debugf("[%s] Completed getting user info from AzureAD", providerLogPrefix)
+	log.Debug("Completed getting user info from AzureAD", "provider", providerLogPrefix, "operation", "get_user_info")
 
 	groupPrincipals, err := c.listGroupPrincipals(context.Background(), userPrincipal, config.GroupMembershipFilter)
 	if err != nil {
@@ -451,13 +451,13 @@ func (c accessTokenCache) Replace(ctx context.Context, cache cache.Unmarshaler, 
 	secretName := fmt.Sprintf("%s:%s", common.SecretsNamespace, AccessTokenSecretName)
 	secret, err := common.ReadFromSecret(c.Secrets, secretName, "access-token")
 	if err != nil {
-		logrus.Errorf("[%s] Failed to read the access token from Kubernetes: %v", cacheLogPrefix, err)
+		log.Error("Failed to read access token from Kubernetes", "provider", cacheLogPrefix, "error", err)
 		return client.IgnoreNotFound(err)
 	}
 
 	err = cache.Unmarshal([]byte(secret))
 	if err != nil {
-		logrus.Errorf("[%s] Failed to unmarshal the access token: %v", cacheLogPrefix, err)
+		log.Error("Failed to unmarshal access token", "provider", cacheLogPrefix, "error", err)
 		return err
 	}
 
@@ -468,13 +468,13 @@ func (c accessTokenCache) Replace(ctx context.Context, cache cache.Unmarshaler, 
 func (c accessTokenCache) Export(ctx context.Context, cache cache.Marshaler, hints cache.ExportHints) error {
 	marshalled, err := cache.Marshal()
 	if err != nil {
-		logrus.Errorf("[%s] Failed to marshal the access token before saving in Kubernetes: %v", cacheLogPrefix, err)
+		log.Error("Failed to marshal access token before saving", "provider", cacheLogPrefix, "error", err)
 		return err
 	}
 
 	_, err = common.CreateOrUpdateSecrets(c.Secrets, string(marshalled), "access-token", "azuread")
 	if err != nil {
-		logrus.Errorf("[%s] Failed to save the access token in Kubernetes: %v", cacheLogPrefix, err)
+		log.Error("Failed to save access token in Kubernetes", "provider", cacheLogPrefix, "error", err)
 		return err
 	}
 

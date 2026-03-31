@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/rancher/rancher/pkg/features"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -51,7 +51,7 @@ type serviceAccountsCache interface {
 // This should only be started in the leader pod.
 func StartServiceAccountSecretCleaner(ctx context.Context, secrets secretsCache, serviceAccounts serviceAccountsCache, client clientcorev1.CoreV1Interface) error {
 	if !features.CleanStaleSecrets.Enabled() {
-		logrus.Info("ServiceAccountSecretCleaner disabled - not starting")
+		log.Info("Service account secret cleaner disabled, not starting", "operation", "start_sa_secret_cleaner")
 		return nil
 	}
 
@@ -64,23 +64,23 @@ func StartServiceAccountSecretCleaner(ctx context.Context, secrets secretsCache,
 
 	startTime := time.Now()
 
-	logrus.Infof("Starting ServiceAccountSecretCleaner with %v secrets", secretsQueue.List.Len())
+	log.Info("Starting service account secret cleaner", "operation", "start_sa_secret_cleaner", "secret_count", secretsQueue.List.Len())
 	ticker := time.NewTicker(cleanCycleDelay)
 
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
-				logrus.Info("terminating service account secret cleaner")
+				log.Info("Terminating service account secret cleaner", "operation", "sa_secret_cleaner")
 				return
 			case <-ticker.C:
 				if err := CleanServiceAccountSecrets(ctx, client.Secrets(impersonationNamespace), serviceAccounts, secretsQueue.dequeue(cleaningBatchSize)); err != nil {
-					logrus.Error(err)
+					log.Error("Error cleaning service account secrets", "operation", "sa_secret_cleaner", "error", err)
 				}
 				if l := secretsQueue.List.Len(); l > 0 {
-					logrus.Infof("ServiceAccountSecretCleaner has %v secrets remaining", l)
+					log.Info("Service account secret cleaner has secrets remaining", "operation", "sa_secret_cleaner", "remaining", l)
 				} else {
-					logrus.Infof("ServiceAccountSecretCleaner has no secrets remaining - terminating at %v", time.Since(startTime))
+					log.Info("Service account secret cleaner has no secrets remaining, terminating", "operation", "sa_secret_cleaner", "elapsed", time.Since(startTime))
 					return
 				}
 				// This ensures that no matter how long the cleaning takes,
@@ -117,7 +117,7 @@ func CleanServiceAccountSecrets(ctx context.Context, secrets clientcorev1.Secret
 	}
 
 	for _, secretRef := range toBeDeleted {
-		logrus.Debugf("Deleting ServiceAccount Secret %s", secretRef)
+		log.Debug("Deleting service account secret", "operation", "clean_sa_secrets", "secret", secretRef)
 		if err := secrets.Delete(ctx, secretRef.Name, metav1.DeleteOptions{}); err != nil {
 			deletionErr = errors.Join(deletionErr, err)
 		}
@@ -125,7 +125,7 @@ func CleanServiceAccountSecrets(ctx context.Context, secrets clientcorev1.Secret
 	}
 
 	if deletedCount > 0 {
-		logrus.Infof("SecretCleaner deleted %v secrets", deletedCount)
+		log.Info("Secret cleaner deleted secrets", "operation", "clean_sa_secrets", "deleted_count", deletedCount)
 	}
 
 	return deletionErr

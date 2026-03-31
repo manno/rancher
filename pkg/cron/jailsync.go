@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
@@ -46,7 +46,7 @@ func (j *jailSync) syncJails() {
 	// Get the clusters from the api to ensure we are up to date
 	clusters, err := j.clusters.List(metav1.ListOptions{})
 	if err != nil {
-		logrus.Warnf("Error listing clusters for jail cleanup: %v", err)
+		log.Warn("Error listing clusters for jail cleanup", "operation", "jail_cleanup", "error", err)
 	}
 
 	clusterMap := make(map[string]v3.Cluster)
@@ -57,7 +57,7 @@ func (j *jailSync) syncJails() {
 	files, err := os.ReadDir(jailPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			logrus.Warnf("Error attempting to get files for jail cleanup: %v", err)
+			log.Warn("Error attempting to get files for jail cleanup", "operation", "jail_cleanup", "error", err)
 		}
 		// The dir doesn't exist, nothing to do
 		return
@@ -76,7 +76,7 @@ func (j *jailSync) syncJails() {
 				clusterPath := path.Join(jailPath, dirName)
 				err = os.RemoveAll(clusterPath)
 				if err != nil {
-					logrus.Warnf("Error attempting to delete jail %v: %v", clusterPath, err)
+					log.Warn("Error attempting to delete jail", "operation", "jail_cleanup", "cluster_path", clusterPath, "error", err)
 				}
 			}
 		}

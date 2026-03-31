@@ -21,11 +21,11 @@ import (
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/ref"
 	schema "github.com/rancher/rancher/pkg/schemas/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 )
 
 type Capabilities struct {
@@ -100,56 +100,56 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	switch resourceType {
 	case "aksUpgrades":
 		if serialized, errCode, err = listKubernetesUpgradeVersions(req.Context(), h.clusterCache, capa); err != nil {
-			logrus.Errorf("[aks-handler] error getting kubernetes upgrade versions: %v", err)
+			log.Error("Aks-handler: error getting kubernetes upgrade versions", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksVersions":
 		if serialized, errCode, err = listKubernetesVersions(req.Context(), capa); err != nil {
-			logrus.Errorf("[aks-handler] error getting kubernetes versions: %v", err)
+			log.Error("Aks-handler: error getting kubernetes versions", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksVirtualNetworks":
 		if serialized, errCode, err = listVirtualNetworks(req.Context(), capa); err != nil {
-			logrus.Errorf("[aks-handler] error getting networks: %v", err)
+			log.Error("Aks-handler: error getting networks", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksClusters":
 		if serialized, errCode, err = listClusters(req.Context(), capa); err != nil {
-			logrus.Errorf("[aks-handler] error getting clusters: %v", err)
+			log.Error("Aks-handler: error getting clusters", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksVMSizes":
 		if serialized, errCode, err = listVMSizesV1(req.Context(), capa); err != nil {
-			logrus.Errorf("[aks-handler] error getting VM sizes: %v", err)
+			log.Error("Aks-handler: error getting VM sizes", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksVMSizesV2":
 		if serialized, errCode, err = listVMSizesV2(req.Context(), capa); err != nil {
-			logrus.Errorf("[aks-handler] error getting VM sizes (v2): %v", err)
+			log.Error("Aks-handler: error getting VM sizes (v2)", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksLocations":
 		if serialized, errCode, err = listLocations(req.Context(), capa); err != nil {
-			logrus.Errorf("[aks-handler] error getting locations: %v", err)
+			log.Error("Aks-handler: error getting locations", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
 		writer.Write(serialized)
 	case "aksRegions":
 		if serialized, errCode, err = listRegions(req.Context(), capa); err != nil {
-			logrus.Errorf("[aks-handler] error getting regions: %v", err)
+			log.Error("Aks-handler: error getting regions", "operation", "handle", "error", err)
 			handleErr(writer, errCode, err)
 			return
 		}
@@ -200,12 +200,12 @@ func (h *handler) checkCredentials(req *http.Request) (int, error) {
 
 	client, err := NewSubscriptionServiceClient(cred)
 	if err != nil {
-		logrus.Errorf("[AKS] failed to create new subscription client: %v", err)
+		log.Error("AKS: failed to create new subscription client", "operation", "get_location_name", "error", err)
 		return http.StatusUnauthorized, fmt.Errorf("invalid credentials: %w", err)
 	}
 	_, err = client.Get(ctx, cred.SubscriptionID, nil)
 	if err != nil {
-		logrus.Errorf("[AKS] failed to get subscription details: %v", err)
+		log.Error("AKS: failed to get subscription details", "operation", "get_location_name", "error", err)
 		return http.StatusUnauthorized, fmt.Errorf("invalid credentials: %w", err)
 	}
 
@@ -215,7 +215,7 @@ func (h *handler) checkCredentials(req *http.Request) (int, error) {
 func (h *handler) getCloudCredential(req *http.Request, cap *Capabilities, credID string) (int, error) {
 	ns, name := ref.Parse(credID)
 	if ns == "" || name == "" {
-		logrus.Errorf("[AKS] invalid cloud credential ID %s", credID)
+		log.Error("AKS: invalid cloud credential ID", "operation", "get_credentials", "cred_id", credID)
 		return http.StatusBadRequest, fmt.Errorf("invalid cloud credential ID %s", credID)
 	}
 
@@ -242,7 +242,7 @@ func (h *handler) getCloudCredential(req *http.Request, cap *Capabilities, credI
 
 	cc, err := h.secretsLister.Get(ns, name)
 	if err != nil {
-		logrus.Errorf("[AKS] error accessing cloud credential %s", credID)
+		log.Error("AKS: error accessing cloud credential", "operation", "get_credentials", "cred_id", credID)
 		return httperror.InvalidBodyContent.Status, fmt.Errorf("error accessing cloud credential %s", credID)
 	}
 	cap.TenantID = string(cc.Data["azurecredentialConfig-tenantId"])
@@ -370,7 +370,7 @@ func handleErr(writer http.ResponseWriter, errorCode int, originalErr error) {
 	payload["error"] = originalErr.Error()
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil { // This should not happen given fixed types on the payload - https://stackoverflow.com/a/33964549
-		logrus.Errorf("[AKS] Failed to write payload JSON: %v", err)
+		log.Error("AKS: failed to write payload JSON", "operation", "encode_payload", "error", err)
 		return
 	}
 	writer.Write(payloadJSON)

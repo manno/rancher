@@ -4,8 +4,8 @@ import (
 	"context"
 
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -28,7 +28,7 @@ func Register(ctx context.Context, cluster *config.UserContext) {
 }
 
 func registerDeferred(ctx context.Context, cluster *config.UserContext) {
-	logrus.Infof("Registering project network policy")
+	log.Info("Registering project network policy", "operation", "register")
 
 	pnpLister := cluster.Management.Management.ProjectNetworkPolicies("").Controller().Lister()
 	pnps := cluster.Management.Management.ProjectNetworkPolicies("")

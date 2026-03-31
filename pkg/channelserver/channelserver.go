@@ -14,10 +14,10 @@ import (
 	"github.com/rancher/channelserver/pkg/config"
 	"github.com/rancher/channelserver/pkg/model"
 	"github.com/rancher/channelserver/pkg/server"
+	rlog "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/wrangler/v3/pkg/data"
 	"github.com/rancher/wrangler/v3/pkg/schemas"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 func GetURLAndInterval() (string, time.Duration) {
 	val := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(settings.RkeMetadataConfig.Get()), &val); err != nil {
-		logrus.Errorf("failed to parse %s value: %v", settings.RkeMetadataConfig.Name, err)
+		rlog.Error("Could not parse setting value", "setting", settings.RkeMetadataConfig.Name, "error", err)
 		return "", 0
 	}
 	url := data.Object(val).String("url")
@@ -62,7 +62,7 @@ func Refresh(ctx context.Context) error {
 		if err := cfg.LoadConfig(ctx); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("failed to reload configuration for %s: %w", runtime, err))
 		} else {
-			logrus.Infof("reloaded configuration for %s", runtime)
+			rlog.Info("Reloaded configuration", "runtime", runtime)
 		}
 	}
 
@@ -83,7 +83,7 @@ func GetReleaseConfigByRuntimeAndVersion(ctx context.Context, runtime, kubernete
 	}
 	cfg := GetReleaseConfigByRuntime(ctx, runtime)
 	if cfg == nil {
-		logrus.Errorf("no release config for %s", runtime)
+		rlog.Error("Could not find release config", "runtime", runtime)
 		return fallBack
 	}
 	for _, releaseData := range cfg.ReleasesConfig().Releases {
@@ -112,7 +112,7 @@ func GetReleaseConfigByRuntime(ctx context.Context, runtime string) *config.Conf
 		}
 		for name, cfg := range configs {
 			if err := cfg.LoadConfig(ctx); err != nil {
-				logrus.Errorf("failed to load initial config for %s: %v", name, err)
+				rlog.Error("Could not load initial config", "runtime", name, "error", err)
 			}
 		}
 	})
@@ -135,7 +135,7 @@ func NewHandler(ctx context.Context) http.Handler {
 func GetDefaultByRuntimeAndServerVersion(ctx context.Context, runtime, serverVersion string) string {
 	version, err := getDefaultFromAppDefaultsByRuntimeAndServerVersion(ctx, runtime, serverVersion)
 	if err != nil {
-		logrus.Debugf("[channelserver] fallback to use the default channel due to: %v", err)
+		rlog.Debug("Fallback to use the default channel", "error", err)
 		version = getDefaultFromChannel(ctx, runtime, "default")
 	}
 	return version
@@ -178,7 +178,7 @@ func getDefaultFromAppDefaultsByRuntimeAndServerVersion(ctx context.Context, run
 	for _, release := range config.ReleasesConfig().Releases {
 		version, err := semver.ParseTolerant(release.Version)
 		if err != nil {
-			logrus.Debugf("fails to parse the release version %s: %v", release.Version, err)
+			rlog.Debug("Could not parse release version", "version", release.Version, "error", err)
 			continue
 		}
 		if dvrParsed(version) {
@@ -197,7 +197,7 @@ func getDefaultFromAppDefaultsByRuntimeAndServerVersion(ctx context.Context, run
 func getDefaultFromChannel(ctx context.Context, runtime, channelName string) string {
 	config := GetReleaseConfigByRuntime(ctx, runtime)
 	if config == nil {
-		logrus.Errorf("no release config for %s", runtime)
+		rlog.Error("Could not find release config", "runtime", runtime)
 		return ""
 	}
 	for _, c := range config.ChannelsConfig().Channels {

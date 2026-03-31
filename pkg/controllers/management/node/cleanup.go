@@ -5,7 +5,7 @@ import (
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 const (
@@ -36,7 +36,7 @@ func removeFinalizerWithPrefix(finalizers []string, prefix string) []string {
 	var nf []string
 	for _, finalizer := range finalizers {
 		if strings.HasPrefix(finalizer, prefix) {
-			logrus.Debugf("[node-cleanup] finalizer with prefix [%s] will be removed", prefix)
+			log.Debug("Finalizer with prefix will be removed", "prefix", prefix)
 			continue
 		}
 		nf = append(nf, finalizer)
@@ -47,7 +47,7 @@ func removeFinalizerWithPrefix(finalizers []string, prefix string) []string {
 func removeAnnotationWithPrefix(annotations map[string]string, prefix string) map[string]string {
 	for k := range annotations {
 		if strings.HasPrefix(k, prefix) {
-			logrus.Debugf("[node-cleanup] annotation with prefix [%s] will be removed", prefix)
+			log.Debug("Annotation with prefix will be removed", "prefix", prefix)
 			delete(annotations, k)
 		}
 	}

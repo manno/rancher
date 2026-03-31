@@ -13,7 +13,7 @@ import (
 	rkecontrollers "github.com/rancher/rancher/pkg/generated/controllers/rke.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -67,7 +67,7 @@ func (h *handler) syncSystemUpgradeControllerCondition(obj *rkev1.RKEControlPlan
 
 	targetVersion := settings.SystemUpgradeControllerChartVersion.Get()
 	if targetVersion == "" {
-		logrus.Warn("[rkecontrolplanecondition] the SystemUpgradeControllerChartVersion setting is not set")
+		log.Warn("The SystemUpgradeControllerChartVersion setting is not set")
 		capr.SystemUpgradeControllerReady.Reason(&status, "the SystemUpgradeControllerChartVersion setting is not set")
 		capr.SystemUpgradeControllerReady.Message(&status, "")
 		capr.SystemUpgradeControllerReady.False(&status)
@@ -117,7 +117,7 @@ func (h *handler) syncSystemUpgradeControllerCondition(obj *rkev1.RKEControlPlan
 	// If that happens, the following Get call can hang until it times out, causing this handler to take longer to return
 	// and delaying the execution of other handlers.
 	name := appName(obj.Spec.ClusterName)
-	logrus.Debugf("[rkecontrolplanecondition] checking %s app in cluster %s", name, obj.Spec.ClusterName)
+	log.Debug("Checking app in cluster", "app", name, "cluster", obj.Spec.ClusterName)
 	app, err := h.downstreamAppClient.Get(namespace.System, name, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		capr.SystemUpgradeControllerReady.Reason(&status, err.Error())

@@ -8,8 +8,8 @@ import (
 
 	mgmtv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -39,7 +39,7 @@ func NewUserLabeler(ctx context.Context, wContext *wrangler.Context) *UserLabele
 // EnsureForAll sets retention labels for all users.
 func (l *UserLabeler) EnsureForAll() error {
 	if l.ctx.Err() != nil {
-		logrus.Info("userretention: labeler: context canceled, quitting")
+		log.Info("Userretention: labeler: context canceled, quitting", "operation", "ensure_for_all")
 		return nil
 	}
 
@@ -47,7 +47,7 @@ func (l *UserLabeler) EnsureForAll() error {
 	if err != nil {
 		// We don't want the caller (UserAttribute controller) to spin indefinitely.
 		// Log the error and return early.
-		logrus.Errorf("userretention: labeler: error reading settings, retention is disabled: %v", err)
+		log.Error("Userretention: labeler: error reading settings, retention is disabled", "operation", "ensure_for_all", "error", err)
 		return nil
 	}
 
@@ -60,7 +60,7 @@ func (l *UserLabeler) EnsureForAll() error {
 
 	for _, user := range users {
 		if l.ctx.Err() != nil {
-			logrus.Info("userretention: labeler: context canceled, quitting")
+			log.Info("Userretention: labeler: context canceled, quitting", "operation", "ensure_for_all")
 			break
 		}
 
@@ -74,14 +74,14 @@ func (l *UserLabeler) EnsureForAll() error {
 
 		attribs, err := l.userAttributeCache.Get(user.Name)
 		if err != nil && !apierrors.IsNotFound(err) {
-			logrus.Errorf("userretention: labeler: error getting user attributes for %s: %v", user.Name, err)
+			log.Error("Userretention: labeler: error getting user attributes", "operation", "ensure_for_all", "user_name", user.Name, "error", err)
 			skipped++
 			continue
 		}
 
 		if attribs == nil {
 			// This is possible if the user was created but hasn't logged in yet.
-			logrus.Debugf("userretention: labeler: no user attributes found for %s, skipping", user.Name)
+			log.Debug("Userretention: labeler: no user attributes found, skipping", "operation", "ensure_for_all", "user_name", user.Name)
 			skipped++
 			continue
 		}
@@ -95,7 +95,7 @@ func (l *UserLabeler) EnsureForAll() error {
 // EnsureForAttributes sets retention labels for a user based on user attributes.
 func (l *UserLabeler) EnsureForAttributes(attribs *mgmtv3.UserAttribute) error {
 	if l.ctx.Err() != nil {
-		logrus.Info("userretention: labeler: context canceled, quitting")
+		log.Info("Userretention: labeler: context canceled, quitting", "operation", "ensure_for_attributes")
 		return nil
 	}
 
@@ -103,7 +103,7 @@ func (l *UserLabeler) EnsureForAttributes(attribs *mgmtv3.UserAttribute) error {
 	if err != nil {
 		// We don't want the caller (Setting controller) to spin indefinitely.
 		// Log the error and return early.
-		logrus.Errorf("userretention: labeler: error reading settings: %v, retention is disabled", err)
+		log.Error("Userretention: labeler: error reading settings, retention is disabled", "operation", "ensure_for_attributes", "user_attributes", attribs.Name, "error", err)
 		return nil
 	}
 
@@ -113,7 +113,7 @@ func (l *UserLabeler) EnsureForAttributes(attribs *mgmtv3.UserAttribute) error {
 		// we don't want the caller to spin indefinitely. There is nothing we can do about it,
 		// other than to log the error and move on.
 		if apierrors.IsNotFound(err) {
-			logrus.Errorf("userretention: labeler: error getting user: user not found for user attributes %s", attribs.Name)
+			log.Error("Userretention: labeler: error getting user: user not found for user attributes", "operation", "ensure_for_attributes", "user_attributes", attribs.Name)
 			return nil
 		}
 
@@ -139,7 +139,7 @@ func (l *UserLabeler) setLabelsAndUpdateUser(settings settings, user *mgmtv3.Use
 					return nil
 				}
 
-				logrus.Errorf("userretention: labeler: error getting user %s: %v", user.Name, err)
+				log.Error("Userretention: labeler: error getting user", "operation", "set_labels_and_update_user", "user_name", user.Name, "error", err)
 				return err
 			}
 		}
@@ -152,7 +152,7 @@ func (l *UserLabeler) setLabelsAndUpdateUser(settings settings, user *mgmtv3.Use
 		_, err = l.users.Update(user)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logrus.Errorf("userretention: labeler: error updating user: user not found %s", user.Name)
+				log.Error("Userretention: labeler: error updating user: user not found", "operation", "set_labels_and_update_user", "user_name", user.Name)
 				return nil
 			}
 
@@ -163,7 +163,7 @@ func (l *UserLabeler) setLabelsAndUpdateUser(settings settings, user *mgmtv3.Use
 	})
 	if err != nil {
 		// Log the error and move on.
-		logrus.Errorf("userretention: labeler: error updating user %s: %v", user.Name, err)
+		log.Error("Userretention: labeler: error updating user", "operation", "set_labels_and_update_user", "user_name", user.Name, "error", err)
 	}
 }
 

@@ -6,8 +6,8 @@ import (
 	"sort"
 
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	knetworkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,7 +49,7 @@ func (ph *podHandler) Sync(_ string, pod *corev1.Pod) (*corev1.Pod, error) {
 	if err != nil {
 		return nil, fmt.Errorf("netpolMgr: podHandler: getSystemNamespaces: err=%v", err)
 	}
-	logrus.Debugf("podHandler: Sync: %+v", *pod)
+	log.Debug("Podhandler: sync", "operation", "sync", "pod", pod.Name, "namespace", pod.Namespace)
 	if err := ph.addLabelIfHostPortsPresent(pod, systemNamespaces); err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (ph *podHandler) addLabelIfHostPortsPresent(pod *corev1.Pod, systemNamespac
 		if _, ok := systemNamespaces[pod.Namespace]; ok {
 			if _, ok := pod.Labels[PodNameFieldLabel]; ok {
 				// we don't create network policies in system namespaces, delete label
-				logrus.Debugf("podHandler: addLabelIfHostPortsPresent: deleting podNameFieldLabel %+v in %s", pod.Labels, pod.Namespace)
+				log.Debug("Podhandler: deleting podnamefieldlabel", "operation", "add_label_if_host_ports_present", "labels", pod.Labels, "namespace", pod.Namespace)
 				podCopy := pod.DeepCopy()
 				delete(podCopy.Labels, PodNameFieldLabel)
 				_, err := ph.pods.Update(podCopy)
@@ -87,7 +87,7 @@ Loop:
 		}
 	}
 	if hasHostPorts {
-		logrus.Debugf("podHandler: addLabelIfHostPortsPresent: pod=%+v has HostPort", *pod)
+		log.Debug("Podhandler: pod has hostport", "operation", "add_label_if_host_ports_present", "pod", pod.Name, "namespace", pod.Namespace)
 		podCopy := pod.DeepCopy()
 		if podCopy.Labels == nil {
 			podCopy.Labels = map[string]string{}
@@ -133,7 +133,7 @@ func (npmgr *netpolMgr) hostPortsUpdateHandler(pod *corev1.Pod, systemNamespaces
 		return portToString(np.Spec.Ingress[0].Ports[i]) < portToString(np.Spec.Ingress[0].Ports[j])
 	})
 
-	logrus.Debugf("netpolMgr: hostPortsUpdateHandler: pod=%+v has host ports, hence programming np=%+v", *pod, *np)
+	log.Debug("Netpolmgr: hostportsupdatehandler: pod has host ports, programming network policy", "operation", "host_ports_update_handler", "pod", pod.Name, "namespace", pod.Namespace, "network_policy", np.Name)
 	return npmgr.program(np)
 }
 

@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,8 +18,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rancher/rancher/pkg/catalogv2/roundtripper"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 	corev1 "k8s.io/api/core/v1"
@@ -128,12 +129,12 @@ func (g *git) injectAgent(cmd *exec.Cmd) (io.Closer, error) {
 			conn, err := l.Accept()
 			if err != nil {
 				if !k8snet.IsProbableEOF(err) {
-					logrus.Errorf("failed to accept ssh-agent client connection: %v", err)
+					log.Error("Failed to accept ssh-agent client connection", "operation", "start_ssh_agent", "error", err)
 				}
 				return
 			}
 			if err := agent.ServeAgent(*g.agent, conn); err != nil && err != io.EOF {
-				logrus.Errorf("failed to handle ssh-agent client connection: %v", err)
+				log.Error("Failed to handle ssh-agent client connection", "operation", "start_ssh_agent", "error", err)
 			}
 		}
 	}()
@@ -169,7 +170,7 @@ func (g *git) httpClientWithCreds() (*http.Client, error) {
 		}
 		pool, err := x509.SystemCertPool()
 		if err != nil {
-			logrus.Debugf("getting system cert pool failed with %s", err)
+			log.Debug("Getting system cert pool failed", "operation", "http_client_with_creds", "error", err)
 			pool = x509.NewCertPool()
 		}
 		pool.AddCert(cert)
@@ -273,14 +274,14 @@ func (g *git) remoteSHAChanged(branch, sha string) (bool, error) {
 
 	client, err := g.httpClientWithCreds()
 	if err != nil {
-		logrus.Warnf("Problem creating http client to check git remote sha of repo [%v]: %v", g.URL, err)
+		log.Warn("Problem creating http client to check git remote sha", "operation", "remote_sha_changed", "repo", g.URL, "error", err)
 		return true, nil
 	}
 	defer client.CloseIdleConnections()
 
 	req, err := http.NewRequest("GET", formattedURL, nil)
 	if err != nil {
-		logrus.Warnf("Problem creating request to check git remote sha of repo [%v]: %v", g.URL, err)
+		log.Warn("Problem creating request to check git remote sha", "operation", "remote_sha_changed", "repo", g.URL, "error", err)
 		return true, nil
 	}
 
@@ -310,7 +311,7 @@ func (g *git) remoteSHAChanged(branch, sha string) (bool, error) {
 
 func (g *git) git(args ...string) error {
 	var output io.Writer
-	if logrus.IsLevelEnabled(logrus.DebugLevel) {
+	if log.L().Enabled(nil, slog.LevelDebug) {
 		output = os.Stdout
 	}
 	return g.gitCmd(output, args...)

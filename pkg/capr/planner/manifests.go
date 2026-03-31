@@ -8,7 +8,7 @@ import (
 	rkev1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1/plan"
 	"github.com/rancher/rancher/pkg/capr"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -39,7 +39,8 @@ func (p *Planner) getControlPlaneManifests(controlPlane *rkev1.RKEControlPlane, 
 	// if we have a nil snapshotMetadata object, it's probably because the annotation didn't exist on the controlplane object. this is not breaking though so don't block.
 	snapshotMetadata := getEtcdSnapshotExtraMetadata(controlPlane, capr.GetRuntime(controlPlane.Spec.KubernetesVersion))
 	if snapshotMetadata == nil {
-		logrus.Errorf("Error while generating etcd snapshot extra metadata manifest for cluster %s", controlPlane.Spec.ClusterName)
+		log.Error("Error generating etcd snapshot extra metadata manifest",
+			"cluster_name", controlPlane.Spec.ClusterName)
 	} else {
 		result = append(result, *snapshotMetadata)
 	}
@@ -63,7 +64,9 @@ func getEtcdSnapshotExtraMetadata(controlPlane *rkev1.RKEControlPlane, runtime s
 		}
 	}
 
-	logrus.Errorf("rkecluster %s/%s: unable to find cluster spec annotation for control plane", controlPlane.Spec.ClusterName, controlPlane.Namespace)
+	log.Error("Unable to find cluster spec annotation for control plane",
+		"cluster_name", controlPlane.Spec.ClusterName,
+		"namespace", controlPlane.Namespace)
 	return nil
 }
 

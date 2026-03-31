@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 // listResponse defines a SCIM list response.
@@ -100,7 +100,7 @@ func writeError(w http.ResponseWriter, err *Error) {
 	w.Header().Set("Content-Type", "application/scim+json")
 	w.WriteHeader(err.Status)
 	if err := json.NewEncoder(w).Encode(err); err != nil {
-		logrus.Errorf("scim::writeError: failed to encode response: %s", err)
+		log.Error("failed to encode response", "error", err)
 	}
 }
 
@@ -118,7 +118,7 @@ func writeResponse(w http.ResponseWriter, payload any, status ...int) {
 		return
 	}
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		logrus.Errorf("scim::writeResponse: failed to encode response: %s", err)
+		log.Error("failed to encode response", "error", err)
 	}
 }
 

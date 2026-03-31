@@ -3,6 +3,7 @@ package clusterrolebinding
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	rbacControllers "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -20,9 +21,9 @@ type Deployer struct {
 	clusterRoleBindings rbacControllers.ClusterRoleBindingController
 }
 
-func NewDeployer(log log.StructuredLogger, clusterRoleBindings rbacControllers.ClusterRoleBindingController) *Deployer {
+func NewDeployer(logger log.StructuredLogger, clusterRoleBindings rbacControllers.ClusterRoleBindingController) *Deployer {
 	return &Deployer{
-		log:                 log.WithField("deployer", "cluster-role-binding"),
+		log:                 logger.With(slog.String("deployer", "cluster-role-binding")),
 		clusterRoleBindings: clusterRoleBindings,
 	}
 }
@@ -71,7 +72,7 @@ func (d *Deployer) Ensure(_ context.Context, labels map[string]string) error {
 			return fmt.Errorf("error creating cluster role binding %s: %w", consts.ClusterRoleBindingName, err)
 		}
 
-		d.log.Infof("Created cluster role binding: %s", consts.ClusterRoleBindingName)
+		d.log.Info("Created cluster role binding", "name", consts.ClusterRoleBindingName)
 	}
 
 	return nil

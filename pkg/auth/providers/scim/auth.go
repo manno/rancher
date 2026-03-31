@@ -13,7 +13,7 @@ import (
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/wrangler"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -70,7 +70,7 @@ func (a *tokenAuthenticator) Authenticate(next http.Handler) http.Handler {
 
 		list, err := a.secretCache.List(tokenSecretNamespace, labelSet.AsSelector())
 		if err != nil {
-			logrus.Errorf("scim::TokenAuthenticator: failed to list secrets: %s", err)
+			log.Error("failed to list secrets", "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -82,7 +82,7 @@ func (a *tokenAuthenticator) Authenticate(next http.Handler) http.Handler {
 			if ttl > 0 && secret.CreationTimestamp.Add(ttl).Before(time.Now()) {
 				// Clean up expired tokens, but don't block authentication if deletion fails for some reason
 				if err := a.secrets.Delete(tokenSecretNamespace, secret.Name, nil); err != nil {
-					logrus.Errorf("scim::TokenAuthenticator: failed to delete expired token secret %s: %s", secret.Name, err)
+					log.Error("failed to delete expired token secret", "secret", secret.Name, "error", err)
 				}
 				continue
 			}

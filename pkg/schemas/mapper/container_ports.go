@@ -7,7 +7,7 @@ import (
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/types/mapper"
 	"github.com/rancher/norman/types/values"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 type ContainerPorts struct {
@@ -33,7 +33,7 @@ func (n ContainerPorts) FromInternal(data map[string]interface{}) {
 			for _, port := range portsSlice {
 				asMap, err := convert.EncodeToMap(port)
 				if err != nil {
-					logrus.Warnf("Failed to convert container port to map %v", err)
+					log.Warn("Failed to convert container port to map", "operation", "from_internal", "error", err)
 					continue
 				}
 				asMap["type"] = "/v3/project/schemas/containerPort"
@@ -59,7 +59,7 @@ func (n ContainerPorts) FromInternal(data map[string]interface{}) {
 		for _, port := range containerPortSlice {
 			asMap, err := convert.EncodeToMap(port)
 			if err != nil {
-				logrus.Warnf("Failed to convert container port to map %v", err)
+				log.Warn("Failed to convert container port to map", "operation", "from_internal", "error", err)
 				continue
 			}
 			portName, _ := values.GetValue(asMap, "name")
@@ -94,7 +94,7 @@ func (n ContainerPorts) ToInternal(data map[string]interface{}) error {
 			for _, p := range l {
 				mapped, err := convert.EncodeToMap(p)
 				if err != nil {
-					logrus.Warnf("Failed to encode port: %v", err)
+					log.Warn("Failed to encode port", "operation", "to_internal", "error", err)
 					return obj
 				}
 				if strings.EqualFold(convert.ToString(mapped["kind"]), "HostPort") {

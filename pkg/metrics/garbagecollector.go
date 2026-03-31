@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -8,9 +9,9 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	rm "github.com/rancher/remotedialer/metrics"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -32,7 +33,7 @@ type metricGarbageCollector struct {
 }
 
 func (gc *metricGarbageCollector) metricGarbageCollection() {
-	logrus.Debugf("[metrics-garbage-collector] Start")
+	log.Debug("Start metrics garbage collection", "operation", "metrics_garbage_collection")
 
 	isClusterMode := settings.Namespace.Get() != "" && settings.PeerServices.Get() != ""
 
@@ -44,7 +45,7 @@ func (gc *metricGarbageCollector) metricGarbageCollection() {
 	// Get Clusters
 	clusters, err := gc.clusterLister.List("", labels.Everything())
 	if err != nil {
-		logrus.Errorf("[metrics-garbage-collector] failed to list clusters: %s", err)
+		log.Error("Failed to list clusters", "operation", "metrics_garbage_collection", "error", err)
 		return
 	}
 	for _, cluster := range clusters {
@@ -55,7 +56,7 @@ func (gc *metricGarbageCollector) metricGarbageCollection() {
 	// Get Nodes
 	nodes, err := gc.nodeLister.List("", labels.Everything())
 	if err != nil {
-		logrus.Errorf("[metrics-garbage-collector] failed to list nodes: %s", err)
+		log.Error("Failed to list nodes", "operation", "metrics_garbage_collection", "error", err)
 	}
 	for _, node := range nodes {
 		if _, ok := observedResourceNames[node.Namespace+":"+node.Name]; !ok {
@@ -66,7 +67,7 @@ func (gc *metricGarbageCollector) metricGarbageCollection() {
 	if isClusterMode {
 		endpoints, err := gc.endpointLister.List(settings.Namespace.Get(), labels.Everything())
 		if err != nil {
-			logrus.Errorf("[metrics-garbage-collector] failed to list endpoints: %s", err)
+			log.Error("Failed to list endpoints", "operation", "metrics_garbage_collection", "error", err)
 		}
 		for _, svc := range strings.Split(settings.PeerServices.Get(), ",") {
 			for _, e := range endpoints {
@@ -88,7 +89,7 @@ func (gc *metricGarbageCollector) metricGarbageCollection() {
 
 	removedCount := removeMetricsForDeletedResource(observedLabelsMap, observedResourceNames)
 
-	logrus.Debugf("[metrics-garbage-collector] Finished - removed %d items", removedCount)
+	log.Debug("Finished metrics garbage collection", "operation", "metrics_garbage_collection", "removed_count", removedCount)
 }
 
 func buildObservedLabelMaps(collectors []interface{}, targetLabel string, observedLabels map[string]map[interface{}][]map[string]string) int {
@@ -135,7 +136,7 @@ func removeMetricsForDeletedResource(observedMetrics map[string]map[interface{}]
 		if _, ok := observedResources[m]; ok {
 			continue
 		}
-		logrus.Infof("[metrics-garbage-collector] remove metrics related to %s", m)
+		log.Info("Removing metrics for deleted resource", "operation", "metrics_garbage_collection", "resource", m)
 		// resource doesn't exist, delete all related metrics
 		for collector, labels := range collectors {
 			for _, label := range labels {
@@ -144,16 +145,16 @@ func removeMetricsForDeletedResource(observedMetrics map[string]map[interface{}]
 					if v.Delete(label) {
 						removedCount++
 					} else {
-						logrus.Errorf("[metrics-garbage-collector] failed to delete %T metrics related to %s: %v", v, m, label)
+						log.Error("Failed to delete counter metrics", "operation", "metrics_garbage_collection", "type", fmt.Sprintf("%T", v), "resource", m, "label", label)
 					}
 				case *prometheus.GaugeVec:
 					if v.Delete(label) {
 						removedCount++
 					} else {
-						logrus.Errorf("[metrics-garbage-collector] failed to delete %T metrics related to %s: %v", v, m, label)
+						log.Error("Failed to delete gauge metrics", "operation", "metrics_garbage_collection", "type", fmt.Sprintf("%T", v), "resource", m, "label", label)
 					}
 				default:
-					logrus.Errorf("[metrics-garbage-collector] saw unknown Metric definition %T", v)
+					log.Error("Unknown metric definition", "operation", "metrics_garbage_collection", "type", fmt.Sprintf("%T", v))
 				}
 			}
 

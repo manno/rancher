@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/rancher/rancher/pkg/features"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/rancher/rancher/pkg/settings"
@@ -24,7 +24,7 @@ func addRepo(wrangler *wrangler.Context, repoName, repoURL, branchName string) e
 	if repoURL == "" || repoURL == defaultURL {
 		repoURL = defaultURL + strings.TrimPrefix(repoName, prefix)
 	} else {
-		logrus.Warnf(
+		log.Warn(
 			"Charts URL for %q set to %q, which is not the default (%q). "+
 				"If Rancher has issues finding charts, consider resetting this to the default value",
 			repoName,

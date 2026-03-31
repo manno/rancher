@@ -5,7 +5,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -23,7 +23,7 @@ func UserGroupsToPrincipals(azureClient userPrincipalsClient, groupNames []strin
 	groupPrincipals := make([]v3.Principal, len(groupNames))
 
 	start := time.Now()
-	logrus.Debug("[AZURE_PROVIDER] Started gathering users groups")
+	log.Debug("Started gathering users groups", "provider", "azure", "operation", "user_groups_to_principals")
 
 	for i, id := range groupNames {
 		if id == "" {
@@ -36,7 +36,7 @@ func UserGroupsToPrincipals(azureClient userPrincipalsClient, groupNames []strin
 		if principal, ok := GroupCache.Get(groupID); ok {
 			p, ok := principal.(v3.Principal)
 			if !ok {
-				logrus.Errorf("failed to convert a cached group to principal")
+				log.Error("Failed to convert cached group to principal", "provider", "azure", "group_id", groupID)
 				continue
 			}
 			groupPrincipals[j] = p
@@ -51,7 +51,7 @@ func UserGroupsToPrincipals(azureClient userPrincipalsClient, groupNames []strin
 			// So Microsoft Graph groups are effectively fetched twice. But this happens only once - before the groups are added to the cache.
 			groupObj, err := azureClient.GetGroup(groupID)
 			if err != nil {
-				logrus.Errorf("[AZURE_PROVIDER] Error getting group: %v", err)
+				log.Error("Error getting group", "provider", "azure", "group_id", groupID, "error", err)
 				return err
 			}
 			groupObj.MemberOf = true
@@ -64,6 +64,6 @@ func UserGroupsToPrincipals(azureClient userPrincipalsClient, groupNames []strin
 	if err := tasksManager.Wait(); err != nil {
 		return nil, err
 	}
-	logrus.Debugf("[AZURE_PROVIDER] Completed gathering users groups, took %v, keys in cache:%v", time.Since(start), GroupCache.Len())
+	log.Debug("Completed gathering users groups", "provider", "azure", "operation", "user_groups_to_principals", "duration", time.Since(start), "cache_size", GroupCache.Len())
 	return groupPrincipals, nil
 }

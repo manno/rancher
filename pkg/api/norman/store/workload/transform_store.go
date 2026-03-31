@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/norman/types/definition"
 	"github.com/rancher/norman/types/values"
 	"github.com/rancher/rancher/pkg/api/norman/store/pod"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 var (
@@ -58,7 +58,7 @@ func SetPublicEndpointsFields(data map[string]interface{}) {
 		for _, ep := range eps {
 			epMap, err := convert.EncodeToMap(ep)
 			if err != nil {
-				logrus.Errorf("Failed to convert public endpoint: %v", err)
+				log.Error("Failed to convert public endpoint", "operation", "set_public_endpoints_fields", "error", err)
 				continue
 			}
 			epMap["serviceId"] = epMap["serviceName"]

@@ -20,11 +20,11 @@ import (
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	publicclient "github.com/rancher/rancher/pkg/client/generated/management/v3public"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -137,7 +137,7 @@ func (g *Provider) LoginUser(host string, githubCredential *apiv3.GithubLogin, c
 	ctx := context.Background()
 	accessToken, err := g.githubClient.getAccessToken(ctx, securityCode, config)
 	if err != nil {
-		logrus.Infof("Error generating accessToken from github %v", err)
+		log.Info("Error generating accessToken from github", "provider", "githubapp", "operation", "login_user", "error", err)
 		return apiv3.Principal{}, nil, "", err
 	}
 
@@ -331,7 +331,7 @@ func (g *Provider) toPrincipal(principalType string, acct common.GitHubAccount, 
 func (g *Provider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []apiv3.Principal) (bool, error) {
 	config, err := g.getConfig()
 	if err != nil {
-		logrus.Errorf("Error fetching github config: %v", err)
+		log.Error("Error fetching github config", "provider", "githubapp", "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 

@@ -12,8 +12,8 @@ import (
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	"github.com/rancher/norman/condition"
 	"github.com/rancher/norman/types"
+	"github.com/rancher/rancher/pkg/log"
 	rketypes "github.com/rancher/rke/types"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
@@ -262,14 +262,14 @@ func (m *MapStringInterface) DeepCopy() *MapStringInterface {
 	dec := gob.NewDecoder(&buf)
 	err := enc.Encode(m)
 	if err != nil {
-		logrus.Errorf("error while deep copying MapStringInterface %v", err)
+		log.Error("Error while deep copying mapstringinterface", "operation", "deep_copy", "error", err)
 		return nil
 	}
 
 	var copy MapStringInterface
 	err = dec.Decode(&copy)
 	if err != nil {
-		logrus.Errorf("error while deep copying MapStringInterface %v", err)
+		log.Error("Error while deep copying mapstringinterface", "operation", "deep_copy", "error", err)
 		return nil
 	}
 

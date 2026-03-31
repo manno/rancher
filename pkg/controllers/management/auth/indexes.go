@@ -3,7 +3,7 @@ package auth
 import (
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/rbac/v1"
 	meta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,7 +50,7 @@ func indexByMembershipBindingOwner(obj interface{}) ([]string, error) {
 
 	accessor, err := meta.Accessor(ro)
 	if err != nil {
-		logrus.Warnf("[indexByMembershipBindingOwner] unexpected object type: %T, err: %v", obj, err.Error())
+		log.Warn("Unexpected object type in indexByMembershipBindingOwner", "operation", "index_membership", "error", err.Error())
 		return []string{}, nil
 	}
 

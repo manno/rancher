@@ -10,11 +10,11 @@ import (
 	"github.com/rancher/rancher/pkg/catalogv2/helm"
 	catalogv1 "github.com/rancher/rancher/pkg/generated/controllers/catalog.cattle.io/v1"
 	corev1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/apply"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -138,7 +138,7 @@ func (a *appHandler) OnConfigMapChange(key string, configMap *corev1.ConfigMap) 
 	if err == helm.ErrNotHelmRelease {
 		return configMap, nil
 	} else if err != nil {
-		logrus.Errorf("Failed to process configmap %s for helm data: %v", key, err)
+		log.Error("Failed to process configmap for helm data", "operation", "on_configmap_change", "key", key, "error", err)
 		// ignore error
 		return configMap, nil
 	}
@@ -183,7 +183,7 @@ func (a *appHandler) OnSecretChange(key string, secret *corev1.Secret) (*corev1.
 	if errors.Is(err, helm.ErrNotHelmRelease) {
 		return secret, nil
 	} else if err != nil {
-		logrus.Errorf("Failed to process secret %s for helm data: %v", key, err)
+		log.Error("Failed to process secret for helm data", "operation", "on_secret_change", "key", key, "error", err)
 		// ignore error
 		return secret, nil
 	}

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 type KontainerDriver struct {
@@ -51,7 +51,7 @@ func (d *KontainerDriver) Install() (string, error) {
 	}
 	defer src.Close()
 
-	logrus.Infof("Copying %v => %v", d.srcBinName(), tmpPath)
+	log.Info("Copying kontainer driver binary", "operation", "stage", "src", d.srcBinName(), "dest", tmpPath)
 	_, err = io.Copy(f, src)
 	if err != nil {
 		return "", errors.Wrapf(err, "Couldn't copy %v to %v", d.srcBinName(), tmpPath)

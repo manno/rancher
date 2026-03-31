@@ -13,9 +13,9 @@ import (
 	"github.com/rancher/rancher/pkg/features"
 	clusterv3 "github.com/rancher/rancher/pkg/generated/norman/cluster.cattle.io/v3"
 	managementv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	wcore "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,7 +46,7 @@ type tokenHandler struct {
 // extCreate is called when a given ext token is created, and is responsible for
 // updating/creating the ClusterAuthToken in the downstream cluster.
 func (h *tokenHandler) extCreate(token *extv1.Token) (*extv1.Token, error) {
-	logrus.Debugf("[%s] ext CREATE FOR %q INTO %q", clusterAuthTokenController, token.Name, token.Spec.ClusterName)
+	log.Debug("Ext create token for cluster", "operation", "create_token", "controller", clusterAuthTokenController, "token", token.Name, "cluster", token.Spec.ClusterName)
 
 	_, err := h.clusterAuthTokenLister.Get(h.namespace, token.Name)
 	if !errors.IsNotFound(err) {
@@ -58,7 +58,7 @@ func (h *tokenHandler) extCreate(token *extv1.Token) (*extv1.Token, error) {
 	hashVersion, err := hashers.GetHashVersion(token.Status.Hash)
 	if err != nil {
 		// the token hash is unlikely to change, re-enqueing would just produce a flood of errors
-		logrus.Errorf("unable to determine hash version of token [%s], will not sync token: %s", token.Name, err.Error())
+		log.Error("Unable to determine hash version of token, will not sync token", "operation", "create_token", "token", token.Name, "error", err.Error())
 		return token, generic.ErrSkip
 	}
 	// we only sync tokens downstream that were created with SHA3
@@ -67,7 +67,7 @@ func (h *tokenHandler) extCreate(token *extv1.Token) (*extv1.Token, error) {
 	}
 
 	// token is hashed, but we can't sync it since we don't have the raw value
-	logrus.Warnf("token [%s] will not be synced or useable for ACE because it uses an older hash version, generate a new token to use ACE", token.Name)
+	log.Warn("Token will not be synced or useable for ACE because it uses an older hash version", "operation", "create_token", "token", token.Name)
 	// don't re-enqueue, we can't sync this token
 	return nil, generic.ErrSkip
 }
@@ -75,7 +75,7 @@ func (h *tokenHandler) extCreate(token *extv1.Token) (*extv1.Token, error) {
 // ExtUpdated is called when a given ext token is modified, and is responsible
 // for updating/creating the ClusterAuthToken in a downstream cluster.
 func (h *tokenHandler) ExtUpdated(token *extv1.Token) (*extv1.Token, error) {
-	logrus.Debugf("[%s] ext UPDATE FOR %q INTO %q", clusterAuthTokenController, token.Name, token.Spec.ClusterName)
+	log.Debug("Ext update token for cluster", "operation", "update_token", "controller", clusterAuthTokenController, "token", token.Name, "cluster", token.Spec.ClusterName)
 
 	clusterAuthToken, err := h.clusterAuthTokenLister.Get(h.namespace, token.Name)
 	if errors.IsNotFound(err) {
@@ -120,7 +120,7 @@ func (h *tokenHandler) ExtUpdated(token *extv1.Token) (*extv1.Token, error) {
 	// note: ext tokens are always hashed (contrary to v3 Tokens)
 	hashVersion, err := hashers.GetHashVersion(token.Status.Hash)
 	if err != nil {
-		logrus.Errorf("unable to determine hash version of token [%s], will not sync token: %s", token.Name, err.Error())
+		log.Error("Unable to determine hash version of token, will not sync token", "operation", "create_token", "token", token.Name, "error", err.Error())
 		return token, generic.ErrSkip
 	}
 	// we only sync tokens downstream that were created with SHA3
@@ -161,14 +161,14 @@ func (h *tokenHandler) ExtUpdated(token *extv1.Token) (*extv1.Token, error) {
 // ExtRemove is called when a given ext token is deleted,
 // and removes the ClusterAuthToken in the downstream cluster.
 func (h *tokenHandler) ExtRemove(token *extv1.Token) (*extv1.Token, error) {
-	logrus.Debugf("[%s] ext REMOVE FOR %q INTO %q", clusterAuthTokenController, token.Name, token.Spec.ClusterName)
+	log.Debug("Ext remove token for cluster", "operation", "remove_token", "controller", clusterAuthTokenController, "token", token.Name, "cluster", token.Spec.ClusterName)
 
 	return nil, h.remove(token.GetName(), token.GetUserID(), extTokenUserClusterKey(token))
 }
 
 // Create is called when a given token is created, and is responsible for creating a ClusterAuthToken in a downstream cluster.
 func (h *tokenHandler) Create(token *managementv3.Token) (runtime.Object, error) {
-	logrus.Debugf("[%s] v3 CREATE FOR %q INTO %q", clusterAuthTokenController, token.Name, token.ClusterName)
+	log.Debug("V3 create token for cluster", "operation", "create_token", "controller", clusterAuthTokenController, "token", token.Name, "cluster", token.ClusterName)
 
 	_, err := h.clusterAuthTokenLister.Get(h.namespace, token.Name)
 	if !errors.IsNotFound(err) {
@@ -185,7 +185,7 @@ func (h *tokenHandler) Create(token *managementv3.Token) (runtime.Object, error)
 		hashVersion, err := hashers.GetHashVersion(token.Token)
 		if err != nil {
 			// the token hash is unlikely to change, re-enqueing would just produce a flood of errors
-			logrus.Errorf("unable to determine hash version of token [%s], will not sync token: %s", token.Name, err.Error())
+			log.Error("Unable to determine hash version of token, will not sync token", "operation", "create_token", "token", token.Name, "error", err.Error())
 			return token, generic.ErrSkip
 		}
 		// we only sync tokens downstream that were created with SHA3
@@ -193,7 +193,7 @@ func (h *tokenHandler) Create(token *managementv3.Token) (runtime.Object, error)
 			return nil, h.createClusterAuthToken(token, token.Token)
 		}
 		// token is hashed, but we can't sync it since we don't have the raw value
-		logrus.Warnf("token [%s] will not be synced or useable for ACE because it uses an older hash version, generate a new token to use ACE", token.Name)
+		log.Warn("Token will not be synced or useable for ACE because it uses an older hash version", "operation", "create_token", "token", token.Name)
 		// don't re-enqueue, we can't sync this token
 		return nil, generic.ErrSkip
 	}
@@ -230,7 +230,7 @@ func (h *tokenHandler) createClusterAuthToken(token accessor.TokenAccessor, hash
 		// Overwrite an existing secret.
 		existing, err := h.clusterSecret.Get(clusterAuthTokenSecret.Namespace, clusterAuthTokenSecret.Name, metav1.GetOptions{})
 		if err != nil {
-			logrus.Errorf("error migrating clusterAuthToken's secret %s: %s", clusterAuthTokenSecret.Name, err)
+			log.Error("error migrating clusterAuthToken's secret", "secret", clusterAuthTokenSecret.Name, "error", err)
 			return err
 		}
 		existing.Data = clusterAuthTokenSecret.Data
@@ -247,8 +247,7 @@ func (h *tokenHandler) createClusterAuthToken(token accessor.TokenAccessor, hash
 
 	// Avoid leaving partially created resources.
 	if err := h.clusterAuthToken.Delete(clusterAuthToken.Name, &metav1.DeleteOptions{}); err != nil {
-		logrus.Errorf("failed to delete cluster auth token `%s` after creation failure: %v",
-			clusterAuthToken.Name, err)
+		log.Error("Failed to delete cluster auth token after creation failure", "operation", "create_v3_token", "token", clusterAuthToken.Name, "error", err)
 	}
 
 	// Report creation failure
@@ -258,7 +257,7 @@ func (h *tokenHandler) createClusterAuthToken(token accessor.TokenAccessor, hash
 // Updated is called when a token is updated, and is responsible for creating/updating the corresponding
 // ClusterAuthTokens in the downstream cluster.
 func (h *tokenHandler) Updated(token *managementv3.Token) (runtime.Object, error) {
-	logrus.Debugf("[%s] v3 UPDATE FOR %q INTO %q", clusterAuthTokenController, token.Name, token.ClusterName)
+	log.Debug("V3 update token for cluster", "operation", "update_token", "controller", clusterAuthTokenController, "token", token.Name, "cluster", token.ClusterName)
 
 	clusterAuthToken, err := h.clusterAuthTokenLister.Get(h.namespace, token.Name)
 	if errors.IsNotFound(err) {
@@ -317,7 +316,7 @@ func (h *tokenHandler) Updated(token *managementv3.Token) (runtime.Object, error
 	if token.Annotations[tokens.TokenHashed] == "true" {
 		hashVersion, err := hashers.GetHashVersion(token.Token)
 		if err != nil {
-			logrus.Errorf("unable to determine hash version of token [%s], will not sync token: %s", token.Name, err.Error())
+			log.Error("Unable to determine hash version of token, will not sync token", "operation", "create_token", "token", token.Name, "error", err.Error())
 			return token, generic.ErrSkip
 		}
 		// we only sync tokens downstream that were created with SHA3
@@ -361,7 +360,7 @@ func (h *tokenHandler) Updated(token *managementv3.Token) (runtime.Object, error
 }
 
 func (h *tokenHandler) Remove(token *managementv3.Token) (runtime.Object, error) {
-	logrus.Debugf("[%s] v3 REMOVE FOR %q INTO %q", clusterAuthTokenController, token.Name, token.ClusterName)
+	log.Debug("V3 remove token for cluster", "operation", "remove_token", "controller", clusterAuthTokenController, "token", token.Name, "cluster", token.ClusterName)
 
 	return nil, h.remove(token.GetName(), token.GetUserID(), tokenUserClusterKey(token))
 }

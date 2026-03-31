@@ -4,8 +4,8 @@ import (
 	"net"
 
 	"github.com/rancher/rancher/pkg/kontainer-engine/logstream"
+	rancherlog "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rke/log"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -129,7 +129,7 @@ func (s *GrpcServer) Serve(listenAddr string, errChan chan error) {
 	s.grpcServer = grpc.NewServer()
 	RegisterDriverServer(s.grpcServer, s)
 	reflection.Register(s.grpcServer)
-	logrus.Debugf("RPC GrpcServer listening on address %s", addr)
+	rancherlog.Debug("RPC GrpcServer listening on address", "address", addr)
 	if err := s.grpcServer.Serve(listen); err != nil {
 		errChan <- err
 	}
@@ -139,16 +139,16 @@ func (s *GrpcServer) Serve(listenAddr string, errChan chan error) {
 func (s *GrpcServer) ServeOrDie(listenAddr string) {
 	listen, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		logrus.Fatal(err)
+		rancherlog.Fatal("failed to listen on address", "address", listenAddr, "error", err)
 	}
 	addr := listen.Addr().String()
 	s.address <- addr
 	s.grpcServer = grpc.NewServer()
 	RegisterDriverServer(s.grpcServer, s)
 	reflection.Register(s.grpcServer)
-	logrus.Infof("RPC GrpcServer listening on address %s", addr)
+	rancherlog.Info("RPC GrpcServer listening on address", "address", addr)
 	if err := s.grpcServer.Serve(listen); err != nil {
-		logrus.Fatalf("%v", err)
+		rancherlog.Fatal("gRPC server stopped unexpectedly", "error", err)
 	}
 }
 

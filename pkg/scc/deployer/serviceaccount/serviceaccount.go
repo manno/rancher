@@ -1,7 +1,9 @@
 package serviceaccount
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 
 	v1core "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -10,8 +12,6 @@ import (
 	"github.com/rancher/rancher/pkg/scc/consts"
 	"github.com/rancher/rancher/pkg/scc/deployer/types"
 	"github.com/rancher/rancher/pkg/scc/util/log"
-
-	"context"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -24,11 +24,11 @@ type Deployer struct {
 
 // NewDeployer creates a new ServiceAccountDeployer
 func NewDeployer(
-	log log.StructuredLogger,
+	logger log.StructuredLogger,
 	serviceAccounts v1core.ServiceAccountController,
 ) *Deployer {
 	return &Deployer{
-		log:             log.WithField("deployer", "serviceaccount"),
+		log:             logger.With(slog.String("deployer", "serviceaccount")),
 		serviceAccounts: serviceAccounts,
 	}
 }
@@ -64,13 +64,13 @@ func (d *Deployer) Ensure(ctx context.Context, labels map[string]string) error {
 		_, err = d.serviceAccounts.Create(sa)
 		if err != nil {
 			if errors.IsAlreadyExists(err) {
-				d.log.Debugf("Noop: service-account already existed")
+				d.log.Debug("Service account already exists")
 				return nil
 			}
 			return fmt.Errorf("failed to create service account %s in namespace %s: %w",
 				saName, consts.DefaultSCCNamespace, err)
 		}
-		d.log.Infof("Created service account: %s in namespace: %s", saName, consts.DefaultSCCNamespace)
+		d.log.Info("Created service account", "account", saName, "namespace", consts.DefaultSCCNamespace)
 	}
 
 	return nil

@@ -11,11 +11,11 @@ import (
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/features"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	pkgrbac "github.com/rancher/rancher/pkg/rbac"
 	"github.com/rancher/rancher/pkg/types/config"
 	wrbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -89,7 +89,7 @@ func (p *prtbLifecycle) Remove(obj *v3.ProjectRoleTemplateBinding) (runtime.Obje
 
 func (p *prtbLifecycle) syncPRTB(binding *v3.ProjectRoleTemplateBinding) error {
 	if binding.RoleTemplateName == "" {
-		logrus.Warnf("ProjectRoleTemplateBinding %s has no role template set. Skipping.", binding.Name)
+		log.Warn("Projectroletemplatebinding has no role template set, skipping", "operation", "sync_prtb", "binding", binding.Name)
 		return nil
 	}
 	if binding.UserName == "" && binding.GroupPrincipalName == "" && binding.GroupName == "" {
@@ -98,7 +98,7 @@ func (p *prtbLifecycle) syncPRTB(binding *v3.ProjectRoleTemplateBinding) error {
 	rt, err := p.rtLister.Get("", binding.RoleTemplateName)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logrus.Warnf("ProjectRoleTemplateBinding %s sets a non-existing role template %s. Skipping.", binding.Name, binding.RoleTemplateName)
+			log.Warn("Projectroletemplatebinding sets a non-existing role template, skipping", "operation", "sync_prtb", "binding", binding.Name, "role_template", binding.RoleTemplateName)
 			return nil
 		}
 		return err
@@ -445,7 +445,7 @@ func (m *manager) reconcileRoleForProjectAccessToGlobalResource(roleName string,
 			return "", nil
 		}
 
-		logrus.Infof("Creating clusterRole %v for project access to global resource.", roleName)
+		log.Info("Creating clusterrole for project access to global resource", "operation", "reconcile_role_for_project_access", "role", roleName)
 
 		clusterRole := &rbacv1.ClusterRole{
 			ObjectMeta: metav1.ObjectMeta{
@@ -459,7 +459,7 @@ func (m *manager) reconcileRoleForProjectAccessToGlobalResource(roleName string,
 			if !apierrors.IsAlreadyExists(err) {
 				return "", fmt.Errorf("couldn't create role %v: %w", roleName, err)
 			}
-			logrus.Infof("Trying to create an already existing clusterRole %v for project access to global resource.", roleName)
+			log.Info("Trying to create already existing clusterrole for project access to global resource", "operation", "reconcile_role_for_project_access", "role", roleName)
 		}
 
 		return roleName, nil
@@ -469,7 +469,7 @@ func (m *manager) reconcileRoleForProjectAccessToGlobalResource(roleName string,
 
 	// If there shouldn't be a promoted clusterRole, remove it
 	if len(promotedRules) == 0 {
-		logrus.Infof("RoleTemplate has no promoted rules, removing clusterRole %s", role.Name)
+		log.Info("Roletemplate has no promoted rules, removing clusterrole", "operation", "reconcile_role_for_project_access", "role", role.Name)
 		return "", m.clusterRoles.Delete(role.Name, &metav1.DeleteOptions{})
 
 	}
@@ -481,7 +481,7 @@ func (m *manager) reconcileRoleForProjectAccessToGlobalResource(roleName string,
 
 	role.Rules = promotedRules
 
-	logrus.Infof("Updating clusterRole %s for project access to global resources", role.Name)
+	log.Info("Updating clusterrole for project access to global resources", "operation", "reconcile_role_for_project_access", "role", role.Name)
 	if _, err := m.clusterRoles.Update(role); err != nil {
 		return "", fmt.Errorf("couldn't update role %s: %w", role.Name, err)
 	}

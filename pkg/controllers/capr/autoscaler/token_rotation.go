@@ -8,8 +8,8 @@ import (
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/tokens"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/ticker"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,7 @@ func (h *autoscalerHandler) startTokenRenewal(ctx context.Context) {
 	go func() {
 		for range ticker.Context(ctx, renewalCheckInterval) {
 			if err := h.checkAndRenewTokens(); err != nil {
-				logrus.Errorf("[autoscaler] Failed to check and renew token: %v", err)
+				log.Error("Failed to check and renew token", "operation", "autoscaler.startTokenRenewal", "error", err)
 			}
 		}
 	}()
@@ -61,20 +61,20 @@ func (h *autoscalerHandler) checkAndRenewTokens() error {
 
 		expiresAt, err := time.Parse(time.RFC3339, token.ExpiresAt)
 		if err != nil {
-			logrus.Warnf("[autoscaler] invalid token expires at on token %v: %v", token.Name, err)
+			log.Warn("Invalid token expires at on token", "operation", "autoscaler.checkAndRenewTokens", "token", token.Name, "error", err)
 			processingErrs = append(processingErrs, err)
 		}
 
 		if expiresAt.Before(time.Now().Add(renewalThreshold)) {
 			expiringCount++
 			if err := h.renewToken(&token); err != nil {
-				logrus.Errorf("[autoscaler] Failed to renew token %s: %v", token.Name, err)
+				log.Error("Failed to renew token", "operation", "autoscaler.checkAndRenewTokens", "token", token.Name, "error", err)
 				processingErrs = append(processingErrs, err)
 			}
 		}
 	}
 
-	logrus.Infof("[autoscaler] Processed %d expiring autoscaler tokens, renewed %d", len(tokens), expiringCount)
+	log.Info("Processed expiring autoscaler tokens", "operation", "autoscaler.checkAndRenewTokens", "totalTokens", len(tokens), "renewed", expiringCount)
 	return errors.Join(processingErrs...)
 }
 
@@ -122,13 +122,13 @@ func (h *autoscalerHandler) renewToken(token *v3.Token) error {
 	}))
 
 	if err != nil {
-		logrus.Errorf("[autoscaler] Failed to list clusters for token %s: %v", newToken.Name, err)
+		log.Error("Failed to list clusters for token", "operation", "autoscaler.renewToken", "token", newToken.Name, "error", err)
 		return fmt.Errorf("failed to list clusters for token %s: %v", newToken.Name, err)
 	} else if len(clusters) == 0 {
-		logrus.Errorf("[autoscaler] No cluster found for token %s with name %s", newToken.Name, clusterName)
+		log.Error("No cluster found for token", "operation", "autoscaler.renewToken", "token", newToken.Name, "cluster", clusterName)
 		return fmt.Errorf("no cluster found for token %s with name %s", newToken.Name, clusterName)
 	} else if len(clusters) > 1 {
-		logrus.Errorf("[autoscaler] Multiple clusters found for token %s with name %s: %d clusters found", newToken.Name, clusterName, len(clusters))
+		log.Error("Multiple clusters found for token", "operation", "autoscaler.renewToken", "token", newToken.Name, "cluster", clusterName, "clusterCount", len(clusters))
 		return fmt.Errorf("multiple clusters found for token %s with name %s: %d clusters found", newToken.Name, clusterName, len(clusters))
 	}
 
@@ -136,7 +136,7 @@ func (h *autoscalerHandler) renewToken(token *v3.Token) error {
 	capiCluster := clusters[0]
 	kubeconfig, err := h.updateKubeConfigSecretWithToken(capiCluster, fmt.Sprintf("%s:%s", token.UserID, newToken.Token))
 	if err != nil {
-		logrus.Errorf("[autoscaler] Failed to update kubeconfig secret for cluster %s/%s: %v", capiCluster.Namespace, capiCluster.Name, err)
+		log.Error("Failed to update kubeconfig secret for cluster", "operation", "autoscaler.renewToken", "namespace", capiCluster.Namespace, "cluster", capiCluster.Name, "error", err)
 		return fmt.Errorf("failed to update kubeconfig secret for cluster %s/%s: %v", capiCluster.Namespace, capiCluster.Name, err)
 	}
 
@@ -146,7 +146,7 @@ func (h *autoscalerHandler) renewToken(token *v3.Token) error {
 		return err
 	}
 
-	logrus.Infof("[autoscaler] Successfully renewed token %s and updated associated kubeconfig secret", newToken.Name)
+	log.Info("Successfully renewed token and updated associated kubeconfig secret", "operation", "autoscaler.renewToken", "token", newToken.Name)
 	return nil
 }
 
@@ -179,6 +179,6 @@ func (h *autoscalerHandler) updateKubeConfigSecretWithToken(cluster *capi.Cluste
 		return nil, fmt.Errorf("failed to update kubeconfig secret %s/%s: %w", cluster.Namespace, secretName, err)
 	}
 
-	logrus.Infof("[autoscaler] Successfully updated kubeconfig secret %s/%s with new token", cluster.Namespace, secretName)
+	log.Info("Successfully updated kubeconfig secret with new token", "operation", "autoscaler.updateKubeConfigSecretWithToken", "namespace", cluster.Namespace, "secret", secretName)
 	return kubeconfig, nil
 }

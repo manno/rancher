@@ -26,9 +26,9 @@ import (
 
 	"github.com/rancher/rancher/pkg/controllers/management/usercontrollers"
 	"github.com/rancher/rancher/pkg/controllers/managementagent/nslabels"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/monitoring"
 	"github.com/rancher/rancher/pkg/namespace"
-	"github.com/sirupsen/logrus"
 	apierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -80,11 +80,11 @@ func Cluster() error {
 	if os.Getenv("SLEEP_FIRST") == "true" {
 		// The sleep allows Rancher server time to finish updating ownerReferences
 		// and close the connection.
-		logrus.Info("Starting sleep for 1 min to allow server time to disconnect....")
+		log.Info("Starting sleep for 1 min to allow server time to disconnect")
 		time.Sleep(time.Duration(1) * time.Minute)
 	}
 
-	logrus.Info("Starting cluster cleanup")
+	log.Info("Starting cluster cleanup")
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func Cluster() error {
 	if rancherInstalled, err := isRancherInstalled(client); err != nil {
 		return fmt.Errorf("checking for %s/rancher service: %w", namespace.System, err)
 	} else if rancherInstalled {
-		logrus.Info("Rancher is installed, not performing cleanup")
+		log.Info("Rancher is installed, not performing cleanup")
 		return deleteJob(client)
 	}
 
@@ -158,7 +158,7 @@ func Cluster() error {
 }
 
 func removeNamespace(namespace string, client *kubernetes.Clientset) error {
-	logrus.Infof("Attempting to remove %s namespace", namespace)
+	log.Info("Attempting to remove namespace", "namespace", namespace)
 	return tryUpdate(func() error {
 		ns, err := client.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 		if err != nil {
@@ -171,7 +171,7 @@ func removeNamespace(namespace string, client *kubernetes.Clientset) error {
 			ns.Finalizers = []string{}
 		}
 
-		logrus.Infof("Updating namespace: %v", ns.Name)
+		log.Info("Updating namespace", "namespace", ns.Name)
 		if !dryRun {
 			ns, err = client.CoreV1().Namespaces().Update(context.TODO(), ns, metav1.UpdateOptions{})
 			if err != nil {
@@ -179,7 +179,7 @@ func removeNamespace(namespace string, client *kubernetes.Clientset) error {
 			}
 		}
 
-		logrus.Infof("Deleting namespace: %v", ns.Name)
+		log.Info("Deleting namespace", "namespace", ns.Name)
 		if !dryRun {
 			err = client.CoreV1().Namespaces().Delete(context.TODO(), namespace, metav1.DeleteOptions{})
 			if err != nil {
@@ -198,7 +198,7 @@ var listOptions = metav1.ListOptions{
 }
 
 func cleanupNamespaces(client *kubernetes.Clientset) []error {
-	logrus.Info("Starting cleanup of namespaces")
+	log.Info("Starting cleanup of namespaces")
 	namespaces, err := client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return []error{err}
@@ -249,7 +249,7 @@ func cleanupNamespaces(client *kubernetes.Clientset) []error {
 			}
 
 			if updated {
-				logrus.Infof("Updating namespace: %v", nameSpace.Name)
+				log.Info("Updating namespace", "namespace_name", nameSpace.Name)
 				if !dryRun {
 					_, err = client.CoreV1().Namespaces().Update(context.TODO(), nameSpace, metav1.UpdateOptions{})
 					if err != nil {
@@ -271,7 +271,7 @@ func cleanupNamespaces(client *kubernetes.Clientset) []error {
 }
 
 func cleanupClusterRoleBindings(client *kubernetes.Clientset) []error {
-	logrus.Info("Starting cleanup of clusterRoleBindings")
+	log.Info("Starting cleanup of clusterRoleBindings")
 	crbs, err := client.RbacV1().ClusterRoleBindings().List(context.TODO(), listOptions)
 	if err != nil {
 		return []error{err}
@@ -280,7 +280,7 @@ func cleanupClusterRoleBindings(client *kubernetes.Clientset) []error {
 	var errs []error
 
 	for _, crb := range crbs.Items {
-		logrus.Infof("Deleting clusterRoleBinding: %v", crb.Name)
+		log.Info("Deleting clusterRoleBinding", "binding_name", crb.Name)
 		if !dryRun {
 			err = client.RbacV1().ClusterRoleBindings().Delete(context.TODO(), crb.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -292,7 +292,7 @@ func cleanupClusterRoleBindings(client *kubernetes.Clientset) []error {
 }
 
 func cleanupRoleBindings(client *kubernetes.Clientset) []error {
-	logrus.Info("Starting cleanup of roleBindings")
+	log.Info("Starting cleanup of roleBindings")
 	rbs, err := client.RbacV1().RoleBindings("").List(context.TODO(), listOptions)
 	if err != nil {
 		return []error{err}
@@ -301,7 +301,7 @@ func cleanupRoleBindings(client *kubernetes.Clientset) []error {
 	var errs []error
 
 	for _, rb := range rbs.Items {
-		logrus.Infof("Deleting roleBinding: %v", rb.Name)
+		log.Info("Deleting roleBinding", "binding_name", rb.Name)
 		if !dryRun {
 			err = client.RbacV1().RoleBindings(rb.Namespace).Delete(context.TODO(), rb.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -313,7 +313,7 @@ func cleanupRoleBindings(client *kubernetes.Clientset) []error {
 }
 
 func cleanupClusterRoles(client *kubernetes.Clientset) []error {
-	logrus.Info("Starting cleanup of clusterRoles")
+	log.Info("Starting cleanup of clusterRoles")
 	crs, err := client.RbacV1().ClusterRoles().List(context.TODO(), listOptions)
 	if err != nil {
 		return []error{err}
@@ -322,7 +322,7 @@ func cleanupClusterRoles(client *kubernetes.Clientset) []error {
 	var errs []error
 
 	for _, cr := range crs.Items {
-		logrus.Infof("Deleting clusterRole: %v", cr.Name)
+		log.Info("Deleting clusterRole", "role_name", cr.Name)
 		if !dryRun {
 			err = client.RbacV1().ClusterRoles().Delete(context.TODO(), cr.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -334,7 +334,7 @@ func cleanupClusterRoles(client *kubernetes.Clientset) []error {
 }
 
 func cleanupRoles(client *kubernetes.Clientset) []error {
-	logrus.Info("Starting cleanup of roles")
+	log.Info("Starting cleanup of roles")
 	rs, err := client.RbacV1().Roles("").List(context.TODO(), listOptions)
 	if err != nil {
 		return []error{err}
@@ -343,7 +343,7 @@ func cleanupRoles(client *kubernetes.Clientset) []error {
 	var errs []error
 
 	for _, r := range rs.Items {
-		logrus.Infof("Deleting role: %v", r.Name)
+		log.Info("Deleting role", "role_name", r.Name)
 		if !dryRun {
 			err = client.RbacV1().Roles(r.Namespace).Delete(context.TODO(), r.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -355,10 +355,10 @@ func cleanupRoles(client *kubernetes.Clientset) []error {
 }
 
 func cleanupWebhookResources(client *kubernetes.Clientset) []error {
-	logrus.Info("Starting cleanup of webhook-specific resources")
-	logrus.Infof("Deleting clusterrolebinding %s", usercontrollers.WebhookClusterRoleBindingName)
-	logrus.Infof("Deleting mutatingwebhookconfiguration %s", usercontrollers.WebhookConfigurationName)
-	logrus.Infof("Deleting validatingwebhookconfigurations %s", usercontrollers.WebhookConfigurationName)
+	log.Info("Starting cleanup of webhook-specific resources")
+	log.Info("Deleting clusterrolebinding", "binding_name", usercontrollers.WebhookClusterRoleBindingName)
+	log.Info("Deleting mutatingwebhookconfiguration", "config_name", usercontrollers.WebhookConfigurationName)
+	log.Info("Deleting validatingwebhookconfigurations", "config_name", usercontrollers.WebhookConfigurationName)
 
 	var errs []error
 
@@ -382,7 +382,7 @@ func cleanupWebhookResources(client *kubernetes.Clientset) []error {
 }
 
 func deleteJob(client *kubernetes.Clientset) error {
-	logrus.Info("Starting cleanup of jobs")
+	log.Info("Starting cleanup of jobs")
 	jobs, err := client.BatchV1().Jobs("default").List(context.TODO(), listOptions)
 	if err != nil {
 		return err
@@ -391,7 +391,7 @@ func deleteJob(client *kubernetes.Clientset) error {
 	for _, job := range jobs.Items {
 		prop := metav1.DeletePropagationBackground
 		if strings.HasPrefix(job.Name, "cattle-cleanup") {
-			logrus.Infof("Deleting job: %v", job.Name)
+			log.Info("Deleting job", "job_name", job.Name)
 			if !dryRun {
 				err = client.BatchV1().Jobs("default").Delete(context.TODO(), job.Name, metav1.DeleteOptions{
 					PropagationPolicy: &prop,

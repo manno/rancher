@@ -24,9 +24,9 @@ import (
 	apiv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/settings"
 	"github.com/rancher/rancher/pkg/auth/tokens"
+	log "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	dsig "github.com/russellhaering/goxmldsig"
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 )
@@ -189,7 +189,7 @@ func InitializeSamlServiceProvider(configToSet *apiv3.SamlConfig, name string) e
 
 	SamlProviders[name] = provider
 
-	log.Debugf("SAML [InitializeSamlServiceProvider]: Set /v1-saml handlers for %s on root %p", name, root)
+	log.Debug("Saml set v1-saml handlers", "provider", name, "root", root)
 
 	switch name {
 	case PingName:
@@ -219,17 +219,17 @@ func InitializeSamlServiceProvider(configToSet *apiv3.SamlConfig, name string) e
 		root.Get("ShibbolethMetadata").HandlerFunc(provider.ServeHTTP)
 	}
 
-	log.Debugf("SAML [InitializeSamlServiceProvider]: /v1-saml handlers for %s on root %p active", name, root)
+	log.Debug("Saml v1-saml handlers active", "provider", name, "root", root)
 
 	appliedVersion = configToSet.ResourceVersion
 	return nil
 }
 
 func AuthHandler() http.Handler {
-	log.Debugf("SAML [AuthHandler]: Setting up /v1-saml routes, mux is %p", root)
+	log.Debug("Saml setting up v1-saml routes", "mux", root)
 
 	if root != nil {
-		log.Debugf("SAML [AuthHandler]: /v1-saml routes are already set, mux is %p", root)
+		log.Debug("Saml v1-saml routes already set", "mux", root)
 		return root
 	}
 
@@ -260,7 +260,7 @@ func AuthHandler() http.Handler {
 	root.Methods("GET").Path("/v1-saml/shibboleth/saml/slo").Name("ShibbolethSLOGet")
 	root.Methods("GET").Path("/v1-saml/shibboleth/saml/metadata").Name("ShibbolethMetadata")
 
-	log.Debugf("SAML [AuthHandler]: /v1-saml routes made, mux is %p", root)
+	log.Debug("Saml v1-saml routes created", "mux", root)
 	return root
 }
 
@@ -323,13 +323,13 @@ func (s *Provider) FinalizeSamlLogout(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	err := s.serviceProvider.ValidateLogoutResponseRequest(r)
 	if err != nil {
-		log.Debugf("SAML [FinalizeSamlLogout]: response validation failed: %v", err)
+		log.Debug("Saml logout response validation failed", "error", err)
 		if parseErr, ok := err.(*saml.InvalidResponseError); ok {
 			// Note: If access to the response itself is needed (debugging)
 			// just add `parseErr.Response` to the log statement.
 
-			log.Debugf("SAML NOW: %s\nSAML ERROR: %s",
-				parseErr.Now, parseErr.PrivateErr)
+			log.Debug("Saml logout response validation details",
+				"now", parseErr.Now, "private_error", parseErr.PrivateErr)
 		}
 
 		rURL, errParse := url.Parse(redirectURL)
@@ -352,15 +352,15 @@ func (s *Provider) FinalizeSamlLogout(w http.ResponseWriter, r *http.Request) {
 
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 
-		log.Debugf("SAML [FinalizeSamlLogout]: Redirected to (%s)", redirectURL)
+		log.Debug("Saml logout redirected", "url", redirectURL)
 		return
 	}
 
-	log.Debugf("SAML [FinalizeSamlLogout]: response validated ok")
+	log.Debug("Saml logout response validated")
 
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 
-	log.Debugf("SAML [FinalizeSamlLogout]: Redirected to (%s)", redirectURL)
+	log.Debug("Saml logout redirected", "url", redirectURL)
 }
 
 // HandleSamlAssertion processes/handles the assertion obtained by the POST to /saml/acs from IdP
@@ -381,7 +381,7 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 		var err error
 		userID, err = s.getUserIdFromRelayStateCookie(r)
 		if err != nil {
-			log.Errorf("SAML: Error getting state from cookie: %v", err)
+			log.Error("Saml error getting state from cookie", "error", err)
 			http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 			return
 		}
@@ -410,14 +410,14 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 
 	config, err := s.getSamlConfig()
 	if err != nil {
-		log.Errorf("SAML: Error getting saml config %v", err)
+		log.Error("Saml error getting config", "error", err)
 		http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 		return
 	}
 
 	userPrincipal, groupPrincipals, err = s.getSamlPrincipals(config, samlData)
 	if err != nil {
-		log.Error(err)
+		log.Error("Failed to get SAML principals", "error", err)
 		// UI uses this translation key to get the error message
 		http.Redirect(w, r, redirectURL+"errorCode=422&err="+UITranslationKeyForErrorMessage, http.StatusFound)
 		return
@@ -426,12 +426,12 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 
 	allowed, err := s.userMGR.CheckAccess(config.AccessMode, allowedPrincipals, userPrincipal.Name, groupPrincipals)
 	if err != nil {
-		log.Errorf("SAML: Error during login while checking access %v", err)
+		log.Error("Saml error checking access during login", "error", err)
 		http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 		return
 	}
 	if !allowed {
-		log.Errorf("SAML: User [%s] is not an authorized user or is not a member of an authorized group", userPrincipal.Name)
+		log.Error("Saml user not authorized", "user", userPrincipal.Name)
 		http.Redirect(w, r, redirectURL+"errorCode=403", http.StatusFound)
 		return
 	}
@@ -439,7 +439,7 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 	if userID != "" && rancherAction == testAndEnableAction {
 		user, err := s.userMGR.SetPrincipalOnCurrentUserByUserID(userID, userPrincipal)
 		if err != nil && user == nil {
-			log.Errorf("SAML: Error setting principal on current user %v", err)
+			log.Error("Saml error setting principal on current user", "error", err)
 			http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 			return
 		} else if err != nil && user != nil {
@@ -450,7 +450,7 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 		config.Enabled = true
 		err = s.saveSamlConfig(config)
 		if err != nil {
-			log.Errorf("SAML: Error saving saml config %v", err)
+			log.Error("Saml error saving config", "error", err)
 			http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 			return
 		}
@@ -461,7 +461,7 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 		}
 		err = s.setRancherToken(w, s.tokenMGR, user.Name, userPrincipal, groupPrincipals, isSecure)
 		if err != nil {
-			log.Errorf("SAML: Failed creating token with error: %v", err)
+			log.Error("Saml failed creating token", "error", err)
 			http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 		}
 		// delete the cookies
@@ -482,13 +482,13 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 	}
 	user, err := s.userMGR.EnsureUser(userPrincipal.Name, displayName)
 	if err != nil {
-		log.Errorf("SAML: Failed getting user with error: %v", err)
+		log.Error("Saml failed getting user", "error", err)
 		http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 		return
 	}
 
 	if user.Enabled != nil && !*user.Enabled {
-		log.Errorf("SAML: User %v permission denied", user.Name)
+		log.Error("Saml user permission denied", "user", user.Name)
 		http.Redirect(w, r, redirectURL+"errorCode=403", http.StatusFound)
 		return
 	}
@@ -498,14 +498,14 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		return s.userMGR.UserAttributeCreateOrUpdate(user.Name, userPrincipal.Provider, groupPrincipals, userExtraInfo, loginTime)
 	}); err != nil {
-		log.Errorf("SAML: Failed creating or updating userAttribute with error: %v", err)
+		log.Error("Saml failed creating or updating user attribute", "error", err)
 		http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 		return
 	}
 
 	err = s.setRancherToken(w, s.tokenMGR, user.Name, userPrincipal, groupPrincipals, true)
 	if err != nil {
-		log.Errorf("SAML: Failed creating token with error: %v", err)
+		log.Error("Saml failed creating token", "error", err)
 		http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 	}
 	redirectURL = s.clientState.GetState(r, "Rancher_FinalRedirectURL")
@@ -522,21 +522,21 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 
 			token, tokenValue, err := tokens.GetKubeConfigToken(user.Name, responseType, s.tokenMGR, userPrincipal)
 			if err != nil {
-				log.Errorf("SAML: getToken error %v", err)
+				log.Error("Saml get token error", "error", err)
 				http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 				return
 			}
 
 			keyBytes, err := base64.StdEncoding.DecodeString(publicKey)
 			if err != nil {
-				log.Errorf("SAML: base64 DecodeString error %v", err)
+				log.Error("Saml base64 decode error", "error", err)
 				http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 				return
 			}
 			pubKey := &rsa.PublicKey{}
 			err = json.Unmarshal(keyBytes, pubKey)
 			if err != nil {
-				log.Errorf("SAML: getPublicKey error %v", err)
+				log.Error("Saml get public key error", "error", err)
 				http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 				return
 			}
@@ -547,7 +547,7 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 				[]byte(fmt.Sprintf("%s:%s", token.ObjectMeta.Name, tokenValue)),
 				nil)
 			if err != nil {
-				log.Errorf("SAML: getEncryptedToken error %v", err)
+				log.Error("Saml get encrypted token error", "error", err)
 				http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 				return
 			}
@@ -564,7 +564,7 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 
 			_, err = s.samlTokens.Create(samlToken)
 			if err != nil {
-				log.Errorf("SAML: createToken err %v", err)
+				log.Error("Saml create token error", "error", err)
 				http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
 			}
 

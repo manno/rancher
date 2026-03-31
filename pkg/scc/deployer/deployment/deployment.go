@@ -63,7 +63,7 @@ func (d *Deployer) Reconcile(_ context.Context, desiredParams *params.SCCOperato
 	}
 
 	if desiredParams.RefreshHash != existingHash {
-		d.log.Debug("The deployment hash has changed; the deployment must be updated or redeployed.")
+		d.log.Debug("The deployment hash has changed; the deployment must be updated or redeployed")
 		patchUpdatedObj, err := generic.PreparePatchUpdated(incoming, desiredDeployment)
 		if err != nil {
 			// todo: wrap this
@@ -77,7 +77,7 @@ func (d *Deployer) Reconcile(_ context.Context, desiredParams *params.SCCOperato
 		return updated, nil
 	}
 
-	d.log.Debugf("The current deployment hash and desired hash match; no update needed.")
+	d.log.Debug("Current deployment hash and desired hash match; no update needed")
 	return incoming, nil
 }
 

@@ -15,6 +15,7 @@ import (
 	capicontrollers "github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io/v1beta2"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	ranchercontrollers "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/provisioningv2/kubeconfig"
 	"github.com/rancher/rancher/pkg/settings"
@@ -29,7 +30,6 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/genericcondition"
 	"github.com/rancher/wrangler/v3/pkg/name"
 	"github.com/rancher/wrangler/v3/pkg/summary"
-	"github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -341,7 +341,7 @@ func (h *handler) OnRemove(key string, obj runtime.Object) (runtime.Object, erro
 		} else if err != nil {
 			return obj, err
 		}
-		logrus.Debugf("[machineprovision] create job for %s not finished, job was found and the error was not nil and was not an isnotfound", key)
+		log.Debug("Machineprovision: create job not finished", "operation", "on_remove", "key", key)
 		// WaitForClient handler will not run when the infra machine is being deleted, we have to reconcile here in order to
 		// finish the create job, since it has to have completed successfully or never ran for the delete job to run
 		state, _, err := h.run(infra, true)
@@ -381,7 +381,7 @@ func (h *handler) OnRemove(key string, obj runtime.Object) (runtime.Object, erro
 		if apierrors.IsNotFound(err) {
 			// If the deletion job condition has been set on the infrastructure object and the deletion job has been removed,
 			// then we don't want to create another deletion job.
-			logrus.Infof("[machineprovision] Machine %s %s has already been deleted", infra.obj.GetObjectKind().GroupVersionKind(), infra.meta.GetName())
+			log.Info("Machineprovision: machine has already been deleted", "operation", "on_remove", "gvk", infra.obj.GetObjectKind().GroupVersionKind(), "name", infra.meta.GetName())
 			return obj, h.apply.WithOwner(obj).ApplyObjects()
 		} else if err != nil {
 			return obj, err
@@ -407,7 +407,7 @@ func (h *handler) OnRemove(key string, obj runtime.Object) (runtime.Object, erro
 
 	machine, err := capr.GetOwnerCAPIMachine(obj, h.machineCache)
 	if err != nil && !errors.Is(err, capr.ErrNoMatchingControllerOwnerRef) && !apierrors.IsNotFound(err) {
-		logrus.Errorf("[machineprovision] %s/%s: error getting machine by owner reference: %v", infra.meta.GetNamespace(), infra.meta.GetName(), err)
+		log.Error("Machineprovision: error getting machine by owner reference", "operation", "on_remove", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "error", err)
 		return obj, err
 	}
 
@@ -415,7 +415,7 @@ func (h *handler) OnRemove(key string, obj runtime.Object) (runtime.Object, erro
 	// to recover from this situation, so we should proceed with deletion
 	if machine == nil || !machine.Status.NodeRef.IsDefined() {
 		// Machine noderef is nil, we should just allow deletion.
-		logrus.Debugf("[machineprovision] There was no associated K8s node with this machine %s. Proceeding with deletion", key)
+		log.Debug("Machineprovision: no associated k8s node with machine, proceeding with deletion", "operation", "on_remove", "key", key)
 		return h.doRemove(infra)
 	}
 
@@ -505,7 +505,7 @@ func (h *handler) doRemove(infra *infraObject) (runtime.Object, error) {
 func (h *handler) EnqueueAfter(infra *infraObject, duration time.Duration) {
 	err := h.dynamic.EnqueueAfter(infra.obj.GetObjectKind().GroupVersionKind(), infra.meta.GetNamespace(), infra.meta.GetName(), duration)
 	if err != nil {
-		logrus.Errorf("[machineprovision] error enqueuing %s %s/%s: %v", infra.obj.GetObjectKind().GroupVersionKind(), infra.meta.GetNamespace(), infra.meta.GetName(), err)
+		log.Error("Machineprovision: error enqueuing", "operation", "enqueue_after", "gvk", infra.obj.GetObjectKind().GroupVersionKind(), "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "duration", duration, "error", err)
 	}
 }
 
@@ -522,13 +522,13 @@ func (h *handler) OnChange(obj runtime.Object) (runtime.Object, error) {
 
 	machine, err := capr.GetOwnerCAPIMachine(obj, h.machineCache)
 	if apierrors.IsNotFound(err) {
-		logrus.Debugf("[machineprovision] %s/%s: waiting: machine to be set as owner reference", infra.meta.GetNamespace(), infra.meta.GetName())
+		log.Debug("Machineprovision: waiting for machine to be set as owner reference", "operation", "on_change", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName())
 		h.EnqueueAfter(infra, 10*time.Second)
 		return obj, generic.ErrSkip
 	}
 
 	if err != nil {
-		logrus.Errorf("[machineprovision] %s/%s: error getting machine by owner reference: %v", infra.meta.GetNamespace(), infra.meta.GetName(), err)
+		log.Error("Machineprovision: error getting machine by owner reference", "operation", "on_change", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "error", err)
 		return obj, err
 	}
 
@@ -545,29 +545,29 @@ func (h *handler) OnChange(obj runtime.Object) (runtime.Object, error) {
 
 	capiCluster, err := capr.GetCAPIClusterFromLabel(machine, h.capiClusterCache)
 	if apierrors.IsNotFound(err) {
-		logrus.Debugf("[machineprovision] %s/%s: waiting: CAPI cluster does not exist", infra.meta.GetNamespace(), infra.meta.GetName())
+		log.Debug("Machineprovision: waiting for capi cluster to exist", "operation", "on_change", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName())
 		h.EnqueueAfter(infra, 10*time.Second)
 		return obj, generic.ErrSkip
 	}
 	if err != nil {
-		logrus.Errorf("[machineprovision] %s/%s: error getting CAPI cluster %v", infra.meta.GetNamespace(), infra.meta.GetName(), err)
+		log.Error("Machineprovision: error getting capi cluster", "operation", "on_change", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "error", err)
 		return obj, err
 	}
 
 	if capiannotations.IsPaused(capiCluster, infra.meta) {
-		logrus.Debugf("[machineprovision] %s/%s: waiting: CAPI cluster or RKEMachine is paused", infra.meta.GetNamespace(), infra.meta.GetName())
+		log.Debug("Machineprovision: waiting for capi cluster or rke machine to be unpaused", "operation", "on_change", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName())
 		h.EnqueueAfter(infra, 10*time.Second)
 		return obj, generic.ErrSkip
 	}
 
 	if !ptr.Deref(capiCluster.Status.Initialization.InfrastructureProvisioned, false) {
-		logrus.Debugf("[machineprovision] %s/%s: waiting: CAPI cluster infrastructure is not ready", infra.meta.GetNamespace(), infra.meta.GetName())
+		log.Debug("Machineprovision: waiting for capi cluster infrastructure to be ready", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName())
 		h.EnqueueAfter(infra, 10*time.Second)
 		return obj, generic.ErrSkip
 	}
 
 	if machine.Spec.Bootstrap.DataSecretName == nil {
-		logrus.Debugf("[machineprovision] %s/%s: waiting: dataSecretName is not populated on machine spec", infra.meta.GetNamespace(), infra.meta.GetName())
+		log.Debug("Machineprovision: waiting for dataSecretName to be populated on machine spec", "operation", "on_change", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName())
 		h.EnqueueAfter(infra, 10*time.Second)
 		return obj, generic.ErrSkip
 	}
@@ -585,11 +585,11 @@ func (h *handler) OnChange(obj runtime.Object) (runtime.Object, error) {
 			return obj, err
 		}
 		if enqueueTime > 0 {
-			logrus.Infof("[machineprovision] %s/%s: Failed to create infrastructure for machine %s, enqueueing deletion after %s...", infra.meta.GetNamespace(), infra.meta.GetName(), machine.Name, enqueueTime)
+			log.Info("Machineprovision: failed to create infrastructure, enqueueing deletion", "operation", "on_change", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "machine", machine.Name, "enqueue_time", enqueueTime)
 			h.EnqueueAfter(infra, enqueueTime)
 			return obj, nil
 		}
-		logrus.Infof("[machineprovision] %s/%s: Failed to create infrastructure for machine %s, deleting and recreating...", infra.meta.GetNamespace(), infra.meta.GetName(), machine.Name)
+		log.Info("Machineprovision: failed to create infrastructure, deleting and recreating machine", "operation", "on_change", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "machine", machine.Name)
 		if err = h.machineClient.Delete(machine.Namespace, machine.Name, &metav1.DeleteOptions{}); err != nil {
 			return obj, err
 		}
@@ -649,7 +649,7 @@ func parseDeleteOnFailureAfterSetting(infra *infraObject) time.Duration {
 	deleteInfraTimeSetting := settings.DeleteMachineOnFailureAfter.Get()
 	deleteOnFailureAfter, err := time.ParseDuration(deleteInfraTimeSetting)
 	if err != nil {
-		logrus.Warnf("[machineprovision] %s/%s: error parsing the '%s' setting: %v: %v, returning 0", infra.meta.GetNamespace(), infra.meta.GetName(), settings.DeleteMachineOnFailureAfter.Name, deleteInfraTimeSetting, err)
+		log.Warn("Machineprovision: error parsing delete on failure after setting, returning 0", "operation", "parse_delete_on_failure_after_setting", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "setting", settings.DeleteMachineOnFailureAfter.Name, "value", deleteInfraTimeSetting, "error", err)
 		return 0
 	}
 
@@ -677,13 +677,13 @@ func (h *handler) infraMachineDeletionEnqueueingTime(infra *infraObject, current
 
 	jobName := infra.data.String("status", "jobName")
 	if jobName == "" {
-		logrus.Warnf("[machineprovision] %s/%s: no job name found on infraMachine, returning 0", infra.meta.GetNamespace(), infra.meta.GetName())
+		log.Warn("Machineprovision: no job name found on infra machine, returning 0", "operation", "infra_machine_deletion_enqueueing_time", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName())
 		return 0, nil
 	}
 
 	job, err := h.jobs.Get(infra.meta.GetNamespace(), jobName)
 	if apierrors.IsNotFound(err) {
-		logrus.Warnf("[machineprovision] %s/%s: job %s not found, returning 0", infra.meta.GetNamespace(), infra.meta.GetName(), jobName)
+		log.Warn("Machineprovision: job not found, returning 0", "operation", "infra_machine_deletion_enqueueing_time", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "job", jobName)
 		return 0, nil
 	} else if err != nil {
 		return 0, err
@@ -691,7 +691,7 @@ func (h *handler) infraMachineDeletionEnqueueingTime(infra *infraObject, current
 
 	failedTime := jobFailureTime(job)
 	if failedTime == nil {
-		logrus.Warnf("[machineprovision] %s/%s: error getting the failure time for job '%s', returning 0", infra.meta.GetNamespace(), infra.meta.GetName(), job.Name)
+		log.Warn("Machineprovision: error getting job failure time, returning 0", "operation", "infra_machine_deletion_enqueueing_time", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "job", job.Name)
 		return 0, nil
 	}
 
@@ -712,7 +712,7 @@ func (h *handler) infraMachineDeletionEnqueueingTime(infra *infraObject, current
 }
 
 func (h *handler) run(infra *infraObject, create bool) (rkev1.RKEMachineStatus, bool, error) {
-	logrus.Infof("[machineprovision] %s/%s: reconciling machine job", infra.meta.GetNamespace(), infra.meta.GetName())
+	log.Info("Machineprovision: reconciling machine job", "operation", "run", "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "create", create)
 
 	args := infra.data.Map("spec")
 	driver := getNodeDriverName(infra.typeMeta)

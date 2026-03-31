@@ -19,10 +19,10 @@ import (
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	publicclient "github.com/rancher/rancher/pkg/client/generated/management/v3public"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -109,16 +109,16 @@ func (s *Provider) AuthenticateUser(http.ResponseWriter, *http.Request, any) (ap
 func (s *Provider) Logout(w http.ResponseWriter, r *http.Request, token accessor.TokenAccessor) error {
 	providerName := token.GetAuthProvider()
 
-	logrus.Debugf("SAML [logout]: triggered by provider %s", providerName)
+	log.Debug("Logout triggered", "provider", providerName, "operation", "logout")
 
 	provider, ok := SamlProviders[providerName]
 	if !ok {
-		logrus.Debugf("SAML [logout]: Rancher provider resource `%v` not configured at all", providerName)
+		log.Debug("Provider resource not configured", "provider", providerName, "operation", "logout")
 		return fmt.Errorf("SAML [logout]: Rancher provider resource `%v` not configured at all", providerName)
 	}
 
 	if provider.sloForced {
-		logrus.Debugf("SAML [logout]: Rancher provider resource `%v` configured for forced SLO, rejecting regular logout", providerName)
+		log.Debug("Rejecting regular logout", "provider", providerName, "operation", "logout", "reason", "forced_slo_configured")
 		return fmt.Errorf("SAML [logout]: Rancher provider resource `%v` configured for forced SLO, rejecting regular logout", providerName)
 	}
 
@@ -128,16 +128,16 @@ func (s *Provider) Logout(w http.ResponseWriter, r *http.Request, token accessor
 func (s *Provider) LogoutAll(w http.ResponseWriter, r *http.Request, token accessor.TokenAccessor) error {
 	providerName := token.GetAuthProvider()
 
-	logrus.Debugf("SAML [logout-all]: triggered by provider %s", providerName)
+	log.Debug("Logout-all triggered", "provider", providerName, "operation", "logout_all")
 
 	provider, ok := SamlProviders[providerName]
 	if !ok {
-		logrus.Debugf("SAML [logout-all]: Rancher provider resource `%v` not configured at all", providerName)
+		log.Debug("Provider resource not configured", "provider", providerName, "operation", "logout_all")
 		return fmt.Errorf("SAML [logout-all]: Rancher provider resource `%v` not configured at all", providerName)
 	}
 
 	if !provider.sloEnabled {
-		logrus.Debugf("SAML [logout-all]: Rancher provider resource `%v` not configured for SLO", providerName)
+		log.Debug("Provider not configured for SLO", "provider", providerName, "operation", "logout_all")
 		return fmt.Errorf("SAML [logout-all]: Rancher provider resource `%v` not configured for SLO", providerName)
 	}
 
@@ -170,7 +170,7 @@ func (s *Provider) LogoutAll(w http.ResponseWriter, r *http.Request, token acces
 		return err
 	}
 
-	logrus.Debugf("SAML [logout-all]: Redirecting to the identity provider logout page at %v", idpRedirectURL)
+	log.Debug("Redirecting to identity provider logout page", "provider", providerName, "operation", "logout_all", "redirect_url", idpRedirectURL)
 
 	data := map[string]any{
 		"idpRedirectUrl": idpRedirectURL,
@@ -190,15 +190,15 @@ func PerformSamlLogin(r *http.Request, w http.ResponseWriter, name string, input
 	}
 	finalRedirectURL := login.FinalRedirectURL
 
-	logrus.Debugf("SAML [PerformSamlLogin]: Id Provider            (%v)", name)
+	log.Debug("Id provider", "provider", name, "operation", "perform_saml_login")
 
 	if provider, ok := SamlProviders[name]; ok {
 		if provider == nil {
-			logrus.Errorf("SAML: Rancher provider resource %v not initialized", name)
+			log.Error("Provider resource not initialized", "provider", name, "operation", "perform_saml_login")
 			return fmt.Errorf("SAML: Rancher provider resource %v not initialized", name)
 		}
 		if provider.clientState == nil {
-			logrus.Errorf("SAML: Provider %v clientState not set", name)
+			log.Error("Provider client state not set", "provider", name, "operation", "perform_saml_login")
 			return fmt.Errorf("SAML: Provider %v clientState not set", name)
 		}
 
@@ -215,7 +215,7 @@ func PerformSamlLogin(r *http.Request, w http.ResponseWriter, name string, input
 			return err
 		}
 
-		logrus.Debugf("SAML [PerformSamlLogin]: Redirecting to the identity provider login page at %v", idpRedirectURL)
+		log.Debug("Redirecting to identity provider login page", "provider", name, "operation", "perform_saml_login", "redirect_url", idpRedirectURL)
 		data := map[string]any{
 			"idpRedirectUrl": idpRedirectURL,
 			"type":           "samlLoginOutput",
@@ -310,7 +310,7 @@ func (s *Provider) saveSamlConfig(config *apiv3.SamlConfig) error {
 	if s.hasLdapGroupSearch() {
 		combinedConfig, err := s.combineSamlAndLdapConfig(config)
 		if err != nil {
-			logrus.Warnf("problem combining saml and ldap config, saving partial configuration %s", err.Error())
+			log.Warn("Problem combining saml and ldap config, saving partial configuration", "provider", s.name, "operation", "save_saml_config", "error", err)
 		}
 		_, err = s.authConfigs.ObjectClient().Update(config.ObjectMeta.Name, combinedConfig)
 		if err != nil {
@@ -422,7 +422,7 @@ func (s *Provider) isThisUserMe(me, other apiv3.Principal) bool {
 func (s *Provider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []apiv3.Principal) (bool, error) {
 	config, err := s.getSamlConfig()
 	if err != nil {
-		logrus.Errorf("Error fetching saml config: %v", err)
+		log.Error("Error fetching saml config", "provider", s.name, "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 	allowed, err := s.userMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipalID, groupPrincipals)
@@ -466,7 +466,7 @@ func (s *Provider) combineSamlAndLdapConfig(config *apiv3.SamlConfig) (runtime.O
 
 	// can be misconfigured but still want it saved
 	if err != nil {
-		logrus.Warnf("error pulling %s ldap configs: %s\n", s.name, err)
+		log.Warn("Error pulling ldap configs", "provider", s.name, "operation", "combine_saml_and_ldap_config", "error", err)
 
 		// if the the config subkey not in the crd
 		if ldapConfig == nil {

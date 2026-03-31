@@ -10,8 +10,8 @@ import (
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/ticker"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -51,11 +51,11 @@ type nodeMetrics struct {
 
 func (m *nodeMetrics) collect(ctx context.Context) {
 	for range ticker.Context(ctx, reportInterval) {
-		logrus.Debugf("%s collecting nodes to report metrics", logPrefix)
+		log.Debug("Collecting nodes to report metrics", "operation", "collect_node_metrics")
 
 		nodes, err := m.nodeCache.List("", labels.Everything())
 		if err != nil {
-			logrus.Errorf("%s couldn't list v3.Nodes: %v", logPrefix, err)
+			log.Error("Couldn't list v3.Nodes", "operation", "collect_node_metrics", "error", err)
 			continue
 		}
 
@@ -63,7 +63,7 @@ func (m *nodeMetrics) collect(ctx context.Context) {
 		for _, node := range nodes {
 			info, err := m.getNodeInfo(node)
 			if err != nil {
-				logrus.Debugf("%s could not determine node info: %v", logPrefix, err)
+				log.Debug("Could not determine node info", "operation", "collect_node_metrics", "error", err)
 				continue
 			}
 			infos = append(infos, info)
@@ -72,7 +72,7 @@ func (m *nodeMetrics) collect(ctx context.Context) {
 		setMetrics(infos)
 	}
 
-	logrus.Debugf("%s context cancelled, exiting", logPrefix)
+	log.Debug("Context cancelled, exiting", "operation", "collect_node_metrics")
 }
 
 type nodeLabelValues struct {

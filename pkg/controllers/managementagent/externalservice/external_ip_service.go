@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +52,7 @@ func (c *Controller) sync(key string, obj *corev1.Service) (runtime.Object, erro
 	var ipsStr []string
 	err := json.Unmarshal([]byte(obj.Annotations[ExternalIPsAnnotation]), &ipsStr)
 	if err != nil {
-		logrus.Debugf("Failed to unmarshal ipAddresses, error: %v", err)
+		log.Debug("Failed to unmarshal external IPs", "operation", "reconcile_external_ips", "service", key, "error", err)
 		return nil, nil
 	}
 	if ipsStr == nil {
@@ -102,14 +102,14 @@ func (c *Controller) sync(key string, obj *corev1.Service) (runtime.Object, erro
 			},
 			Subsets: newSubsets,
 		}
-		logrus.Infof("Creating endpoints for external ip service [%s]: %v", key, ep.Subsets)
+		log.Info("Creating endpoints for external ip service", "operation", "reconcile_external_ips", "service", key, "subsets_count", len(ep.Subsets))
 		if _, err := c.endpoints.Create(ep); err != nil {
 			return nil, err
 		}
 	} else if subsetsChanged(newSubsets, existing.Subsets) {
 		toUpdate := existing.DeepCopy()
 		toUpdate.Subsets = newSubsets
-		logrus.Infof("Updating endpoints for external ip service [%s]: %v", key, toUpdate.Subsets)
+		log.Info("Updating endpoints for external ip service", "operation", "reconcile_external_ips", "service", key, "subsets_count", len(toUpdate.Subsets))
 		if _, err := c.endpoints.Update(toUpdate); err != nil {
 			return nil, err
 		}

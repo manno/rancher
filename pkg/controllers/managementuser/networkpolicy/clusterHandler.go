@@ -7,9 +7,9 @@ import (
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/controllers/managementuser/nodesyncer"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	wcore "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -56,10 +56,10 @@ func (ch *clusterHandler) Sync(key string, cluster *v3.Cluster) (runtime.Object,
 
 	var err error
 	if toEnable {
-		logrus.Infof("clusterHandler: calling sync to create network policies for cluster %v", cluster.Name)
+		log.Info("Clusterhandler: calling sync to create network policies", "operation", "sync", "cluster", cluster.Name)
 		err = ch.createNetworkPolicies(cluster)
 	} else {
-		logrus.Infof("clusterHandler: deleting network policies for cluster %s", cluster.Name)
+		log.Info("Clusterhandler: deleting network policies for cluster", "operation", "remove", "cluster", cluster.Name)
 		err = ch.deleteNetworkPolicies(cluster)
 	}
 

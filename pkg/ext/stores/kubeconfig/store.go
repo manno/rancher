@@ -22,13 +22,13 @@ import (
 	exttokens "github.com/rancher/rancher/pkg/ext/stores/tokens"
 	ctrlv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	kconfig "github.com/rancher/rancher/pkg/kubeconfig"
+	"github.com/rancher/rancher/pkg/log"
 	v3node "github.com/rancher/rancher/pkg/node"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/user"
 	"github.com/rancher/rancher/pkg/wrangler"
 	extapi "github.com/rancher/steve/pkg/ext"
 	v1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -1009,7 +1009,7 @@ func (s *Store) Watch(
 
 	configMapWatch, err := s.configMapClient.Watch(namespace, *listOptions)
 	if err != nil {
-		logrus.Errorf("kubeconfig: watch: error starting watch: %s", err)
+		log.Error("Kubeconfig watch error starting watch", "operation", "watch_kubeconfig", "error", err)
 		return nil, apierrors.NewInternalError(fmt.Errorf("kubeconfig: watch: error starting watch: %w", err))
 	}
 
@@ -1034,7 +1034,7 @@ func (s *Store) Watch(
 				case watch.Bookmark:
 					configMap, ok := event.Object.(*corev1.ConfigMap)
 					if !ok {
-						logrus.Warnf("kubeconfig: watch: expected configmap got %T", event.Object)
+						log.Warn("Kubeconfig watch expected configmap", "operation", "watch_kubeconfig", "object_type", "unknown")
 						continue
 					}
 
@@ -1050,13 +1050,13 @@ func (s *Store) Watch(
 				case watch.Added, watch.Modified, watch.Deleted:
 					configMap, ok := event.Object.(*corev1.ConfigMap)
 					if !ok {
-						logrus.Warnf("kubeconfig: watch: expected configmap got %T", event.Object)
+						log.Warn("Kubeconfig watch expected configmap", "operation", "watch_kubeconfig", "object_type", "unknown")
 						continue
 					}
 
 					obj, err = s.fromConfigMap(configMap)
 					if err != nil {
-						logrus.Errorf("kubeconfig: watch: error converting configmap %s to kubeconfig: %s", configMap.Name, err)
+						log.Error("Kubeconfig watch error converting configmap to kubeconfig", "operation", "watch_kubeconfig", "configmap", configMap.Name, "error", err)
 						continue
 					}
 				default: // watch.Error

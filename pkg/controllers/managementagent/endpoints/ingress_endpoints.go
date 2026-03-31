@@ -6,7 +6,7 @@ import (
 
 	workloadutil "github.com/rancher/rancher/pkg/controllers/managementagent/workload"
 	"github.com/rancher/rancher/pkg/ingresswrapper"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -53,7 +53,7 @@ func (c *IngressEndpointsController) reconcileEndpointsForIngress(obj ingresswra
 		return false, err
 	}
 
-	logrus.Infof("Updating ingress [%s:%s] with public endpoints [%v]", obj.GetNamespace(), obj.GetName(), epsToUpdate)
+	log.Info("Updating ingress with public endpoints", "operation", "reconcile_endpoints_for_ingress", "namespace", obj.GetNamespace(), "ingress", obj.GetName(), "endpoints", epsToUpdate)
 
 	toUpdate, err := ingresswrapper.ToCompatIngress(obj.DeepCopyObject())
 	if err != nil {

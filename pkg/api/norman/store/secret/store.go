@@ -11,8 +11,8 @@ import (
 	"github.com/rancher/rancher/pkg/api/norman/store/cert"
 	"github.com/rancher/rancher/pkg/api/scheme"
 	client "github.com/rancher/rancher/pkg/client/generated/project/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 )
 
 type Store struct {
@@ -65,7 +65,7 @@ func NewNamespacedSecretStore(ctx context.Context, clientGetter proxy.ClientGett
 					return data, nil
 				}
 				if err := cert.AddCertInfo(data); err != nil {
-					logrus.Errorf("Error %v parsing cert %v. Will not display correctly in UI", err, data["name"])
+					log.Error("Error parsing cert, will not display correctly in UI", "operation", "transformer", "cert_name", data["name"], "error", err)
 					return data, nil
 				}
 				return data, nil

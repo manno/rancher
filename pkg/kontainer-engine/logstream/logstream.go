@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 var (
@@ -73,7 +73,7 @@ func (l *loggerStream) Warnf(msg string, args ...interface{}) {
 }
 
 func (l *loggerStream) Debugf(msg string, args ...interface{}) {
-	logrus.Debugf(msg, args...)
+	log.Debug(fmt.Sprintf(msg, args...))
 }
 
 func (l *loggerStream) write(error bool, msg string, args ...interface{}) {

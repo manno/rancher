@@ -18,8 +18,8 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/management/clusterprovisioner"
 	"github.com/rancher/rancher/pkg/controllers/management/clusterstatus"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 )
@@ -57,7 +57,7 @@ func (t *transformer) transposeGenericConfigToDynamicField(data map[string]inter
 			}
 		}
 		if driver == nil {
-			logrus.Warnf("unable to find the kontainer driver %v that maps to %v", driverName, data[clusterprovisioner.DriverNameField])
+			log.Warn("Unable to find the kontainer driver", "operation", "transpose_generic_config", "driver_name", driverName, "field_driver", data[clusterprovisioner.DriverNameField])
 			return data, nil
 		}
 
@@ -93,7 +93,7 @@ func GetClusterStore(schema *types.Schema, mgmt *config.ScaledContext) *Store {
 
 	dynamicClient, err := dynamic.NewForConfig(&mgmt.RESTConfig)
 	if err != nil {
-		logrus.Warnf("GetClusterStore error creating K8s dynamic client: %v", err)
+		log.Warn("Error creating k8s dynamic client", "operation", "get_cluster_store", "error", err)
 	} else {
 		s.ClusterClient = dynamicClient.Resource(v3.ClusterGroupVersionResource)
 	}

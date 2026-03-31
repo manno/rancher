@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/rancher/rancher/pkg/auth/requests"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/endpoints/request"
@@ -65,7 +65,7 @@ func writeResp(rw http.ResponseWriter, tr *v1.TokenReview) {
 	enc := json.NewEncoder(rw)
 	err := enc.Encode(tr)
 	if err != nil {
-		logrus.Infof("Failed to encode token review response")
+		log.Info("Failed to encode token review response", "operation", "write_resp")
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/rancher/rancher/pkg/kontainer-engine/logstream"
 	"github.com/rancher/rancher/pkg/kontainer-engine/types"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -180,12 +180,12 @@ func (c *Cluster) createInner(ctx context.Context) error {
 
 	var info *types.ClusterInfo
 	if c.Status == Error {
-		logrus.Errorf("Cluster %s previously failed to create", c.Name)
+		log.Error("cluster previously failed to create", "cluster", c.Name)
 		info = toInfo(c)
 	}
 
 	if c.Status == Updating || c.Status == Running || c.Status == PostCheck || c.Status == Init {
-		logrus.Infof("Cluster %s already exists.", c.Name)
+		log.Info("cluster already exists", "cluster", c.Name)
 		return ErrClusterExists
 	}
 
@@ -203,12 +203,12 @@ func (c *Cluster) Update(ctx context.Context) error {
 	}
 
 	if c.Status == Error {
-		logrus.Errorf("Cluster %s previously failed to create", c.Name)
+		log.Error("cluster previously failed to create", "cluster", c.Name)
 		return c.Create(ctx)
 	}
 
 	if c.Status == PreCreating || c.Status == Creating {
-		logrus.Errorf("Cluster %s has not been created.", c.Name)
+		log.Error("cluster has not been created", "cluster", c.Name)
 		return fmt.Errorf("cluster %s has not been created", c.Name)
 	}
 
@@ -307,7 +307,7 @@ func (c *Cluster) Remove(ctx context.Context, forceRemove bool) error {
 		if !forceRemove {
 			return fmt.Errorf("Error removing cluster [%s] with driver [%s]: %v", c.Name, c.DriverName, err)
 		}
-		logrus.Errorf("Error removing cluster [%s] with driver [%s]. Check for stray resources on cloud provider: %v", c.Name, c.DriverName, err)
+		log.Error("error removing cluster, check for stray resources on cloud provider", "cluster", c.Name, "driver", c.DriverName, "error", err)
 	}
 	return c.PersistStore.Remove(c.Name)
 }
@@ -426,9 +426,9 @@ func flattenIfNotExist(data map[string]interface{}, driverOptions *types.DriverO
 				flattenIfNotExist(v, driverOptions)
 			}
 		case nil:
-			logrus.Debugf("could not convert %v because value is nil %v=%v", reflect.TypeOf(v), k, v)
+			log.Debug("could not convert value because it is nil", "type", reflect.TypeOf(v), "key", k, "value", v)
 		default:
-			logrus.Warnf("could not convert %v %v=%v", reflect.TypeOf(v), k, v)
+			log.Warn("could not convert value", "type", reflect.TypeOf(v), "key", k, "value", v)
 		}
 	}
 }

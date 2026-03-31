@@ -17,10 +17,10 @@ import (
 	provv1 "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -98,7 +98,7 @@ func (p *proxy) isAllowed(host string) bool {
 		// this may not always be the case. To prevent potential security issues,
 		// we also check for overly broad domains here and skip them if found.
 		if isOverlyBroad(valid) {
-			logrus.Debugf("Skipping overly broad wildcard match for proxy request: %s", valid)
+		log.Debug("Skipping overly broad wildcard match for proxy request", "host", valid)
 			continue
 		}
 
@@ -142,7 +142,7 @@ func NewProxy(prefix string, validHosts Supplier, scaledContext *config.ScaledCo
 	return &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
 			if err := p.proxy(req); err != nil {
-				logrus.Infof("Failed to proxy: %v", err)
+				log.Info("Failed to proxy", "error", err)
 			}
 		},
 		ModifyResponse: setModifiedHeaders,

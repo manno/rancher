@@ -14,8 +14,8 @@ import (
 	"github.com/rancher/rancher/pkg/auth/tokens"
 	exttokenstore "github.com/rancher/rancher/pkg/ext/stores/tokens"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -63,7 +63,7 @@ func (r *refresher) ensureMaxAgeUpToDate(maxAge string) {
 
 	parsed, err := ParseMaxAge(maxAge)
 	if err != nil {
-		logrus.Errorf("Error parsing max age %v", err)
+		log.Error("Error parsing max age", "operation", "ensure_max_age_up_to_date", "error", err)
 		return
 	}
 	r.unparsedMaxAge = maxAge
@@ -72,15 +72,15 @@ func (r *refresher) ensureMaxAgeUpToDate(maxAge string) {
 
 func (r *refresher) TriggerUserRefresh(userName string, force bool) {
 	if force {
-		logrus.Debugf("Triggering auth refresh manually on %v", userName)
+		log.Debug("Triggering auth refresh manually on user", "operation", "trigger_user_refresh", "user_name", userName)
 	} else {
-		logrus.Debugf("Triggering auth refresh on %v", userName)
+		log.Debug("Triggering auth refresh on user", "operation", "trigger_user_refresh", "user_name", userName)
 	}
 	r.Lock()
 	r.ensureMaxAgeUpToDate(settings.AuthUserInfoMaxAgeSeconds.Get())
 	r.Unlock()
 	if !force && (r.maxAge <= 0) {
-		logrus.Debugf("Skipping refresh trigger on user %v because max age setting is <= 0", userName)
+		log.Debug("Skipping refresh trigger on user because max age setting is <= 0", "operation", "trigger_user_refresh", "user_name", userName)
 		return
 	}
 
@@ -88,14 +88,14 @@ func (r *refresher) TriggerUserRefresh(userName string, force bool) {
 }
 
 func (r *refresher) TriggerAllUserRefresh() {
-	logrus.Debug("Triggering auth refresh manually on all users")
+	log.Debug("Triggering auth refresh manually on all users", "operation", "trigger_all_user_refresh")
 	r.refreshAll(true)
 }
 
 func (r *refresher) refreshAll(force bool) {
 	users, err := r.userLister.List("", labels.Everything())
 	if err != nil {
-		logrus.Errorf("Error listing Users during auth provider refresh: %v", err)
+		log.Error("Error listing users during auth provider refresh", "operation", "refresh_all", "error", err)
 	}
 	for _, user := range users {
 		r.triggerUserRefresh(user.Name, force)
@@ -105,7 +105,7 @@ func (r *refresher) refreshAll(force bool) {
 func (r *refresher) triggerUserRefresh(userName string, force bool) {
 	attribs, needCreate, err := r.ensureAndGetUserAttribute(userName)
 	if err != nil {
-		logrus.Errorf("Error fetching user attribute to trigger refresh: %v", err)
+		log.Error("Error fetching user attribute to trigger refresh", "operation", "trigger_user_refresh", "user_name", userName, "error", err)
 		return
 	}
 	now := time.Now().UTC()
@@ -113,19 +113,19 @@ func (r *refresher) triggerUserRefresh(userName string, force bool) {
 	lastRefresh, _ := time.Parse(time.RFC3339, attribs.LastRefresh)
 	earliestRefresh := lastRefresh.Add(r.maxAge)
 	if !force && now.Before(earliestRefresh) {
-		logrus.Debugf("Skipping refresh for %v due to max-age", userName)
+		log.Debug("Skipping refresh for user due to max-age", "operation", "trigger_user_refresh", "user_name", userName)
 		return
 	}
 
 	user, err := r.userLister.Get("", userName)
 	if err != nil {
-		logrus.Errorf("Error finding user before triggering refresh %v", err)
+		log.Error("Error finding user before triggering refresh", "operation", "trigger_user_refresh", "user_name", userName, "error", err)
 		return
 	}
 
 	for _, principalID := range user.PrincipalIDs {
 		if strings.HasPrefix(principalID, "system://") {
-			logrus.Debugf("Skipping refresh for system-user %v ", userName)
+			log.Debug("Skipping refresh for system-user", "operation", "trigger_user_refresh", "user_name", userName)
 			return
 		}
 	}
@@ -134,16 +134,16 @@ func (r *refresher) triggerUserRefresh(userName string, force bool) {
 	if needCreate {
 		_, err := r.userAttributes.Create(attribs)
 		if err != nil {
-			logrus.Errorf("Error creating user attribute to trigger refresh: %v", err)
+			log.Error("Error creating user attribute to trigger refresh", "operation", "trigger_user_refresh", "user_name", userName, "error", err)
 		}
 	} else {
 		_, err = r.userAttributes.Update(attribs)
 		if err != nil {
 			if apierrors.IsConflict(err) {
 				// User attribute has just been updated, triggering the refresh.
-				logrus.Debugf("Error updating user attribute to trigger refresh: %v", err)
+				log.Debug("Error updating user attribute to trigger refresh", "operation", "trigger_user_refresh", "user_name", userName, "error", err)
 			} else {
-				logrus.Errorf("Error updating user attribute to trigger refresh: %v", err)
+				log.Error("Error updating user attribute to trigger refresh", "operation", "trigger_user_refresh", "user_name", userName, "error", err)
 			}
 		}
 	}
@@ -204,7 +204,7 @@ func (r *refresher) refreshAttributes(attribs *apiv3.UserAttribute) (*v3.UserAtt
 
 		providerDisabled, err := providers.IsDisabledProvider(providerName)
 		if err != nil {
-			logrus.Warnf("Unable to determine if provider %s was disabled, will assume that it isn't with error: %v", providerName, err)
+			log.Warn("Unable to determine if provider was disabled, will assume that it isn't", "operation", "refresh_attributes", "provider", providerName, "error", err)
 			// This is set as false by the return, but it's re-set here to be explicit/safe about the behavior.
 			providerDisabled = false
 		}
@@ -244,13 +244,7 @@ func (r *refresher) refreshAttributes(attribs *apiv3.UserAttribute) (*v3.UserAtt
 					// we no longer want to disable derived tokens, or remove their login tokens for this provider.
 					if err.Error() != "no access" {
 						errorConfirmingLogins = true
-						logrus.Warnf(
-							"Error refreshing token principals for auth provider %s, userattribute %s, principal %s, skipping: %v",
-							providerName,
-							attribs.Name,
-							principalID,
-							err,
-						)
+						log.Warn("Error refreshing token principals for auth provider, skipping", "operation", "refresh_attributes", "provider", providerName, "user_attribute", attribs.Name, "principal", principalID, "error", err)
 						existingPrincipals := attribs.GroupPrincipals[providerName].Items
 						if existingPrincipals != nil {
 							newGroupPrincipals = existingPrincipals

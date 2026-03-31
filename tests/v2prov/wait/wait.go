@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/tests/v2prov/defaults"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +27,7 @@ func ClusterScopedList(ctx context.Context, watchFunc WatchClusterScopedFunc, cb
 func doWatch(ctx context.Context, watchFunc watchFunc, cb func(obj runtime.Object) (bool, error)) (bool, error) {
 	result, err := watchFunc()
 	if err != nil {
-		logrus.Error("watch failed", err)
+		log.Error("Watch failed", err)
 		time.Sleep(2 * time.Second)
 		return false, nil
 	}

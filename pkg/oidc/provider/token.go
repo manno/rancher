@@ -17,10 +17,10 @@ import (
 	"github.com/rancher/rancher/pkg/auth/tokens"
 	wrangmgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	oidcerror "github.com/rancher/rancher/pkg/oidc/provider/error"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/oidc/provider/session"
 	"github.com/rancher/rancher/pkg/settings"
 	corev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -109,7 +109,7 @@ func newTokenHandler(tokenCache wrangmgmtv3.TokenCache,
 func (h *tokenHandler) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		logrus.Debug("[OIDC provider] error parsing request  form values")
+		log.Debug("Error parsing request form values")
 		oidcerror.WriteError(oidcerror.InvalidRequest, fmt.Sprintf("error parsing parameters from request %v", err), http.StatusBadRequest, w)
 		return
 	}
@@ -118,7 +118,7 @@ func (h *tokenHandler) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	case "authorization_code":
 		tokenResponse, oidcErr := h.createTokenFromCode(r)
 		if oidcErr != nil {
-			logrus.Debug("[OIDC provider] error creating token response: " + oidcErr.ToString())
+			log.Debug("Error creating token response", "error", oidcErr.ToString())
 			oidcErr.Write(http.StatusBadRequest, w)
 			return
 		}
@@ -131,7 +131,7 @@ func (h *tokenHandler) tokenEndpoint(w http.ResponseWriter, r *http.Request) {
 	case "refresh_token":
 		tokenResponse, oidcErr := h.createRefreshToken(r)
 		if oidcErr != nil {
-			logrus.Debug("[OIDC provider] error creating refresh token response: " + oidcErr.ToString())
+			log.Debug("Error creating refresh token response", "error", oidcErr.ToString())
 			oidcErr.Write(http.StatusBadRequest, w)
 			return
 		}
@@ -182,7 +182,7 @@ func (h *tokenHandler) createTokenFromCode(r *http.Request) (TokenResponse, *oid
 		if clientSecret == string(cs) {
 			clientSecretFound = true
 			if err := h.updateClientSecretUsedTimeStamp(oidcClient, key); err != nil {
-				logrus.Errorf("[OIDC provider] failed to update client secret's used timestamp: %v", err)
+				log.Error("Failed to update client secret's used timestamp", "error", err)
 			}
 			break
 		}
@@ -208,7 +208,7 @@ func (h *tokenHandler) createTokenFromCode(r *http.Request) (TokenResponse, *oid
 	if oidcErr == nil {
 		err := h.sessionClient.Remove(code)
 		if err != nil && !apierrors.IsNotFound(err) {
-			logrus.Warnf("[OIDC provider] error removing session: %v", err)
+			log.Warn("Could not remove session", "error", err)
 		}
 	}
 
@@ -322,7 +322,7 @@ func (h *tokenHandler) createTokenResponse(rancherToken *v3.Token, oidcClient *v
 	accessToken := CreateAccessToken(oidcClient, rancherToken, scopes, kid, h.now())
 	accessTokenString, err := accessToken.SignedString(key)
 	if err != nil {
-		logrus.Errorf("[OIDC provider] failed to sign access token %v", err)
+		log.Error("Could not sign access token", "error", err)
 		return TokenResponse{}, oidcerror.New(oidcerror.ServerError, fmt.Sprintf("failed to sign access token: %v", err))
 	}
 
@@ -335,7 +335,7 @@ func (h *tokenHandler) createTokenResponse(rancherToken *v3.Token, oidcClient *v
 		idToken := createIDToken(oidcClient, rancherToken, scopes, user, nonce, groups, kid, h.now())
 		idTokenString, err := idToken.SignedString(key)
 		if err != nil {
-			logrus.Errorf("[OIDC provider] failed to sign id token %v", err)
+			log.Error("Could not sign id token", "error", err)
 			return TokenResponse{}, oidcerror.New(oidcerror.ServerError, fmt.Sprintf("failed to sign id token: %v", err))
 		}
 		resp.IDToken = idTokenString
@@ -360,7 +360,7 @@ func (h *tokenHandler) createTokenResponse(rancherToken *v3.Token, oidcClient *v
 		refreshToken.Header["kid"] = kid
 		refreshTokenString, err := refreshToken.SignedString(key)
 		if err != nil {
-			logrus.Errorf("[OIDC provider] failed to sign refresh token %v", err)
+			log.Error("Could not sign refresh token", "error", err)
 			return TokenResponse{}, oidcerror.New(oidcerror.ServerError, fmt.Sprintf("failed to sign refresh token: %v", err))
 		}
 		resp.RefreshToken = refreshTokenString

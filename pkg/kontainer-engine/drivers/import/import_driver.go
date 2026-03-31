@@ -12,7 +12,7 @@ import (
 	"github.com/rancher/rancher/pkg/kontainer-engine/drivers/util"
 	"github.com/rancher/rancher/pkg/kontainer-engine/store"
 	"github.com/rancher/rancher/pkg/kontainer-engine/types"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -61,7 +61,7 @@ func (d *Driver) GetDriverUpdateOptions(ctx context.Context) (*types.DriverFlags
 }
 
 func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, _ *types.ClusterInfo) (*types.ClusterInfo, error) {
-	logrus.Info("importing kubeconfig file into clusters")
+	log.Info("importing kubeconfig file into clusters")
 
 	configPath := opts.StringOptions["kubeConfigPath"]
 
@@ -124,7 +124,7 @@ func (d *Driver) Update(ctx context.Context, clusterInfo *types.ClusterInfo, opt
 }
 
 func (d *Driver) PostCheck(ctx context.Context, info *types.ClusterInfo) (*types.ClusterInfo, error) {
-	logrus.Info("starting post check")
+	log.Info("starting post check")
 
 	capem, err := base64.StdEncoding.DecodeString(info.RootCaCertificate)
 
@@ -169,8 +169,8 @@ func (d *Driver) PostCheck(ctx context.Context, info *types.ClusterInfo) (*types
 		return nil, err
 	}
 
-	logrus.Info("service account token generated successfully")
-	logrus.Info("post-check completed successfully")
+	log.Info("service account token generated successfully")
+	log.Info("post-check completed successfully")
 
 	return info, nil
 }

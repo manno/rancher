@@ -17,7 +17,7 @@ import (
 	wcore "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 
 	cluster2 "github.com/rancher/rancher/pkg/controllers/provisioningv2/cluster"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	knetworkingv1 "k8s.io/api/networking/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -56,10 +56,10 @@ type netpolMgr struct {
 
 func (npmgr *netpolMgr) program(np *knetworkingv1.NetworkPolicy) error {
 	existing, err := npmgr.npLister.Get(np.Namespace, np.Name)
-	logrus.Debugf("netpolMgr: program: existing=%+v, err=%v", existing, err)
+	log.Debug("Netpolmgr: program", "operation", "program", "existing", existing, "error", err)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
-			logrus.Debugf("netpolMgr: program: about to create np=%+v", *np)
+			log.Debug("Netpolmgr: program: about to create np", "operation", "program", "network_policy", *np)
 			_, err = npmgr.npClient.NetworkPolicies(np.Namespace).Create(np)
 			if err != nil && !kerrors.IsAlreadyExists(err) && !kerrors.IsForbidden(err) {
 				return fmt.Errorf("netpolMgr: program: error creating network policy err=%v", err)
@@ -68,15 +68,15 @@ func (npmgr *netpolMgr) program(np *knetworkingv1.NetworkPolicy) error {
 			return fmt.Errorf("netpolMgr: program: got unexpected error while getting network policy=%v", err)
 		}
 	} else {
-		logrus.Debugf("netpolMgr: program: existing=%+v", existing)
+		log.Debug("Netpolmgr: program: existing", "operation", "program", "existing", existing)
 		if existing.DeletionTimestamp == nil && !reflect.DeepEqual(existing.Spec, np.Spec) {
-			logrus.Debugf("netpolMgr: program: about to update np=%+v", *np)
+			log.Debug("Netpolmgr: program: about to update np", "operation", "program", "network_policy", *np)
 			_, err = npmgr.npClient.NetworkPolicies(np.Namespace).Update(np)
 			if err != nil {
 				return fmt.Errorf("netpolMgr: program: error updating network policy err=%v", err)
 			}
 		} else {
-			logrus.Debugf("netpolMgr: program: no need to update np=%+v", *np)
+			log.Debug("Netpolmgr: program: no need to update np", "operation", "program", "network_policy", *np)
 		}
 	}
 	return nil
@@ -84,14 +84,14 @@ func (npmgr *netpolMgr) program(np *knetworkingv1.NetworkPolicy) error {
 
 func (npmgr *netpolMgr) delete(policyNamespace, policyName string) error {
 	existing, err := npmgr.npLister.Get(policyNamespace, policyName)
-	logrus.Debugf("netpolMgr: delete: existing=%+v, err=%v", existing, err)
+	log.Debug("Netpolmgr: delete", "operation", "delete", "existing", existing, "error", err)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			return nil
 		}
 		return fmt.Errorf("netpolMgr: delete: got unexpected error while getting network policy=%v", err)
 	}
-	logrus.Debugf("netpolMgr: delete: existing=%+v", existing)
+	log.Debug("Netpolmgr: delete: existing", "operation", "delete", "existing", existing)
 	err = npmgr.npClient.NetworkPolicies(existing.Namespace).Delete(existing.Name, &v1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("netpolMgr: delete: error deleting network policy err=%v", err)
@@ -100,14 +100,14 @@ func (npmgr *netpolMgr) delete(policyNamespace, policyName string) error {
 }
 
 func (npmgr *netpolMgr) programNetworkPolicy(projectID string, clusterNamespace string) error {
-	logrus.Debugf("netpolMgr: programNetworkPolicy: projectID=%v", projectID)
+	log.Debug("Netpolmgr: programnetworkpolicy", "operation", "program_network_policy", "project_id", projectID)
 	// Get namespaces belonging to project
 	set := labels.Set(map[string]string{nslabels.ProjectIDFieldLabel: projectID})
 	namespaces, err := npmgr.nsLister.List(set.AsSelector())
 	if err != nil {
 		return fmt.Errorf("netpolMgr: couldn't list namespaces with projectID %v err=%v", projectID, err)
 	}
-	logrus.Debugf("netpolMgr: programNetworkPolicy: namespaces=%+v", namespaces)
+	log.Debug("Netpolmgr: programnetworkpolicy: namespaces", "operation", "program_network_policy", "namespaces", namespaces)
 
 	systemNamespaces, systemProjectID, err := npmgr.getSystemNSInfo(clusterNamespace)
 	if err != nil {
@@ -138,12 +138,12 @@ func (npmgr *netpolMgr) programNetworkPolicy(projectID string, clusterNamespace 
 
 			// there are existing network policies in this system project based namespace, skip programming default
 			if len(nps) > 0 {
-				logrus.Debugf("netPolMgr: namespace=%s in project=%s has existing network policies, skipping programming %s", aNS.Name, id, defaultSystemProjectNamespacePolicyName)
+				log.Debug("Netpolmgr: namespace has existing network policies, skipping programming", "operation", "program_network_policy", "namespace", aNS.Name, "project", id, "policy", defaultSystemProjectNamespacePolicyName)
 				continue
 			}
 
 			// program default network policy for system project based namespace
-			logrus.Debugf("netPolMgr: programming %s for namespace=%s in project=%s", defaultSystemProjectNamespacePolicyName, aNS.Name, id)
+			log.Debug("Netpolmgr: programming policy for namespace", "operation", "program_network_policy", "policy", defaultSystemProjectNamespacePolicyName, "namespace", aNS.Name, "project", id)
 			if err := npmgr.program(generateAllowAllNetworkPolicy(aNS, systemProjectID)); err != nil {
 				return fmt.Errorf(
 					"netPolMgr: programNetworkPolicy: error programming network policy %s for system project based namespace=%s err=%v",
@@ -162,7 +162,7 @@ func (npmgr *netpolMgr) programNetworkPolicy(projectID string, clusterNamespace 
 			continue
 		}
 		if aNS.DeletionTimestamp != nil {
-			logrus.Debugf("netpolMgr: programNetworkPolicy: aNS=%+v marked for deletion, skipping", aNS)
+			log.Debug("Netpolmgr: programnetworkpolicy: namespace marked for deletion, skipping", "operation", "program_network_policy", "namespace", aNS)
 			continue
 		}
 
@@ -197,7 +197,7 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 		return err
 	}
 
-	logrus.Debugf("netpolMgr: handleHostNetwork: processing %d nodes", len(nodes))
+	log.Debug("Netpolmgr: handlehostnetwork: processing nodes", "operation", "handle_host_network", "node_count", len(nodes))
 	np := generateNodesNetworkPolicy()
 
 	// This for loop builds CNI specific host network policies to allow traffic from ingress controllers through to endpoints.
@@ -214,8 +214,8 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 				tunnelAddr = node.Annotations[calicoVXLANTunnelAddrAnno]
 			}
 			if tunnelAddr == "" {
-				logrus.Debugf("netpolMgr: handleHostNetwork: calico: node=%+v", node)
-				logrus.Errorf("netpolMgr: handleHostNetwork: calico: couldn't get tunnel address for node %v err=%v", node.Name, err)
+				log.Debug("Netpolmgr: handlehostnetwork: calico: node", "operation", "handle_host_network", "node", node)
+				log.Error("Netpolmgr: handlehostnetwork: calico: couldn't get tunnel address for node", "operation", "handle_host_network", "node", node.Name, "error", err)
 				continue
 			}
 			ipBlock := knetworkingv1.IPBlock{
@@ -228,8 +228,8 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 		// other CNIs
 		podCIDRFirstIP, _, err := net.ParseCIDR(node.Spec.PodCIDR)
 		if err != nil {
-			logrus.Debugf("netpolMgr: handleHostNetwork: node=%+v", node)
-			logrus.Errorf("netpolMgr: handleHostNetwork: couldn't parse PodCIDR(%v) for node %v err=%v", node.Spec.PodCIDR, node.Name, err)
+			log.Debug("Netpolmgr: handlehostnetwork: node", "operation", "handle_host_network", "node", node)
+			log.Error("Netpolmgr: handlehostnetwork: couldn't parse podcidr for node", "operation", "handle_host_network", "podcidr", node.Spec.PodCIDR, "node", node.Name, "error", err)
 			continue
 		}
 		ipBlock := knetworkingv1.IPBlock{
@@ -244,7 +244,7 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 	// An empty ingress rule allows all traffic to the namespace
 	// so we need to skip creating the network policy here if that's what we have.
 	if len(np.Spec.Ingress[0].From) == 0 {
-		logrus.Debugf("netpolMgr: handleHostNetwork: no host addresses found, skipping programming the %s policy", hostNetworkPolicyName)
+		log.Debug("Netpolmgr: handlehostnetwork: no host addresses found, skipping programming policy", "operation", "handle_host_network", "policy", hostNetworkPolicyName)
 		return nil
 	}
 
@@ -269,14 +269,14 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 			continue
 		}
 		if aNS.DeletionTimestamp != nil || aNS.Status.Phase == corev1.NamespaceTerminating {
-			logrus.Debugf("netpolMgr: handleHostNetwork: aNS=%+v marked for deletion/termination, skipping", aNS)
+			log.Debug("Netpolmgr: handlehostnetwork: namespace marked for deletion/termination, skipping", "operation", "handle_host_network", "namespace", aNS)
 			continue
 		}
 		if _, ok := aNS.Labels[nslabels.ProjectIDFieldLabel]; !ok {
 			continue
 		}
 
-		logrus.Debugf("netpolMgr: handleHostNetwork: aNS=%+v", aNS)
+		log.Debug("Netpolmgr: handlehostnetwork: namespace", "operation", "handle_host_network", "namespace", aNS)
 
 		np.OwnerReferences = []v1.OwnerReference{
 			{
@@ -288,7 +288,7 @@ func (npmgr *netpolMgr) handleHostNetwork(clusterNamespace string) error {
 		}
 		np.Namespace = aNS.Name
 		if err := npmgr.program(np); err != nil {
-			logrus.Errorf("netpolMgr: handleHostNetwork: error programming hostNetwork network policy for ns=%v err=%v", aNS.Name, err)
+			log.Error("Netpolmgr: handlehostnetwork: error programming hostnetwork network policy", "operation", "handle_host_network", "namespace", aNS.Name, "error", err)
 		}
 	}
 	return nil
@@ -496,9 +496,9 @@ func (npmgr *netpolMgr) SyncDefaultNetworkPolicies(key string, np *rnetworkingv1
 	}
 
 	if np == nil {
-		logrus.Debugf("netpolMgr: SyncDefaultNetworkPolicies: default network policy %s in namespace %s was deleted", npName, nsName)
+		log.Debug("Netpolmgr: syncdefaultnetworkpolicies: default network policy was deleted", "operation", "sync_default_policies", "policy", npName, "namespace", nsName)
 	} else {
-		logrus.Debugf("netpolMgr: SyncDefaultNetworkPolicies: default network policy %s in namespace %s was edited", npName, nsName)
+		log.Debug("Netpolmgr: syncdefaultnetworkpolicies: default network policy was edited", "operation", "sync_default_policies", "policy", npName, "namespace", nsName)
 	}
 
 	if npName == hostNetworkPolicyName {

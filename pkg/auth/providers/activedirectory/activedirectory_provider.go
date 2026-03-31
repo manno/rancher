@@ -16,11 +16,11 @@ import (
 	v3client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3public"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -227,7 +227,7 @@ func newCAPool(cert string) (*x509.CertPool, error) {
 func (p *adProvider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []v3.Principal) (bool, error) {
 	config, _, err := p.getActiveDirectoryConfig()
 	if err != nil {
-		logrus.Errorf("Error fetching AD config: %v", err)
+		log.Error("Error fetching AD config", "provider", "activedirectory", "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 	allowed, err := p.userMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipalID, groupPrincipals)

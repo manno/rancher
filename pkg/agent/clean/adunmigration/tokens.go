@@ -6,7 +6,7 @@ import (
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v3norman "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -23,15 +23,19 @@ func identifyTokens(workunits *[]migrateUserWorkUnit, tokenList *v3.TokenList) {
 			if workUnitContainsName(&(*workunits)[index], token.UserID) {
 				(*workunits)[index].activeDirectoryTokens = append((*workunits)[index].activeDirectoryTokens, token)
 			} else {
-				logrus.Warnf("[%v] found token for user with guid-based principal '%v' and name '%v', but no user object with that name matches the GUID or its associated DN. refusing to process",
-					identifyAdUserOperation, token.UserPrincipal.Name, token.UserID)
+				log.Warn("Found token for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+					"operation", identifyAdUserOperation,
+					"principal", token.UserPrincipal.Name,
+					"user", token.UserID)
 			}
 		} else if index, exists = duplicateLocalWorkUnitsByPrincipal[token.UserPrincipal.Name]; exists {
 			if workUnitContainsName(&(*workunits)[index], token.UserID) {
 				(*workunits)[index].duplicateLocalTokens = append((*workunits)[index].duplicateLocalTokens, token)
 			} else {
-				logrus.Warnf("[%v] found token for user with guid-based principal '%v' and name '%v', but no user object with that name matches the GUID or its associated DN. refusing to process",
-					identifyAdUserOperation, token.UserPrincipal.Name, token.UserID)
+				log.Warn("Found token for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+					"operation", identifyAdUserOperation,
+					"principal", token.UserPrincipal.Name,
+					"user", token.UserID)
 			}
 		}
 	}
@@ -40,7 +44,10 @@ func identifyTokens(workunits *[]migrateUserWorkUnit, tokenList *v3.TokenList) {
 func updateToken(tokenInterface v3norman.TokenInterface, userToken v3.Token, newPrincipalID string, guid string, targetUser *v3.User, targetPrincipal *v3.Principal) error {
 	latestToken, err := tokenInterface.Get(userToken.Name, metav1.GetOptions{})
 	if err != nil {
-		logrus.Errorf("[%v] token %s no longer exists: %v", migrateTokensOperation, userToken.Name, err)
+		log.Error("Token no longer exists",
+			"operation", migrateTokensOperation,
+			"token_name", userToken.Name,
+			"error", err)
 		return nil
 	}
 	if latestToken.Annotations == nil {
@@ -73,7 +80,9 @@ func updateToken(tokenInterface v3norman.TokenInterface, userToken v3.Token, new
 		_, err = tokenInterface.Update(latestToken)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				logrus.Errorf("[%v] internal error while updating token, will backoff and retry: %v", migrateTokensOperation, err)
+				log.Error("Internal error while updating token, will backoff and retry",
+					"operation", migrateTokensOperation,
+					"error", err)
 				return false, err
 			}
 			return true, fmt.Errorf("[%v] unable to update token: %w", migrateTokensOperation, err)
@@ -92,13 +101,18 @@ func migrateTokens(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryR
 	dnPrincipalID := activeDirectoryPrefix + workunit.distinguishedName
 	for _, userToken := range workunit.activeDirectoryTokens {
 		if dryRun {
-			logrus.Infof("[%v] DRY RUN: would migrate token '%v' from GUID principal '%v' to DN principal '%v'. "+
-				"Would add annotation, %v, and label, %v, to indicate migration status",
-				migrateTokensOperation, userToken.Name, userToken.UserPrincipal.Name, dnPrincipalID, adGUIDMigrationAnnotation, adGUIDMigrationLabel)
+			log.Info("DRY RUN: would migrate token from GUID principal to DN principal",
+				"operation", migrateTokensOperation,
+				"token_name", userToken.Name,
+				"old_principal", userToken.UserPrincipal.Name,
+				"new_principal", dnPrincipalID)
 		} else {
 			err := updateToken(tokenInterface, userToken, dnPrincipalID, workunit.guid, workunit.originalUser, workunit.principal)
 			if err != nil {
-				logrus.Errorf("[%v] error while migrating tokens for user '%v': %v", migrateTokensOperation, workunit.originalUser.Name, err)
+				log.Error("Error while migrating tokens for user",
+					"operation", migrateTokensOperation,
+					"user", workunit.originalUser.Name,
+					"error", err)
 			}
 		}
 	}
@@ -106,13 +120,18 @@ func migrateTokens(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryR
 	localPrincipalID := localPrefix + workunit.originalUser.Name
 	for _, userToken := range workunit.duplicateLocalTokens {
 		if dryRun {
-			logrus.Infof("[%v] DRY RUN: would migrate Token '%v' from duplicate local user '%v' to original user '%v'. "+
-				"Would add annotation, %v, and label, %v, to indicate migration status",
-				migrateTokensOperation, userToken.Name, userToken.UserPrincipal.Name, localPrincipalID, adGUIDMigrationAnnotation, adGUIDMigrationLabel)
+			log.Info("DRY RUN: would migrate token from duplicate local user to original user",
+				"operation", migrateTokensOperation,
+				"token_name", userToken.Name,
+				"old_principal", userToken.UserPrincipal.Name,
+				"new_principal", localPrincipalID)
 		} else {
 			err := updateToken(tokenInterface, userToken, localPrincipalID, workunit.guid, workunit.originalUser, workunit.principal)
 			if err != nil {
-				logrus.Errorf("[%v] error while migrating tokens for user '%v': %v", migrateTokensOperation, workunit.originalUser.Name, err)
+				log.Error("Error while migrating tokens for user",
+					"operation", migrateTokensOperation,
+					"user", workunit.originalUser.Name,
+					"error", err)
 			}
 		}
 	}

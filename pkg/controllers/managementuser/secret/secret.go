@@ -12,9 +12,9 @@ import (
 	apimgmtv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/capr"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,7 +81,7 @@ func (c *ResourceSyncController) bootstrap(mgmtClusterClient v3.ClusterInterface
 		return fmt.Errorf("failed to list secrets in %v namespace: %w", c.namespace, err)
 	}
 
-	logrus.Debugf("[pre-bootstrap][secrets] looking for secrets-to synchronize to cluster %v", c.clusterName)
+	log.Debug("Looking for secrets to synchronize to cluster", "operation", "sync_bootstrap_secrets", "cluster", c.clusterName)
 
 	for _, sec := range secrets.Items {
 		s := &sec
@@ -90,14 +90,14 @@ func (c *ResourceSyncController) bootstrap(mgmtClusterClient v3.ClusterInterface
 			continue
 		}
 
-		logrus.Debugf("[pre-bootstrap-sync][secrets] syncing secret %v/%v to cluster %v", s.Namespace, s.Name, c.clusterName)
+		log.Debug("Syncing secret to cluster", "operation", "sync_bootstrap_secrets", "secret", fmt.Sprintf("%s/%s", s.Namespace, s.Name), "cluster", c.clusterName)
 
 		_, err = c.sync("", s)
 		if err != nil {
 			return fmt.Errorf("failed to synchronize secret %v/%v to cluster %v: %w", s.Namespace, s.Name, c.clusterName, err)
 		}
 
-		logrus.Debugf("[pre-boostrap-sync][secret] successfully synced secret %v/%v to downstream cluster %v", s.Namespace, s.Name, c.clusterName)
+		log.Debug("Successfully synced secret to downstream cluster", "operation", "sync_bootstrap_secrets", "secret", fmt.Sprintf("%s/%s", s.Namespace, s.Name), "cluster", c.clusterName)
 	}
 
 	apimgmtv3.ClusterConditionPreBootstrapped.True(mgmtCluster)
@@ -171,7 +171,7 @@ func (c *ResourceSyncController) sync(_ string, obj *corev1.Secret) (*corev1.Sec
 		ns = obj.Namespace
 	}
 
-	logrus.Debugf("[resource-sync][secret] synchronizing %v/%v to %v/%v for cluster %v", obj.Namespace, obj.Name, ns, name, c.clusterName)
+	log.Debug("Synchronizing secret", "operation", "resource_sync", "source_secret", fmt.Sprintf("%s/%s", obj.Namespace, obj.Name), "target", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
 
 	var targetSecret *corev1.Secret
 	var err error
@@ -180,7 +180,7 @@ func (c *ResourceSyncController) sync(_ string, obj *corev1.Secret) (*corev1.Sec
 	}
 
 	if targetSecret == nil || errors.IsNotFound(err) {
-		logrus.Debugf("[resource-sync][secret] creating secret %v/%v in cluster %v", ns, name, c.clusterName)
+		log.Debug("Creating secret in cluster", "operation", "resource_sync", "secret", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
 
 		newSecret := &corev1.Secret{
 			Type:       obj.Type,
@@ -195,7 +195,7 @@ func (c *ResourceSyncController) sync(_ string, obj *corev1.Secret) (*corev1.Sec
 			return nil, fmt.Errorf("failed to create secret %v/%v in cluster %v: %w", ns, name, c.clusterName, err)
 		}
 	} else if !reflect.DeepEqual(c.removeClusterIdFromSecretData(targetSecret).Data, obj.Data) {
-		logrus.Debugf("[resource-sync][secret] updating secret %v/%v in cluster %v", ns, name, c.clusterName)
+		log.Debug("Updating secret in cluster", "operation", "resource_sync", "secret", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
 
 		targetSecret.Data = obj.Data
 		targetSecret = c.injectClusterIdIntoSecretData(targetSecret)
@@ -205,11 +205,11 @@ func (c *ResourceSyncController) sync(_ string, obj *corev1.Secret) (*corev1.Sec
 			return nil, fmt.Errorf("failed to update secret %v/%v in cluster %v: %w", ns, name, c.clusterName, err)
 		}
 	} else {
-		logrus.Debugf("[resource-sync][secret] skipping downstream update - contents are the same")
+		log.Debug("Skipping downstream update - contents are the same", "operation", "resource_sync")
 		return obj, nil
 	}
 
-	logrus.Debugf("[resource-sync][secret] successfully synchronized secret %v/%v to %v/%v for cluster %v", obj.Namespace, obj.Name, ns, name, c.clusterName)
+	log.Debug("Successfully synchronized secret", "operation", "resource_sync", "source_secret", fmt.Sprintf("%s/%s", obj.Namespace, obj.Name), "target", fmt.Sprintf("%s/%s", ns, name), "cluster", c.clusterName)
 
 	obj.Annotations[syncedAtAnnotation] = time.Now().Format(time.RFC3339)
 	return obj, nil

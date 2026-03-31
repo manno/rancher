@@ -5,7 +5,7 @@ import (
 
 	"github.com/rancher/rancher/pkg/controllers/managementuser/nodesyncer"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -24,7 +24,7 @@ func (nh *nodeHandler) Sync(key string, machine *v3.Node) (runtime.Object, error
 		if disabled {
 			return nil, nil
 		}
-		logrus.Debugf("nodeHandler: Sync: key=%v", key)
+		log.Debug("Nodehandler: sync", "operation", "sync", "key", key)
 		return nil, nh.npmgr.handleHostNetwork(nh.clusterNamespace)
 	}
 	return nil, nil

@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/apiserver/pkg/apierror"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,7 +35,7 @@ func Connect(config *v3.LdapConfig, caPool *x509.CertPool) (*ldapv3.Conn, error)
 }
 
 func NewLDAPConn(servers []string, TLS, startTLS bool, port int64, connectionTimeout int64, caPool *x509.CertPool) (*ldapv3.Conn, error) {
-	logrus.Debug("Now creating Ldap connection")
+	log.Debug("Creating ldap connection", "operation", "new_ldap_conn")
 	var (
 		lConn     *ldapv3.Conn
 		err       error
@@ -99,7 +99,7 @@ func HasPermission(attributes []*ldapv3.EntryAttribute, userObjectClass string, 
 				if len(attr.Values) > 0 && attr.Values[0] != "" {
 					intAttr, err := strconv.ParseInt(attr.Values[0], 10, 64)
 					if err != nil {
-						logrus.Errorf("Failed to get USER_ENABLED_ATTRIBUTE, error: %v", err)
+						log.Error("Failed to get USER_ENABLED_ATTRIBUTE", "operation", "has_permission", "error", err)
 						return false
 					}
 					permission = intAttr
@@ -118,13 +118,13 @@ func IsType(search []*ldapv3.EntryAttribute, varType string) bool {
 		if strings.EqualFold(attrib.Name, "objectClass") {
 			for _, val := range attrib.Values {
 				if strings.EqualFold(val, varType) {
-					logrus.Debugf("ldap IsType found object of type %s", varType)
+					log.Debug("Ldap IsType found object of type", "operation", "is_type", "type", varType)
 					return true
 				}
 			}
 		}
 	}
-	logrus.Debugf("ldap IsType failed to determine if object is type: %s", varType)
+	log.Debug("Ldap IsType failed to determine if object is type", "operation", "is_type", "type", varType)
 	return false
 }
 
@@ -138,7 +138,7 @@ func GetAttributeValuesByName(search []*ldapv3.EntryAttribute, attributeName str
 }
 
 func AuthenticateServiceAccountUser(serviceAccountPassword string, serviceAccountUsername string, defaultLoginDomain string, lConn ldapv3.Client) error {
-	logrus.Debug("Binding service account username password")
+	log.Debug("Binding service account username password", "operation", "authenticate_service_account_user")
 	if serviceAccountPassword == "" {
 		return apierror.NewAPIError(validation.MissingRequired, "service account password not provided")
 	}
@@ -246,7 +246,7 @@ func GatherParentGroups(groupPrincipal v3.Principal, searchDomain string, groupS
 		entry := resultGroups.Entries[i]
 		principal, err := AttributesToPrincipal(entry.Attributes, entry.DN, groupScope, config.ProviderName, config.UserObjectClass, config.UserNameAttribute, config.UserLoginAttribute, config.GroupObjectClass, config.GroupNameAttribute)
 		if err != nil {
-			logrus.Errorf("Error translating group result: %v", err)
+			log.Error("Error translating group result", "operation", "gather_parent_groups", "error", err)
 			continue
 		}
 		principals = append(principals, *principal)

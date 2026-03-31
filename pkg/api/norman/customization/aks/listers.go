@@ -21,7 +21,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/mcuadros/go-version"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 type virtualNetworksResponseBody struct {
@@ -259,7 +259,7 @@ func listKubernetesUpgradeVersions(ctx context.Context, clusterLister mgmtv3.Clu
 	var upgradeVersions map[string]bool
 	for _, v := range res.Values {
 		if v == nil {
-			logrus.Warning("unexpected nil version")
+			log.Warn("Unexpected nil version", "operation", "list_kubernetes_upgrade_versions")
 			continue
 		}
 

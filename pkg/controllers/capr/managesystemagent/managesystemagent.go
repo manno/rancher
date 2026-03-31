@@ -20,6 +20,7 @@ import (
 	v3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	provisioningcontrollers "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
 	v1 "github.com/rancher/rancher/pkg/generated/controllers/rke.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	namespaces "github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/provisioningv2/image"
 	"github.com/rancher/rancher/pkg/settings"
@@ -28,7 +29,6 @@ import (
 	upgradev1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
 	"github.com/rancher/wrangler/v3/pkg/apply"
 	corev1controllers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -95,11 +95,11 @@ func (h *handler) InstallSystemAgentUpgrader(_ string, cluster *rancherv1.Cluste
 		return cluster, nil
 	}
 	if settings.SystemAgentUpgradeImage.Get() == "" {
-		logrus.Debugf("[managesystemagent] cluster %s/%s: the SystemAgentUpgradeImage setting is not set, skip installing system-agent-upgrader", cluster.Namespace, cluster.Name)
+		log.Debug("SystemAgentUpgradeImage setting not set, skipping system-agent-upgrader installation", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 		return cluster, fmt.Errorf("[managesystemagent] cluster %s/%s: the SystemAgentUpgradeImage setting is not set", cluster.Namespace, cluster.Name)
 	}
 	if settings.SystemUpgradeControllerChartVersion.Get() == "" {
-		logrus.Debugf("[managesystemagent] cluster %s/%s: the SystemUpgradeControllerChartVersion setting is not set, skip installing system-agent-upgrader", cluster.Namespace, cluster.Name)
+		log.Debug("SystemUpgradeControllerChartVersion setting not set", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 		return cluster, fmt.Errorf("[managesystemagent] cluster %s/%s: the SystemUpgradeControllerChartVersion setting is not set", cluster.Namespace, cluster.Name)
 	}
 	// Skip if Rancher does not have a connection to the cluster
@@ -116,21 +116,19 @@ func (h *handler) InstallSystemAgentUpgrader(_ string, cluster *rancherv1.Cluste
 		return cluster, err
 	}
 	if capr.SystemUpgradeControllerReady.GetStatus(cp) == "" {
-		logrus.Debugf("[managesystemagent] cluster %s/%s: SystemUpgradeControllerReady condition is not found, skip installing system-agent-upgrader", cluster.Namespace, cluster.Name)
+		log.Debug("SystemUpgradeControllerReady condition not found, skipping installation", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 		return cluster, nil
 	}
 	// Skip if the system-upgrade-controller app is not ready or the target version has not been installed,
 	// because new Plans may depend on functionality of a new version of the system-upgrade-controller app
 	if !capr.SystemUpgradeControllerReady.IsTrue(cp) {
-		logrus.Debugf("[managesystemagent] cluster %s/%s: waiting for system-upgrade-controller to be ready (reason: %s)",
-			cluster.Namespace, cluster.Name, capr.SystemUpgradeControllerReady.GetReason(cp))
+		log.Debug("Waiting for system-upgrade-controller to be ready", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "reason", capr.SystemUpgradeControllerReady.GetReason(cp))
 		return cluster, nil
 	}
 
 	targetVersion := settings.SystemUpgradeControllerChartVersion.Get()
 	if targetVersion != capr.SystemUpgradeControllerReady.GetMessage(cp) {
-		logrus.Debugf("[managesystemagent] cluster %s/%s: waiting for system-upgrade-controller to be upgraded to %s",
-			cluster.Namespace, cluster.Name, targetVersion)
+		log.Debug("Waiting for system-upgrade-controller upgrade", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "target_version", targetVersion)
 		return cluster, nil
 	}
 
@@ -182,9 +180,7 @@ func (h *handler) InstallSystemAgentUpgrader(_ string, cluster *rancherv1.Cluste
 
 	val, ok := cp.Annotations[AppliedSystemAgentUpgraderHashAnnotation]
 	if ok && hash == val {
-		logrus.Debugf("[managesystemagent] cluster %s/%s: applied templates for system-agent-upgrader is up to date. "+
-			"To trigger a force redeployment, remove the %s annotation from the conresponding rkeControlPlane object",
-			cluster.Namespace, cluster.Name, AppliedSystemAgentUpgraderHashAnnotation)
+		log.Debug("Applied templates for system-agent-upgrader is up to date", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 		return cluster, nil
 	}
 
@@ -196,7 +192,7 @@ func (h *handler) InstallSystemAgentUpgrader(_ string, cluster *rancherv1.Cluste
 	installCounter.Add(1)
 	defer installCounter.Add(-1)
 
-	logrus.Infof("[managesystemagent] cluster %s/%s: applying system-agent-upgrader templates", cluster.Namespace, cluster.Name)
+	log.Info("Applying system-agent-upgrader templates", "operation", "sync_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 	// Construct a Wrangler's Apply object
 	kcSecret, err := h.secrets.Cache().Get(cluster.Namespace, cluster.Status.ClientSecretName)
 	if err != nil {
@@ -493,11 +489,11 @@ func (h *handler) UninstallFleetBasedApps(_ string, cluster *rancherv1.Cluster) 
 	}
 
 	if settings.SystemAgentUpgradeImage.Get() == "" {
-		logrus.Debugf("[managesystemagent] cluster %s/%s: the SystemAgentUpgradeImage setting is not set, skip uninstalling Fleet-based apps", cluster.Namespace, cluster.Name)
+		log.Debug("SystemAgentUpgradeImage setting not set, skipping uninstall", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 		return cluster, fmt.Errorf("[managesystemagent] cluster %s/%s: the SystemAgentUpgradeImage setting is not set", cluster.Namespace, cluster.Name)
 	}
 	if settings.SystemUpgradeControllerChartVersion.Get() == "" {
-		logrus.Debugf("[managesystemagent] cluster %s/%s: the SystemUpgradeControllerChartVersion setting is not set, skip uninstalling Fleet-based apps", cluster.Namespace, cluster.Name)
+		log.Debug("SystemUpgradeControllerChartVersion setting not set, skipping uninstall", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 		return cluster, fmt.Errorf("[managesystemagent] cluster %s/%s: the SystemUpgradeControllerChartVersion setting is not set", cluster.Namespace, cluster.Name)
 	}
 
@@ -517,7 +513,7 @@ func (h *handler) UninstallFleetBasedApps(_ string, cluster *rancherv1.Cluster) 
 		return cluster, err
 	}
 	if bundle != nil && bundle.DeletionTimestamp == nil {
-		logrus.Infof("[managesystemagent] cluster %s/%s: uninstalling the bundle %s", cluster.Namespace, cluster.Name, bundle.Name)
+		log.Info("Uninstalling the bundle", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "bundle", bundle.Name)
 		err := h.bundles.Delete(bundle.Namespace, bundle.Name, &metav1.DeleteOptions{})
 		if err == nil {
 			dropAnnotation = true
@@ -533,7 +529,7 @@ func (h *handler) UninstallFleetBasedApps(_ string, cluster *rancherv1.Cluster) 
 		return cluster, err
 	}
 	if managedChart != nil && managedChart.DeletionTimestamp == nil {
-		logrus.Infof("[managesystemagent] cluster %s/%s: uninstalling the managedChart %s", cluster.Namespace, cluster.Name, sucName)
+		log.Info("Uninstalling the managedChart", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name), "chart", sucName)
 		err := h.managedCharts.Delete(managedChart.Namespace, managedChart.Name, &metav1.DeleteOptions{})
 		if err == nil {
 			dropAnnotation = true
@@ -559,7 +555,7 @@ func (h *handler) UninstallFleetBasedApps(_ string, cluster *rancherv1.Cluster) 
 	if _, ok := cp.Annotations[AppliedSystemAgentUpgraderHashAnnotation]; !ok {
 		return cluster, nil
 	}
-	logrus.Debugf("[managesystemagent] cluster %s/%s: removing AppliedSystemAgentUpgraderHashAnnotation", cluster.Namespace, cluster.Name)
+	log.Debug("Removing AppliedSystemAgentUpgraderHashAnnotation", "operation", "cleanup_system_agent_upgrader", "cluster", fmt.Sprintf("%s/%s", cluster.Namespace, cluster.Name))
 	cp = cp.DeepCopy()
 	delete(cp.Annotations, AppliedSystemAgentUpgraderHashAnnotation)
 	if _, err = h.rkeControlPlanes.Update(cp); err != nil {

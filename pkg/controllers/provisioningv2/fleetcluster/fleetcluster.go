@@ -15,11 +15,11 @@ import (
 	fleetcontrollers "github.com/rancher/rancher/pkg/generated/controllers/fleet.cattle.io/v1alpha1"
 	v3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	rocontrollers "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/provisioningv2/image"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/taints"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
 
 	fleet "github.com/rancher/fleet/pkg/apis/fleet.cattle.io/v1alpha1"
 	"github.com/rancher/wrangler/v3/pkg/apply"
@@ -295,13 +295,13 @@ func (h *handler) createCluster(cluster *provv1.Cluster, status provv1.ClusterSt
 func (h *handler) addAPIServer(clientSecret string) {
 	secret, err := h.secretsController.Cache().Get(fleetpkg.ClustersLocalNamespace, clientSecret)
 	if err != nil {
-		logrus.Warnf("local cluster provisioning: failed to get client secret: %v", err)
+		log.Warn("Failed to get client secret", "operation", "local_cluster_provisioning", "error", err)
 		return
 	}
 
 	host, ca, err := h.hostGetter.GetClusterHost(h.clientConfig)
 	if err != nil {
-		logrus.Warnf("local cluster provisioning: failed to get internal API server URL: %v", err)
+		log.Warn("Failed to get internal API server URL", "operation", "local_cluster_provisioning", "error", err)
 		return
 	}
 
@@ -309,7 +309,7 @@ func (h *handler) addAPIServer(clientSecret string) {
 	secret.Data["apiServerCA"] = ca
 
 	if _, err := h.secretsController.Update(secret); err != nil {
-		logrus.Warnf("local cluster provisioning: failed to update client secret: %v", err)
+		log.Warn("Failed to update client secret", "operation", "local_cluster_provisioning", "error", err)
 	}
 }
 

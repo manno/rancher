@@ -11,10 +11,10 @@ import (
 	"github.com/rancher/rancher/pkg/capr"
 	"github.com/rancher/rancher/pkg/capr/planner"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/systemtemplate"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 )
 
 func NewRetriever(clients *wrangler.CAPIContext) *Retriever {
@@ -73,7 +73,7 @@ func (r *Retriever) GeneratePreBootstrapClusterAgentManifest(controlPlane *rkev1
 func (r *Retriever) preBootstrapCluster(cp *rkev1.RKEControlPlane) (bool, error) {
 	mgmtCluster, err := r.mgmtClusterCache.Get(cp.Spec.ManagementClusterName)
 	if err != nil {
-		logrus.Warnf("[pre-bootstrap] failed to get management cluster [%v] for rke control plane [%v]: %v", cp.Spec.ManagementClusterName, cp.Name, err)
+		log.Warn("Failed to get management cluster for rke control plane", "operation", "pre_bootstrap", "mgmt_cluster", cp.Spec.ManagementClusterName, "control_plane", cp.Name, "error", err)
 		return false, fmt.Errorf("failed to get mgmt Cluster %v: %w", cp.Spec.ManagementClusterName, err)
 	}
 

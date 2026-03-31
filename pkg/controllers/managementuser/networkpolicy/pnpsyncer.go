@@ -2,7 +2,7 @@ package networkpolicy
 
 import (
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -15,6 +15,6 @@ func (pnps *projectNetworkPolicySyncer) Sync(key string, pnp *v3.ProjectNetworkP
 	if pnp == nil || pnp.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	logrus.Debugf("projectNetworkPolicySyncer: Sync: pnp=%+v", pnp)
+	log.Debug("Projectnetworkpolicysyncer: sync", "operation", "sync", "pnp", pnp.Name)
 	return nil, pnps.npmgr.programNetworkPolicy(pnp.Namespace, pnps.npmgr.clusterNamespace)
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/rancher/norman/types/convert"
 	v1 "github.com/rancher/rancher/pkg/apis/provisioning.cattle.io/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -32,13 +32,13 @@ func (h *handler) cloudConfigSecretRemover(_ string, cluster *v1.Cluster) (*v1.C
 
 		// ensure the secret format is proper
 		if len(namespaceAndName) != 2 {
-			logrus.Errorf("[cloud-config-secret-remover] error encountered while handling secrets deletion for cloud-provider-config: provided secret value is not of form secret://namespace:name")
+			log.Error("Provided secret value is not of form secret://namespace:name", "operation", "remove_cloud_config_secret")
 			continue
 		}
 
 		secret, err := h.migrator.secrets.GetNamespaced(namespaceAndName[0], namespaceAndName[1], metav1.GetOptions{})
 		if err != nil {
-			logrus.Errorf("[cloud-config-secret-remover] error encountered while retrieving secret %s:%s defined within cloud-provider-config: %s", namespaceAndName[0], namespaceAndName[1], err)
+			log.Error("Error retrieving secret defined within cloud-provider-config", "operation", "remove_cloud_config_secret", "namespace", namespaceAndName[0], "secret", namespaceAndName[1], "error", err)
 			continue
 		}
 

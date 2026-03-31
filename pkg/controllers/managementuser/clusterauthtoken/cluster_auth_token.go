@@ -10,7 +10,7 @@ import (
 	extcontrollers "github.com/rancher/rancher/pkg/generated/controllers/ext.cattle.io/v1"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	clusterv3 "github.com/rancher/rancher/pkg/generated/norman/cluster.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -38,7 +38,7 @@ func (h *clusterAuthTokenHandler) sync(key string, clusterAuthToken *clusterv3.C
 	}
 
 	tokenName := clusterAuthToken.Name
-	logrus.Debugf("[%s] sync key %q, cluster auth token %q", clusterAuthTokenController, key, tokenName)
+	log.Debug("Sync cluster auth token", "operation", "sync_cluster_auth_token", "controller", clusterAuthTokenController, "key", key, "token", tokenName)
 
 	// check ext token first, if feature is enabled
 	if h.extTokenCache != nil {
@@ -61,7 +61,7 @@ func (h *clusterAuthTokenHandler) sync(key string, clusterAuthToken *clusterv3.C
 				return nil, fmt.Errorf("error updating lastUsedAt for token %s: %w", tokenName, err)
 			}
 
-			logrus.Debugf("[%s] Updated lastUsedAt for token %s", clusterAuthTokenController, tokenName)
+			log.Debug("Updated lastUsedAt for token", "operation", "update_last_used", "controller", clusterAuthTokenController, "token", tokenName)
 
 			return clusterAuthToken, nil
 		}
@@ -108,7 +108,7 @@ func (h *clusterAuthTokenHandler) sync(key string, clusterAuthToken *clusterv3.C
 		return nil, fmt.Errorf("error updating lastUsedAt for token %s: %v", tokenName, err)
 	}
 
-	logrus.Debugf("[%s] Updated lastUsedAt for token %s", clusterAuthTokenController, tokenName)
+	log.Debug("Updated lastUsedAt for token", "operation", "update_last_used", "controller", clusterAuthTokenController, "token", tokenName)
 
 	return clusterAuthToken, nil
 }

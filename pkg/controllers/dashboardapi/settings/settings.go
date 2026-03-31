@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -165,7 +165,7 @@ func (s *settingsProvider) SetAll(settingsMap map[string]settings.Setting) error
 	s.fallback = fallback
 
 	if err := s.cleanupUnknownSettings(settingsMap); err != nil {
-		logrus.Errorf("Error cleaning up unknown settings: %v", err)
+		log.Error("Error cleaning up unknown settings", "operation", "set_all", "error", err)
 	}
 
 	return nil
@@ -186,11 +186,11 @@ func (s *settingsProvider) cleanupUnknownSettings(settingsMap map[string]setting
 
 		err = s.settings.Delete(setting.Name, &metav1.DeleteOptions{})
 		if err != nil {
-			logrus.Errorf("Error deleting unknown setting %s: %v", setting.Name, err)
+			log.Error("Error deleting unknown setting", "operation", "cleanup_unknown_settings", "setting", setting.Name, "error", err)
 			continue
 		}
 
-		logrus.Warnf("Deleted unknown setting %s", setting.Name)
+		log.Warn("Deleted unknown setting", "operation", "cleanup_unknown_settings", "setting", setting.Name)
 	}
 
 	return nil

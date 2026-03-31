@@ -7,7 +7,7 @@ import (
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/kontainer-engine/cluster"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -18,7 +18,7 @@ const (
 func NewPersistentStore(namespaces v1.NamespaceInterface, secretsGetter v1.SecretsGetter, clusterClient v3.ClusterInterface) cluster.PersistentStore {
 	store, err := encryptedstore.NewGenericEncryptedStore("c-", "", namespaces, secretsGetter)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal("Failed to create encrypted store", "error", err)
 	}
 
 	return &engineStore{

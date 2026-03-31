@@ -13,7 +13,7 @@ import (
 	rkev1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1/plan"
 	"github.com/rancher/rancher/pkg/capr"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/utils/ptr"
 )
@@ -126,7 +126,10 @@ func (p *Planner) rotateEncryptionKeys(controlPlane *rkev1.RKEControlPlane, stat
 	if supported, err := encryptionKeyRotationSupported(releaseData); err != nil {
 		return status, err
 	} else if !supported {
-		logrus.Debugf("rkecluster %s/%s: marking encryption key rotation phase as failed as it was not supported by version: %s", controlPlane.Namespace, controlPlane.Name, controlPlane.Spec.KubernetesVersion)
+		log.Debug("Marking encryption key rotation phase as failed as it was not supported by version",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name,
+			"kubernetes_version", controlPlane.Spec.KubernetesVersion)
 		return p.setEncryptionKeyRotateState(status, controlPlane.Spec.RotateEncryptionKeys, rkev1.RotateEncryptionKeysPhaseFailed)
 	}
 
@@ -136,22 +139,31 @@ func (p *Planner) rotateEncryptionKeys(controlPlane *rkev1.RKEControlPlane, stat
 
 	if !ptr.Deref(status.Initialization.ControlPlaneInitialized, false) {
 		// cluster is not yet initialized, so return nil for now.
-		logrus.Warnf("[planner] rkecluster %s/%s: skipping encryption key rotation as cluster was not initialized", controlPlane.Namespace, controlPlane.Name)
+		log.Warn("Skipping encryption key rotation as cluster was not initialized",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name)
 		return status, nil
 	}
 
 	found, joinServer, initNode, err := p.findInitNode(controlPlane, clusterPlan)
 	if err != nil {
-		logrus.Errorf("[planner] rkecluster %s/%s: error encountered while searching for init node during encryption key rotation: %v", controlPlane.Namespace, controlPlane.Name, err)
+		log.Error("Error encountered while searching for init node during encryption key rotation",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name,
+			"error", err)
 		return status, err
 	}
 	if !found || joinServer == "" {
-		logrus.Warnf("[planner] rkecluster %s/%s: skipping encryption key rotation as cluster does not have an init node", controlPlane.Namespace, controlPlane.Name)
+		log.Warn("Skipping encryption key rotation as cluster does not have an init node",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name)
 		return status, nil
 	}
 
 	if shouldRestartEncryptionKeyRotation(controlPlane) {
-		logrus.Debugf("[planner] rkecluster %s/%s: starting/restarting encryption key rotation", controlPlane.Namespace, controlPlane.Name)
+		log.Debug("Starting/restarting encryption key rotation",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name)
 		return p.setEncryptionKeyRotateState(status, controlPlane.Spec.RotateEncryptionKeys, rkev1.RotateEncryptionKeysPhasePrepare)
 	}
 
@@ -165,7 +177,10 @@ func (p *Planner) rotateEncryptionKeys(controlPlane *rkev1.RKEControlPlane, stat
 		return status, errWaitingf("elected %s as control plane leader for encryption key rotation", leader.Machine.Name)
 	}
 
-	logrus.Debugf("[planner] rkecluster %s/%s: current encryption key rotation phase: [%s]", controlPlane.Namespace, controlPlane.Spec.ClusterName, controlPlane.Status.RotateEncryptionKeysPhase)
+	log.Debug("Current encryption key rotation phase",
+		"namespace", controlPlane.Namespace,
+		"cluster_name", controlPlane.Spec.ClusterName,
+		"phase", controlPlane.Status.RotateEncryptionKeysPhase)
 
 	switch controlPlane.Status.RotateEncryptionKeysPhase {
 	case rkev1.RotateEncryptionKeysPhasePrepare:
@@ -352,13 +367,18 @@ func encryptionKeyRotationIsEtcdAndNotControlPlaneAndNotLeaderAndInit(controlPla
 func (p *Planner) encryptionKeyRotationRestartNodes(controlPlane *rkev1.RKEControlPlane, status rkev1.RKEControlPlaneStatus, tokensSecret plan.Secret, clusterPlan *plan.Plan, leader *planEntry, initNode *planEntry, joinServer string) (rkev1.RKEControlPlaneStatus, error) {
 	// in certain cases with multi-node setups, we must restart the init node before we can proceed to restarting the leader.
 	if !isInitNode(leader) {
-		logrus.Debugf("[planner] rkecluster %s/%s: leader %s was not the init node, finding and restarting etcd nodes", controlPlane.Namespace, controlPlane.Name, leader.Machine.Name)
+		log.Debug("Leader was not the init node, finding and restarting etcd nodes",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name,
+			"leader_machine_name", leader.Machine.Name)
 
 		_, status, err := p.encryptionKeyRotationRestartService(controlPlane, status, tokensSecret, joinServer, initNode, false, "")
 		if err != nil {
 			return status, err
 		}
-		logrus.Debugf("[planner] rkecluster %s/%s: collecting etcd and not control plane", controlPlane.Namespace, controlPlane.Name)
+		log.Debug("Collecting etcd and not control plane",
+			"namespace", controlPlane.Namespace,
+			"cluster_name", controlPlane.Name)
 		for _, entry := range collect(clusterPlan, encryptionKeyRotationIsEtcdAndNotControlPlaneAndNotLeaderAndInit(controlPlane)) {
 			_, status, err = p.encryptionKeyRotationRestartService(controlPlane, status, tokensSecret, joinServer, entry, false, "")
 			if err != nil {
@@ -372,7 +392,9 @@ func (p *Planner) encryptionKeyRotationRestartNodes(controlPlane *rkev1.RKEContr
 		return status, err
 	}
 
-	logrus.Debugf("[planner] rkecluster %s/%s: collecting control plane and not leader and init nodes", controlPlane.Namespace, controlPlane.Name)
+	log.Debug("Collecting control plane and not leader and init nodes",
+		"namespace", controlPlane.Namespace,
+		"cluster_name", controlPlane.Name)
 	for _, entry := range collect(clusterPlan, encryptionKeyRotationIsControlPlaneAndNotLeaderAndInit(controlPlane)) {
 		var stage string
 		stage, status, err = p.encryptionKeyRotationRestartService(controlPlane, status, tokensSecret, joinServer, entry, true, leaderStage)
@@ -513,7 +535,10 @@ func (p *Planner) encryptionKeyRotationLeaderPhaseReconcile(controlPlane *rkev1.
 	if err != nil {
 		if IsErrWaiting(err) {
 			if strings.HasPrefix(err.Error(), "starting") {
-				logrus.Infof("[planner] rkecluster %s/%s: applying encryption key rotation stage command: [%s]", controlPlane.Namespace, controlPlane.Spec.ClusterName, apply.Args[1])
+				log.Info("Applying encryption key rotation stage command",
+					"namespace", controlPlane.Namespace,
+					"cluster_name", controlPlane.Spec.ClusterName,
+					"command", apply.Args[1])
 			}
 			return status, err
 		}
@@ -537,7 +562,10 @@ func (p *Planner) encryptionKeyRotationLeaderPhaseReconcile(controlPlane *rkev1.
 		}
 	}
 	// successful restart, complete same phases for rotate & reencrypt
-	logrus.Infof("[planner] rkecluster %s/%s: successfully applied encryption key rotation stage command: [%s]", controlPlane.Namespace, controlPlane.Spec.ClusterName, leader.Plan.Plan.Instructions[0].Args[1])
+	log.Info("Successfully applied encryption key rotation stage command",
+		"namespace", controlPlane.Namespace,
+		"cluster_name", controlPlane.Spec.ClusterName,
+		"command", leader.Plan.Plan.Instructions[0].Args[1])
 	return status, nil
 }
 

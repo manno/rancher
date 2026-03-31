@@ -7,8 +7,8 @@ import (
 	rkev1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1/plan"
 	"github.com/rancher/rancher/pkg/capr"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/sirupsen/logrus"
 )
 
 // clearInitNodeMark removes the init node label on the given machine and updates the machine directly against the api
@@ -44,7 +44,9 @@ func (p *Planner) setInitNodeMark(entry *planEntry) error {
 // findAndDesignateFixedInitNode is used for rancherd where an exact machine (determined by labeling the
 // rkecontrolplane object) is desired to be the init node
 func (p *Planner) findAndDesignateFixedInitNode(rkeControlPlane *rkev1.RKEControlPlane, plan *plan.Plan) (bool, string, *planEntry, error) {
-	logrus.Debugf("rkecluster %s/%s: finding and designating fixed init node", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName)
+	log.Debug("Finding and designating fixed init node",
+		"namespace", rkeControlPlane.Namespace,
+		"cluster_name", rkeControlPlane.Spec.ClusterName)
 	fixedMachineID := rkeControlPlane.Labels[capr.InitNodeMachineIDLabel]
 	if fixedMachineID == "" {
 		return false, "", nil, fmt.Errorf("fixed machine ID label did not exist on rkecontrolplane")
@@ -58,7 +60,10 @@ func (p *Planner) findAndDesignateFixedInitNode(rkeControlPlane *rkev1.RKEContro
 		return false, "", nil, fmt.Errorf("fixed machine with ID %s not found", fixedMachineID)
 	}
 	if entries[0].Metadata.Labels[capr.InitNodeLabel] != "true" {
-		logrus.Debugf("rkecluster %s/%s: setting designated init node to fixedMachineID: %s", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, fixedMachineID)
+		log.Debug("Setting designated init node to fixedMachineID",
+			"namespace", rkeControlPlane.Namespace,
+			"cluster_name", rkeControlPlane.Spec.ClusterName,
+			"fixed_machine_id", fixedMachineID)
 		allInitNodes := collect(plan, isEtcd)
 		// clear all init node marks and return a generic.ErrSkip if we invalidated caches during clearing
 		cachesInvalidated := false
@@ -80,7 +85,10 @@ func (p *Planner) findAndDesignateFixedInitNode(rkeControlPlane *rkev1.RKEContro
 
 		return true, entries[0].Metadata.Annotations[capr.JoinURLAnnotation], entries[0], p.setInitNodeMark(entries[0])
 	}
-	logrus.Debugf("rkecluster %s/%s: designated init node %s found", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, fixedMachineID)
+	log.Debug("Designated init node found",
+		"namespace", rkeControlPlane.Namespace,
+		"cluster_name", rkeControlPlane.Spec.ClusterName,
+		"fixed_machine_id", fixedMachineID)
 	return true, entries[0].Metadata.Annotations[capr.JoinURLAnnotation], entries[0], nil
 }
 
@@ -89,7 +97,9 @@ func (p *Planner) findAndDesignateFixedInitNode(rkeControlPlane *rkev1.RKEContro
 // is a more suitable init node. Notably, if multiple init nodes are found, it will return false as it could not come to
 // consensus on a single init node
 func (p *Planner) findInitNode(rkeControlPlane *rkev1.RKEControlPlane, plan *plan.Plan) (bool, string, *planEntry, error) {
-	logrus.Debugf("rkecluster %s/%s searching for init node", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName)
+	log.Debug("Searching for init node",
+		"namespace", rkeControlPlane.Namespace,
+		"cluster_name", rkeControlPlane.Spec.ClusterName)
 	// if the rkecontrolplane object has an InitNodeMachineID label, we need to find the fixedInitNode.
 	if rkeControlPlane.Labels[capr.InitNodeMachineIDLabel] != "" {
 		return p.findAndDesignateFixedInitNode(rkeControlPlane, plan)
@@ -110,14 +120,22 @@ func (p *Planner) findInitNode(rkeControlPlane *rkev1.RKEControlPlane, plan *pla
 			initNodeFound = true
 			initNode = entry
 			joinURL := entry.Metadata.Annotations[capr.JoinURLAnnotation]
-			logrus.Debugf("rkecluster %s/%s found current init node %s with joinURL: %s", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, entry.Machine.Name, joinURL)
+			log.Debug("Found current init node",
+				"namespace", rkeControlPlane.Namespace,
+				"cluster_name", rkeControlPlane.Spec.ClusterName,
+				"machine_name", entry.Machine.Name,
+				"join_url", joinURL)
 			if joinURL != "" {
 				return true, joinURL, entry, nil
 			}
 		}
 	}
 
-	logrus.Debugf("rkecluster %s/%s: initNodeFound was %t and joinURL is empty", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, initNodeFound)
+	log.Debug("InitNodeFound status and joinURL state",
+		"namespace", rkeControlPlane.Namespace,
+		"cluster_name", rkeControlPlane.Spec.ClusterName,
+		"init_node_found", initNodeFound,
+		"join_url_empty", true)
 	// If the current init node has an empty joinURL annotation, we can look to see if there are other init nodes that are more suitable
 	if initNodeFound {
 		// if the init node was found but doesn't have a joinURL, let's see if there is possible a more suitable init node.
@@ -129,7 +147,9 @@ func (p *Planner) findInitNode(rkeControlPlane *rkev1.RKEControlPlane, plan *pla
 			}
 		}
 		// if we got through all possibleInitNodes (or there weren't any other possible init nodes), return true that we found an init node with no error.
-		logrus.Debugf("rkecluster %s/%s: init node with empty JoinURLAnnotation was found, no suitable alternatives exist", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName)
+		log.Debug("Init node with empty JoinURLAnnotation was found, no suitable alternatives exist",
+			"namespace", rkeControlPlane.Namespace,
+			"cluster_name", rkeControlPlane.Spec.ClusterName)
 		return true, "", initNode, nil
 	}
 
@@ -140,15 +160,22 @@ func (p *Planner) findInitNode(rkeControlPlane *rkev1.RKEControlPlane, plan *pla
 // (using findInitNode), then will perform a re-election of the most suitable init node (one with a joinURL) and fall back to simply
 // electing the first possible init node if no fully populated init node is found.
 func (p *Planner) electInitNode(rkeControlPlane *rkev1.RKEControlPlane, plan *plan.Plan, allowReelection bool) (string, error) {
-	logrus.Debugf("rkecluster %s/%s: determining if election of init node is necessary", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName)
+	log.Debug("Determining if election of init node is necessary",
+		"namespace", rkeControlPlane.Namespace,
+		"cluster_name", rkeControlPlane.Spec.ClusterName)
 	if initNodeFound, joinURL, _, err := p.findInitNode(rkeControlPlane, plan); (initNodeFound && err == nil) || errors.Is(err, generic.ErrSkip) {
-		logrus.Debugf("rkecluster %s/%s: init node was already elected and found with joinURL: %s", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, joinURL)
+		log.Debug("Init node was already elected and found",
+			"namespace", rkeControlPlane.Namespace,
+			"cluster_name", rkeControlPlane.Spec.ClusterName,
+			"join_url", joinURL)
 		return joinURL, err
 	} else if !initNodeFound && rkeControlPlane.Labels[capr.InitNodeMachineIDLabel] != "" {
 		return "", errWaitingf("unable to find designated init node matching machine ID %s", rkeControlPlane.Labels[capr.InitNodeMachineIDLabel])
 	}
 	// If the joinURL (or an errSkip) was not found, re-elect the init node.
-	logrus.Debugf("rkecluster %s/%s: performing election of init node", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName)
+	log.Debug("Performing election of init node",
+		"namespace", rkeControlPlane.Namespace,
+		"cluster_name", rkeControlPlane.Spec.ClusterName)
 
 	// keep track of whether we invalidate our machine cache when we clear init node marks across nodes.
 	cachesInvalidated := false
@@ -157,7 +184,10 @@ func (p *Planner) electInitNode(rkeControlPlane *rkev1.RKEControlPlane, plan *pl
 		if !allowReelection {
 			return "", errWaitingf("rkecluster %s/%s: re-election of init machine %s/%s disallowed", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, entry.Machine.Namespace, entry.Machine.Name)
 		}
-		logrus.Debugf("rkecluster %s/%s: clearing init node mark on machine %s", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, entry.Machine.Name)
+		log.Debug("Clearing init node mark on machine",
+			"namespace", rkeControlPlane.Namespace,
+			"cluster_name", rkeControlPlane.Spec.ClusterName,
+			"machine_name", entry.Machine.Name)
 		if err := p.clearInitNodeMark(entry); errors.Is(err, generic.ErrSkip) {
 			cachesInvalidated = true
 		} else if err != nil {
@@ -173,7 +203,11 @@ func (p *Planner) electInitNode(rkeControlPlane *rkev1.RKEControlPlane, plan *pl
 	// Mark the first init node that has a joinURL as our new init node.
 	for _, entry := range possibleInitNodes {
 		if joinURL := entry.Metadata.Annotations[capr.JoinURLAnnotation]; joinURL != "" {
-			logrus.Debugf("rkecluster %s/%s: found %s as fully suitable init node with joinURL: %s", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, entry.Machine.Name, joinURL)
+			log.Debug("Found fully suitable init node",
+				"namespace", rkeControlPlane.Namespace,
+				"cluster_name", rkeControlPlane.Spec.ClusterName,
+				"machine_name", entry.Machine.Name,
+				"join_url", joinURL)
 			// it is likely that the error returned by `electInitNode` is going to be `generic.ErrSkip`
 			return joinURL, p.setInitNodeMark(entry)
 		}
@@ -181,11 +215,16 @@ func (p *Planner) electInitNode(rkeControlPlane *rkev1.RKEControlPlane, plan *pl
 
 	if len(possibleInitNodes) > 0 {
 		fallbackInitNode := possibleInitNodes[0]
-		logrus.Debugf("rkecluster %s/%s: no fully suitable init node was found, marking %s as init node as fallback", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, fallbackInitNode.Machine.Name)
+		log.Debug("No fully suitable init node was found, marking as init node as fallback",
+			"namespace", rkeControlPlane.Namespace,
+			"cluster_name", rkeControlPlane.Spec.ClusterName,
+			"machine_name", fallbackInitNode.Machine.Name)
 		return "", p.setInitNodeMark(fallbackInitNode)
 	}
 
-	logrus.Debugf("rkecluster %s/%s: failed to elect init node, no suitable init nodes were found", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName)
+	log.Debug("Failed to elect init node, no suitable init nodes were found",
+		"namespace", rkeControlPlane.Namespace,
+		"cluster_name", rkeControlPlane.Spec.ClusterName)
 	return "", errWaiting("waiting for viable init node")
 }
 
@@ -196,7 +235,10 @@ func (p *Planner) designateInitNodeByMachineID(rkeControlPlane *rkev1.RKEControl
 	if machineID == "" {
 		return "", fmt.Errorf("machineID cannot be empty when designating init node")
 	}
-	logrus.Debugf("rkecluster %s/%s: ensuring designated init node for machine ID: %s", rkeControlPlane.Namespace, rkeControlPlane.Spec.ClusterName, machineID)
+	log.Debug("Ensuring designated init node for machine ID",
+		"namespace", rkeControlPlane.Namespace,
+		"cluster_name", rkeControlPlane.Spec.ClusterName,
+		"machine_id", machineID)
 	entries := collect(plan, isEtcd)
 	cacheInvalidated := false
 	joinURL := ""

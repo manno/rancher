@@ -23,6 +23,7 @@ import (
 	v1 "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/catalogv2/oci"
 	"github.com/rancher/rancher/pkg/controllers/dashboard/helm"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/tests/integration/pkg/defaults"
 	"github.com/rancher/shepherd/clients/rancher"
 	"github.com/rancher/shepherd/clients/rancher/catalog"
@@ -31,7 +32,6 @@ import (
 	"github.com/rancher/shepherd/pkg/api/steve/catalog/types"
 	"github.com/rancher/shepherd/pkg/session"
 	rancherWait "github.com/rancher/shepherd/pkg/wait"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -987,7 +987,7 @@ func (c *ClusterRepoTestSuite) testClusterRepoRetries(params ClusterRepoParams) 
 
 		for _, condition := range cr.Status.Conditions {
 			if v1.RepoCondition(condition.Type) == v1.RepoDownloaded {
-				logrus.Infof("Condition Status (Actual/Wanted): %s/%s, Number of Retries (Actual/Wanted): %d/%d", condition.Status, corev1.ConditionFalse, cr.Status.NumberOfRetries, retryNumber)
+				log.Info("Condition status and retry count", "actual_status", condition.Status, "wanted_status", corev1.ConditionFalse, "actual_retries", cr.Status.NumberOfRetries, "wanted_retries", retryNumber)
 				if condition.Status == corev1.ConditionFalse && cr.Status.NumberOfRetries == retryNumber {
 					retryNumber++
 					return false, nil
@@ -1000,19 +1000,18 @@ func (c *ClusterRepoTestSuite) testClusterRepoRetries(params ClusterRepoParams) 
 	})
 
 	if err != nil {
-		logrus.Infof("ClusterRepo Status Details:")
-		logrus.Infof("ResourceVersion: %s", cr.ResourceVersion)
-		logrus.Infof("Conditions: %+v", cr.Status.Conditions)
-		logrus.Infof("NumberOfRetries: %d", cr.Status.NumberOfRetries)
-		logrus.Infof("DownloadTime: %s", cr.Status.DownloadTime)
-		logrus.Infof("ObservedGeneration: %d", cr.Status.ObservedGeneration)
-		logrus.Infof("Meta Generation: %d", cr.Generation)
-		logrus.Infof("Branch: %s", cr.Status.Branch)
-		logrus.Infof("Commit: %s", cr.Status.Commit)
-		logrus.Infof("NumberOfRetries: %d", cr.Status.NumberOfRetries)
-		logrus.Infof("NextRetryAt: %s", cr.Status.NextRetryAt)
-		logrus.Infof("ShouldNotSkip: %t", cr.Status.ShouldNotSkip)
-		logrus.Infof("ExponentialBackOffValues: %+v", cr.Spec.ExponentialBackOffValues)
+		log.Info("Cluster repo status details",
+			"resource_version", cr.ResourceVersion,
+			"conditions", cr.Status.Conditions,
+			"retries", cr.Status.NumberOfRetries,
+			"download_time", cr.Status.DownloadTime,
+			"observed_generation", cr.Status.ObservedGeneration,
+			"meta_generation", cr.Generation,
+			"branch", cr.Status.Branch,
+			"commit", cr.Status.Commit,
+			"next_retry_at", cr.Status.NextRetryAt,
+			"should_not_skip", cr.Status.ShouldNotSkip,
+			"exponential_backoff_values", cr.Spec.ExponentialBackOffValues)
 	}
 	require.NoError(c.T(), err)
 
@@ -1098,7 +1097,7 @@ func setClusterRepoURL(spec *v1.RepoSpec, repoType RepoType, URL string) {
 func getOutboundIP() net.IP {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 	defer conn.Close()
 

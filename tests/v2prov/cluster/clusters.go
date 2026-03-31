@@ -26,7 +26,7 @@ import (
 	"github.com/rancher/rancher/tests/v2prov/wait"
 	"github.com/rancher/wrangler/v3/pkg/condition"
 	"github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,7 +61,7 @@ func New(clients *clients.Clients, cluster *provisioningv1api.Cluster) (*provisi
 
 	if defaults.PrimeMode == "1" && defaults.PrimeRegistryHost != "" {
 		appendGlobalRegistrySelector(cluster, defaults.PrimeRegistryHost)
-		logrus.Infof("Prime registry active")
+		log.Info("Prime registry active")
 	}
 
 	if cluster.Spec.RKEConfig != nil {
@@ -152,7 +152,7 @@ func WaitForCreate(clients *clients.Clients, c *provisioningv1api.Cluster) (_ *p
 		if err != nil {
 			data, newErr := GatherDebugData(clients, c)
 			if newErr != nil {
-				logrus.Error(newErr)
+				log.Error("Error", "error", newErr)
 			}
 			//nolint:revive
 			err = fmt.Errorf("cluster %s creation wait failed on: %w\ncluster %s test data bundle: \n%s\n", c.Name, err, c.Name, data)
@@ -243,7 +243,7 @@ func WaitForControlPlane(clients *clients.Clients, c *provisioningv1api.Cluster,
 		if err != nil {
 			data, newErr := GatherDebugData(clients, c)
 			if newErr != nil {
-				logrus.Error(newErr)
+				log.Error("Error", "error", newErr)
 			}
 			//nolint:revive
 			err = fmt.Errorf("cluster %s %s wait failed on: %w\ncluster %s test data bundle: \n%s\n", c.Name, errorPrefix, err, c.Name, data)
@@ -271,7 +271,7 @@ func WaitForDelete(clients *clients.Clients, c *provisioningv1api.Cluster) (_ *p
 		if err != nil {
 			data, newErr := GatherDebugData(clients, c)
 			if newErr != nil {
-				logrus.Error(newErr)
+				log.Error("Error", "error", newErr)
 			}
 			//nolint:revive
 			err = fmt.Errorf("cluster %s delete wait failed on: %w\ncluster %s test data bundle: \n%s\n", c.Name, err, c.Name, data)
@@ -406,13 +406,13 @@ func getPodFileContents(podNamespace, podName, podPath string) (string, error) {
 
 	cmd := exec.Command("kubectl", kcp...)
 	if err := cmd.Run(); err != nil {
-		logrus.Errorf("error running kubectl -n %s cp %s:%s %s", podNamespace, podName, podPath, destFile)
+		log.Error("Error running kubectl cp", "namespace", podNamespace, "pod", podName, "src", podPath, "dest", destFile)
 		return "", nil
 	}
 
 	file, err := os.Open(destFile)
 	if err != nil {
-		logrus.Errorf("error retrieving destination file %s: %v", destFile, err)
+		log.Error("Error retrieving destination file", "file", destFile, "error", err)
 		return "", nil
 	}
 	defer file.Close()
@@ -428,13 +428,13 @@ func getPodFileContents(podNamespace, podName, podPath string) (string, error) {
 func GatherDebugData(clients *clients.Clients, c *provisioningv1api.Cluster) (string, error) {
 	newC, newErr := clients.Provisioning.Cluster().Get(c.Namespace, c.Name, metav1.GetOptions{})
 	if newErr != nil {
-		logrus.Errorf("failed to get cluster %s/%s to print error: %v", c.Namespace, c.Name, newErr)
+		log.Error("Failed to get cluster to print error", "namespace", c.Namespace, "cluster", c.Name, "error", newErr)
 		newC = nil
 	}
 
 	newControlPlane, newErr := clients.RKE.RKEControlPlane().Get(c.Namespace, c.Name, metav1.GetOptions{})
 	if newErr != nil {
-		logrus.Errorf("failed to get controlplane %s/%s to print error: %v", c.Namespace, c.Name, newErr)
+		log.Error("Failed to get controlplane to print error", "namespace", c.Namespace, "cluster", c.Name, "error", newErr)
 		newControlPlane = nil
 	}
 
@@ -444,19 +444,19 @@ func GatherDebugData(clients *clients.Clients, c *provisioningv1api.Cluster) (st
 
 	machines, newErr := Machines(clients, c)
 	if newErr != nil {
-		logrus.Errorf("failed to get machines for %s/%s to print error: %v", c.Namespace, c.Name, newErr)
+		log.Error("Failed to get machines to print error", "namespace", c.Namespace, "cluster", c.Name, "error", newErr)
 	} else {
 		for _, machine := range machines.Items {
 			rb, newErr := clients.RKE.RKEBootstrap().Get(machine.Namespace, machine.Spec.Bootstrap.ConfigRef.Name, metav1.GetOptions{})
 			if newErr != nil {
-				logrus.Errorf("failed to get RKEBootstrap %s/%s to print error: %v", c.Namespace, c.Name, newErr)
+				log.Error("Failed to get RKEBootstrap to print error", "namespace", c.Namespace, "cluster", c.Name, "error", newErr)
 			} else {
 				rkeBootstraps = append(rkeBootstraps, rb)
 			}
 
 			im, newErr := external.GetObjectFromContractVersionedRef(clients.Ctx, clients.Client, machine.Spec.InfrastructureRef, machine.Namespace)
 			if newErr != nil {
-				logrus.Errorf("failed to get infrastructure machine %s/%s: %v", machine.Namespace, machine.Spec.InfrastructureRef.Name, newErr)
+				log.Error("Failed to get infrastructure machine", "namespace", machine.Namespace, "machine", machine.Spec.InfrastructureRef.Name, "error", newErr)
 			} else {
 				infraMachines = append(infraMachines, im)
 				if machine.Spec.InfrastructureRef.Kind == "PodMachine" {
@@ -472,7 +472,7 @@ func GatherDebugData(clients *clients.Clients, c *provisioningv1api.Cluster) (st
 		LabelSelector: "custom-cluster-name=" + c.Name,
 	})
 	if newErr != nil {
-		logrus.Errorf("failed to list custommachine pods: %v", newErr)
+		log.Error("Failed to list custommachine pods", "error", newErr)
 	} else {
 		for _, pod := range customPods.Items {
 			podLogs[pod.Name] = populatePodLogs(clients, newControlPlane, pod.Namespace, pod.Name)
@@ -483,14 +483,14 @@ func GatherDebugData(clients *clients.Clients, c *provisioningv1api.Cluster) (st
 		LabelSelector: "cluster.x-k8s.io/cluster-name=" + c.Name,
 	})
 	if newErr != nil {
-		logrus.Errorf("failed to get rkebootstrap templates for %s/%s to print error: %v", c.Namespace, c.Name, newErr)
+		log.Error("Failed to get rkebootstrap templates to print error", "namespace", c.Namespace, "cluster", c.Name, "error", newErr)
 	}
 
 	mgmtCluster, newErr := clients.Mgmt.Cluster().Get(c.Status.ClusterName, metav1.GetOptions{})
 	if apierrors.IsNotFound(newErr) {
 		mgmtCluster = nil
 	} else if newErr != nil {
-		logrus.Errorf("failed to get mgmt cluster %s/%s to print error: %v", c.Namespace, c.Name, newErr)
+		log.Error("Failed to get mgmt cluster to print error", "namespace", c.Namespace, "cluster", c.Name, "error", newErr)
 	}
 
 	var infraCluster *unstructured.Unstructured
@@ -501,33 +501,32 @@ func GatherDebugData(clients *clients.Clients, c *provisioningv1api.Cluster) (st
 	if apierrors.IsNotFound(newErr) {
 		capiCluster = nil
 	} else if newErr != nil {
-		logrus.Errorf("failed to get capi cluster %s/%s to print error: %v", c.Namespace, c.Name, newErr)
+		log.Error("Failed to get capi cluster to print error", "namespace", c.Namespace, "cluster", c.Name, "error", newErr)
 	} else {
 		infraCluster, newErr = external.GetObjectFromContractVersionedRef(clients.Ctx, clients.Client, capiCluster.Spec.InfrastructureRef, capiCluster.Namespace)
 		if newErr != nil {
-			logrus.Errorf("failed to get %s %s/%s to print error: %v",
-				capiCluster.Spec.InfrastructureRef.GroupKind(), capiCluster.Namespace, capiCluster.Spec.InfrastructureRef.Name, newErr)
+			log.Error("Failed to get infrastructure ref to print error", "gk", capiCluster.Spec.InfrastructureRef.GroupKind(), "namespace", capiCluster.Namespace, "name", capiCluster.Spec.InfrastructureRef.Name, "error", newErr)
 			infraCluster = nil
 		}
 		machineDeployments, newErr = clients.CAPI.MachineDeployment().List(c.Namespace, metav1.ListOptions{
 			LabelSelector: "cluster.x-k8s.io/cluster-name=" + c.Name,
 		})
 		if newErr != nil {
-			logrus.Error(newErr)
+			log.Error("Error", "error", newErr)
 			machineDeployments = nil
 		}
 		machineSets, newErr = clients.CAPI.MachineSet().List(c.Namespace, metav1.ListOptions{
 			LabelSelector: "cluster.x-k8s.io/cluster-name=" + c.Name,
 		})
 		if newErr != nil {
-			logrus.Error(newErr)
+			log.Error("Error", "error", newErr)
 			machineSets = nil
 		}
 	}
 
 	snapshots, newErr := clients.RKE.ETCDSnapshot().List(c.Namespace, metav1.ListOptions{})
 	if newErr != nil {
-		logrus.Error(newErr)
+		log.Error("Error", "error", newErr)
 		snapshots = nil
 	}
 
@@ -554,7 +553,7 @@ func populatePodLogs(clients *clients.Clients, controlPlane *rkev1.RKEControlPla
 
 	logs, err := getPodLogs(clients, podNamespace, podName)
 	if err != nil {
-		logrus.Errorf("error while retrieving pod logs: %v", err)
+		log.Error("Error while retrieving pod logs", "error", err)
 	} else {
 		logMap["logs"] = logs
 	}
@@ -562,7 +561,7 @@ func populatePodLogs(clients *clients.Clients, controlPlane *rkev1.RKEControlPla
 	if controlPlane != nil && capr.GetRuntime(controlPlane.Spec.KubernetesVersion) == capr.RuntimeRKE2 {
 		kubeletLogs, err := getPodFileContents(podNamespace, podName, path.Join(capr.GetDistroDataDir(controlPlane), "agent/logs/kubelet.log"))
 		if err != nil {
-			logrus.Errorf("error while retrieving pod kubelet logs: %v", err)
+			log.Error("Error while retrieving pod kubelet logs", "error", err)
 		} else {
 			logMap["kubeletLogs"] = kubeletLogs
 		}
@@ -577,7 +576,7 @@ func EnsureMinimalConflictsWithThreshold(clients *clients.Clients, c *provisioni
 		LabelSelector: "custom-cluster-name=" + c.Name,
 	})
 	if newErr != nil {
-		logrus.Errorf("failed to list custommachine pods: %v", newErr)
+		log.Error("Failed to list custommachine pods", "error", newErr)
 	} else {
 		for _, pod := range customPods.Items {
 			count, err := countPodLogRegexOccurances(clients, pod.Namespace, pod.Name, ConflictMessageRegex)
@@ -592,12 +591,12 @@ func EnsureMinimalConflictsWithThreshold(clients *clients.Clients, c *provisioni
 
 	machines, newErr := Machines(clients, c)
 	if newErr != nil {
-		logrus.Errorf("failed to get machines for %s/%s to count conflicts: %v", c.Namespace, c.Name, newErr)
+		log.Error("Failed to get machines to count conflicts", "namespace", c.Namespace, "cluster", c.Name, "error", newErr)
 	}
 	for _, machine := range machines.Items {
 		im, newErr := external.GetObjectFromContractVersionedRef(clients.Ctx, clients.Client, machine.Spec.InfrastructureRef, machine.Namespace)
 		if newErr != nil {
-			logrus.Errorf("failed to get infrastructure machine %s/%s: %v", machine.Namespace, machine.Spec.InfrastructureRef.Name, newErr)
+			log.Error("Failed to get infrastructure machine", "namespace", machine.Namespace, "machine", machine.Spec.InfrastructureRef.Name, "error", newErr)
 		} else {
 			if machine.Spec.InfrastructureRef.Kind == "PodMachine" {
 				// In the case of a podMachine, the pod name will be strings.ReplaceAll(infra.meta.GetName(), ".", "-")

@@ -84,7 +84,6 @@ require (
 	github.com/crewjam/saml v0.0.0-00010101000000-000000000000
 	github.com/docker/distribution v2.8.3+incompatible
 	github.com/docker/docker v25.0.13+incompatible
-	github.com/ehazlett/simplelog v0.0.0-20200226020431-d374894e92a4
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/ghodss/yaml v1.0.0
@@ -138,7 +137,6 @@ require (
 	github.com/rancher/wrangler v1.1.2
 	github.com/rancher/wrangler/v3 v3.5.0-rc.2
 	github.com/robfig/cron v1.2.0
-	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/urfave/cli v1.22.16
@@ -260,6 +258,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
+	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/skeema/knownhosts v1.3.0 // indirect
 	github.com/std-uritemplate/std-uritemplate/go v0.0.57 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect

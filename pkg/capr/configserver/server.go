@@ -17,12 +17,12 @@ import (
 	provisioningcontrollers "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
 	rkecontroller "github.com/rancher/rancher/pkg/generated/controllers/rke.cattle.io/v1"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/serviceaccounttoken"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/tls"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,13 +95,13 @@ func (r *RKE2ConfigServer) DeferCAPIResources(clients *wrangler.Context) {
 		r.machineCache = clients.CAPI.Machine().Cache()
 		r.machines = clients.CAPI.Machine()
 		r.capiAvailable = true
-		logrus.Debug("[rke2configserver] Initialized CAPI clients after deferred func execution")
+		log.Debug("Rke2configserver: initialized capi clients after deferred func execution", "operation", "defer_capi_resources")
 	})
 }
 
 func (r *RKE2ConfigServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if !r.capiAvailable {
-		logrus.Debug("[rke2configserver] CAPI not ready yet")
+		log.Debug("Rke2configserver: capi not ready yet", "operation", "serve_http")
 		rw.WriteHeader(http.StatusServiceUnavailable)
 		rw.Header().Set("Retry-After", "5")
 		return
@@ -109,10 +109,10 @@ func (r *RKE2ConfigServer) ServeHTTP(rw http.ResponseWriter, req *http.Request) 
 
 	if !r.secrets.Informer().HasSynced() || !r.clusterTokens.Informer().HasSynced() {
 		if err := r.secrets.Informer().GetIndexer().Resync(); err != nil {
-			logrus.Errorf("error re-syncing secrets informer in rke2configserver: %v", err)
+			log.Error("Rke2configserver: error re-syncing secrets informer", "operation", "serve_http", "error", err)
 		}
 		if err := r.clusterTokens.Informer().GetIndexer().Resync(); err != nil {
-			logrus.Errorf("error re-syncing clustertokens informer in rke2configserver: %v", err)
+			log.Error("Rke2configserver: error re-syncing clustertokens informer", "operation", "serve_http", "error", err)
 		}
 		rw.WriteHeader(http.StatusUnauthorized)
 		return
@@ -311,7 +311,7 @@ func (r *RKE2ConfigServer) getClusterKubernetesVersion(clusterName, ns string) (
 // findSA uses the request machineID to find and deliver the plan secret name and a service account token (or an error).
 func (r *RKE2ConfigServer) findSA(req *http.Request) (string, *corev1.Secret, error) {
 	machineID := req.Header.Get(machineIDHeader)
-	logrus.Debugf("[rke2configserver] parsed %s as machineID", machineID)
+	log.Debug("Rke2configserver: parsed machine id", "operation", "find_sa", "machine_id", machineID)
 	if machineID == "" {
 		return "", nil, nil
 	}
@@ -320,13 +320,13 @@ func (r *RKE2ConfigServer) findSA(req *http.Request) (string, *corev1.Secret, er
 	if err != nil {
 		return "", nil, err
 	}
-	logrus.Debugf("[rke2configserver] Got %s/%s machine from provisioning SA", machineNamespace, machineName)
+	log.Debug("Rke2configserver: got machine from provisioning sa", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName)
 	if machineName == "" {
 		machineNamespace, machineName, err = r.findMachineByClusterToken(req)
 		if err != nil {
 			return "", nil, err
 		}
-		logrus.Debugf("[rke2configserver] Got %s/%s machine from cluster token", machineNamespace, machineName)
+		log.Debug("Rke2configserver: got machine from cluster token", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName)
 	}
 
 	if machineName == "" || machineNamespace == "" {
@@ -345,36 +345,36 @@ func (r *RKE2ConfigServer) findSA(req *http.Request) (string, *corev1.Secret, er
 		return "", nil, err
 	}
 
-	logrus.Debugf("[rke2configserver] %s/%s listed %d planSAs", machineNamespace, machineName, len(planSAs))
+	log.Debug("Rke2configserver: listed plan service accounts", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "count", len(planSAs))
 
 	for _, planSA := range planSAs {
 		if err := capr.PlanSACheck(r.bootstrapCache, machineName, planSA); err != nil {
-			logrus.Errorf("[rke2configserver] error encountered when searching for checking planSA %s/%s against machine %s: %v", planSA.Namespace, planSA.Name, machineName, err)
+			log.Error("Rke2configserver: error checking plan service account against machine", "operation", "find_sa", "plan_sa_namespace", planSA.Namespace, "plan_sa", planSA.Name, "machine", machineName, "error", err)
 			continue
 		}
 		planSecret, err := capr.GetPlanSecretName(planSA)
 		if err != nil {
-			logrus.Errorf("[rke2configserver] error encountered when searching for plan secret name for planSA %s/%s: %v", planSA.Namespace, planSA.Name, err)
+			log.Error("Rke2configserver: error getting plan secret name for plan service account", "operation", "find_sa", "plan_sa_namespace", planSA.Namespace, "plan_sa", planSA.Name, "error", err)
 			continue
 		}
-		logrus.Debugf("[rke2configserver] %s/%s plan secret was %s", machineNamespace, machineName, planSecret)
+		log.Debug("Rke2configserver: plan secret found", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "plan_secret", planSecret)
 		if planSecret == "" {
 			continue
 		}
 		tokenSecret, _, err := capr.GetPlanServiceAccountTokenSecret(r.secrets, r.k8s, planSA)
 		if err != nil {
-			logrus.Errorf("[rke2configserver] error encountered when searching for token secret for planSA %s/%s: %v", planSA.Namespace, planSA.Name, err)
+			log.Error("Rke2configserver: error getting token secret for plan service account", "operation", "find_sa", "plan_sa_namespace", planSA.Namespace, "plan_sa", planSA.Name, "error", err)
 			continue
 		}
 		if tokenSecret == nil {
-			logrus.Debugf("[rke2configserver] %s/%s token secret for planSecret %s was nil", machineNamespace, machineName, planSecret)
+			log.Debug("Rke2configserver: token secret was nil", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "plan_secret", planSecret)
 			continue
 		}
-		logrus.Infof("[rke2configserver] %s/%s machineID: %s delivering planSecret %s with token secret %s/%s to system-agent", machineNamespace, machineName, machineID, planSecret, tokenSecret.Namespace, tokenSecret.Name)
+		log.Info("Rke2configserver: delivering plan secret with token secret to system-agent", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "machine_id", machineID, "plan_secret", planSecret, "token_secret_namespace", tokenSecret.Namespace, "token_secret", tokenSecret.Name)
 		return planSecret, tokenSecret, err
 	}
 
-	logrus.Debugf("[rke2configserver] %s/%s watching for plan secret to become ready for consumption", machineNamespace, machineName)
+	log.Debug("Rke2configserver: watching for plan secret to become ready", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName)
 
 	// The plan service account will likely not exist yet -- the plan service account is created by the bootstrap controller.
 	respSA, err := r.serviceAccounts.Watch(machineNamespace, metav1.ListOptions{
@@ -400,31 +400,31 @@ func (r *RKE2ConfigServer) findSA(req *http.Request) (string, *corev1.Secret, er
 		var ok bool
 		if planSA, ok = event.Object.(*corev1.ServiceAccount); ok {
 			if err := capr.PlanSACheck(r.bootstrapCache, machineName, planSA); err != nil {
-				logrus.Errorf("[rke2configserver] error encountered when searching for checking planSA %s/%s against machine %s: %v", planSA.Namespace, planSA.Name, machineName, err)
+				log.Error("Rke2configserver: error checking plan service account against machine", "operation", "find_sa", "plan_sa_namespace", planSA.Namespace, "plan_sa", planSA.Name, "machine", machineName, "error", err)
 				continue
 			}
 			planSecret, err = capr.GetPlanSecretName(planSA)
 			if err != nil {
-				logrus.Errorf("[rke2configserver] error encountered when searching for plan secret name for planSA %s/%s: %v", planSA.Namespace, planSA.Name, err)
+				log.Error("Rke2configserver: error getting plan secret name for plan service account", "operation", "find_sa", "plan_sa_namespace", planSA.Namespace, "plan_sa", planSA.Name, "error", err)
 				continue
 			}
-			logrus.Debugf("[rke2configserver] %s/%s plan secret was %s", machineNamespace, machineName, planSecret)
+			log.Debug("Rke2configserver: plan secret found", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "plan_secret", planSecret)
 			if planSecret == "" {
 				continue
 			}
 			tokenSecret, watchable, err := capr.GetPlanServiceAccountTokenSecret(r.secrets, r.k8s, planSA)
 			if err != nil || tokenSecret == nil {
-				logrus.Debugf("[rke2configserver] %s/%s token secret for planSecret %s was nil or error received", machineNamespace, machineName, planSecret)
+				log.Debug("Rke2configserver: token secret was nil or error received", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "plan_secret", planSecret)
 				if err != nil {
-					logrus.Errorf("[rke2configserver] error encountered when searching for token secret for planSA %s/%s: %v", planSA.Namespace, planSA.Name, err)
+					log.Error("Rke2configserver: error getting token secret for plan service account", "operation", "find_sa", "plan_sa_namespace", planSA.Namespace, "plan_sa", planSA.Name, "error", err)
 				}
 				if watchable {
-					logrus.Debugf("[rke2configserver] %s/%s token secret for planSecret %s is watchable, starting secret watch to wait for token to populate", machineNamespace, machineName, planSecret)
+					log.Debug("Rke2configserver: token secret is watchable, starting secret watch", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "plan_secret", planSecret)
 					break
 				}
 				continue
 			}
-			logrus.Infof("[rke2configserver] %s/%s machineID: %s delivering planSecret %s with token secret %s/%s to system-agent from plan service account watch", machineNamespace, machineName, machineID, planSecret, tokenSecret.Namespace, tokenSecret.Name)
+			log.Info("Rke2configserver: delivering plan secret from service account watch", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "machine_id", machineID, "plan_secret", planSecret, "token_secret_namespace", tokenSecret.Namespace, "token_secret", tokenSecret.Name)
 			return planSecret, tokenSecret, nil
 		}
 	}
@@ -433,7 +433,7 @@ func (r *RKE2ConfigServer) findSA(req *http.Request) (string, *corev1.Secret, er
 		return "", nil, fmt.Errorf("could not start secret watch for token secret")
 	}
 
-	logrus.Debugf("[rke2configserver] %s/%s starting token secret watch for planSA %s/%s", machineNamespace, machineName, planSA.Namespace, planSA.Name)
+	log.Debug("Rke2configserver: starting token secret watch", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "plan_sa_namespace", planSA.Namespace, "plan_sa", planSA.Name)
 	// start watch for the planSA corresponding secret, using a label selector.
 	respSecret, err := r.secrets.Watch(machineNamespace, metav1.ListOptions{
 		LabelSelector: labels.Set{
@@ -452,7 +452,7 @@ func (r *RKE2ConfigServer) findSA(req *http.Request) (string, *corev1.Secret, er
 	}()
 	for event := range respSecret.ResultChan() {
 		if secret, ok := event.Object.(*corev1.Secret); ok {
-			logrus.Infof("[rke2configserver] %s/%s machineID: %s delivering planSecret %s with token secret %s/%s to system-agent from secret watch", machineNamespace, machineName, machineID, planSecret, secret.Namespace, secret.Name)
+			log.Info("Rke2configserver: delivering plan secret from secret watch", "operation", "find_sa", "namespace", machineNamespace, "machine", machineName, "machine_id", machineID, "plan_secret", planSecret, "token_secret_namespace", secret.Namespace, "token_secret", secret.Name)
 			return planSecret, secret, nil
 		}
 	}
@@ -477,7 +477,7 @@ func (r *RKE2ConfigServer) setOrUpdateMachineID(machineNamespace, machineName, m
 
 	machine.Labels[capr.MachineIDLabel] = machineID
 	_, err = r.machines.Update(machine)
-	logrus.Debugf("[rke2configserver] %s/%s updated machine ID to %s", machineNamespace, machineName, machineID)
+	log.Debug("Rke2configserver: updated machine id", "operation", "set_or_update_machine_id", "namespace", machineNamespace, "machine", machineName, "machine_id", machineID)
 	return err
 }
 

@@ -3,7 +3,7 @@ package workload
 import (
 	"testing"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 func TestGetRegistryDomain(t *testing.T) {
@@ -24,7 +24,7 @@ func TestGetRegistryDomain(t *testing.T) {
 			t.Fail()
 		}
 		if d != test[1] {
-			logrus.Infof("d: %v", d)
+			log.Info("Registry domain mismatch", "domain", d)
 			t.Fail()
 		}
 	}

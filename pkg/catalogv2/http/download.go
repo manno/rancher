@@ -14,8 +14,8 @@ import (
 
 	"sigs.k8s.io/yaml"
 
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -121,7 +121,7 @@ func DownloadIndex(secret *corev1.Secret, repoURL string, caBundle []byte, insec
 	parsedURL.Path = path.Join(parsedURL.Path, "index.yaml")
 
 	url := parsedURL.String()
-	logrus.Infof("Downloading repo index from %s", url)
+	log.Info("Downloading repo index", "operation", "download_index", "url", url)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -144,7 +144,7 @@ func DownloadIndex(secret *corev1.Secret, repoURL string, caBundle []byte, insec
 	// become a "fetch any file" service.
 	index := &repo.IndexFile{}
 	if err := yaml.Unmarshal(bytes, index); err != nil {
-		logrus.Errorf("failed to unmarshal %s: %v", url, err)
+		log.Error("Failed to unmarshal index", "operation", "download_index", "url", url, "error", err)
 		return nil, fmt.Errorf("failed to parse response from %s", url)
 	}
 

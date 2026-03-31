@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/rancher/pkg/auth/accessor"
 	"github.com/rancher/rancher/pkg/auth/providers"
 	"github.com/rancher/rancher/pkg/auth/tokens"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 var cookieUnsetTimestamp = time.Date(1982, time.February, 10, 23, 0, 0, 0, time.UTC)
@@ -58,7 +58,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	storedToken, status, err := h.tokenMgr.GetToken(tokenAuthValue)
 	if err != nil {
-		logrus.Errorf("logout: getting token: %v", err)
+		log.Error("Getting token", "operation", "logout", "error", err)
 
 		if status == http.StatusNotFound {
 			status = http.StatusInternalServerError
@@ -78,7 +78,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		err = h.logout(w, r, storedToken)
 	}
 	if err != nil {
-		logrus.Errorf("logout: provider logout: %v", err)
+		log.Error("Provider logout", "operation", "logout", "error", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -89,7 +89,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.tokenMgr.DeleteTokenByName(storedToken.Name)
 	if err != nil { // NotFound is already handled by DeleteTokenByName.
-		logrus.Errorf("logout: deleting session token %s: %v", storedToken.Name, err)
+		log.Error("Deleting session token", "operation", "logout", "token_name", storedToken.Name, "error", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }

@@ -18,11 +18,11 @@ import (
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	publicclient "github.com/rancher/rancher/pkg/client/generated/management/v3public"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	admin "google.golang.org/api/admin/directory/v1"
@@ -88,7 +88,7 @@ func (g *googleOauthProvider) loginUser(c context.Context, googleOAuthCredential
 		}
 	}
 
-	logrus.Debugf("[Google OAuth] loginuser: Using code to get oauth token")
+	log.Debug("Using code to get oauth token", "provider", "google_oauth", "operation", "loginuser")
 	securityCode := googleOAuthCredential.Code
 	oauth2Config, err := google.ConfigFromJSON([]byte(config.OauthCredential), scopes...)
 	if err != nil {
@@ -99,7 +99,7 @@ func (g *googleOauthProvider) loginUser(c context.Context, googleOAuthCredential
 	if err != nil {
 		return userPrincipal, groupPrincipals, "", err
 	}
-	logrus.Debugf("[Google OAuth] loginuser: Exchanged code for oauth token")
+	log.Debug("Exchanged code for oauth token", "provider", "google_oauth", "operation", "loginuser")
 
 	// init the admin directory service
 	adminSvc, err := g.getDirectoryService(c, config.AdminEmail, []byte(config.ServiceAccountCredential), oauth2Config.TokenSource(c, gOAuthToken))
@@ -111,7 +111,7 @@ func (g *googleOauthProvider) loginUser(c context.Context, googleOAuthCredential
 		return userPrincipal, groupPrincipals, "", err
 	}
 
-	logrus.Debugf("[Google OAuth] loginuser: Checking user's access to Rancher")
+	log.Debug("Checking user access to Rancher", "provider", "google_oauth", "operation", "loginuser")
 	allowed, err := g.userMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipal.Name, groupPrincipals)
 	if err != nil {
 		return userPrincipal, groupPrincipals, "", err
@@ -127,7 +127,7 @@ func (g *googleOauthProvider) loginUser(c context.Context, googleOAuthCredential
 		return userPrincipal, groupPrincipals, "", err
 	}
 
-	logrus.Debugf("[Google OAuth] loginuser: Returning principals and marshaled oauth token")
+	log.Debug("Returning principals and marshaled oauth token", "provider", "google_oauth", "operation", "loginuser")
 	return userPrincipal, groupPrincipals, string(oauthToken), nil
 }
 
@@ -144,13 +144,13 @@ func (g *googleOauthProvider) SearchPrincipals(searchKey, principalType string, 
 	if err != nil && !apierrors.IsNotFound(err) {
 		return nil, err
 	}
-	logrus.Debugf("[Google OAuth] SearchPrincipals: Retrieved stored oauth token")
+	log.Debug("Retrieved stored oauth token", "provider", "google_oauth", "operation", "search_principals")
 	adminSvc, err := g.getdirectoryServiceFromStoredToken(storedOauthToken, config)
 	if err != nil {
 		return principals, err
 	}
 
-	logrus.Debugf("[Google OAuth] SearchPrincipals: Initialized dir svc with stored oauth token")
+	log.Debug("Initialized directory service with stored oauth token", "provider", "google_oauth", "operation", "search_principals")
 	accounts, err := g.searchPrincipals(adminSvc, searchKey, principalType, config)
 	if err != nil {
 		return principals, err
@@ -158,7 +158,7 @@ func (g *googleOauthProvider) SearchPrincipals(searchKey, principalType string, 
 	for _, acc := range accounts {
 		principals = append(principals, g.toPrincipal(acc.Type, acc, token))
 	}
-	logrus.Debugf("[Google OAuth] SearchPrincipals: Returning principals")
+	log.Debug("Returning principals", "provider", "google_oauth", "operation", "search_principals")
 	return principals, nil
 }
 
@@ -174,18 +174,18 @@ func (g *googleOauthProvider) GetPrincipal(principalID string, token accessor.To
 			return principal, err
 		}
 	}
-	logrus.Debugf("[Google OAuth] GetPrincipal: Retrieved stored oauth token")
+	log.Debug("Retrieved stored oauth token", "provider", "google_oauth", "operation", "get_principal")
 	adminSvc, err := g.getdirectoryServiceFromStoredToken(storedOauthToken, config)
 	if err != nil {
 		return principal, err
 	}
 
-	logrus.Debugf("[Google OAuth] GetPrincipal: Initialized dir svc with stored oauth token")
+	log.Debug("Initialized directory service with stored oauth token", "provider", "google_oauth", "operation", "get_principal")
 	externalID, principalType, err := getUIDFromPrincipalID(principalID)
 	if err != nil {
 		return principal, err
 	}
-	logrus.Debugf("[Google OAuth] GetPrincipal: Parsed principalID")
+	log.Debug("Parsed principalID", "provider", "google_oauth", "operation", "get_principal")
 	switch principalType {
 	case userType:
 		user, err := adminSvc.Users.Get(externalID).Do()
@@ -271,12 +271,12 @@ func (g *googleOauthProvider) RefetchGroupPrincipals(principalID string, secret 
 	if err != nil {
 		return principals, err
 	}
-	logrus.Debugf("[Google OAuth] RefetchGroupPrincipals: Initialized dir svc with stored oauth token")
+	log.Debug("Initialized directory service with stored oauth token", "provider", "google_oauth", "operation", "refetch_group_principals")
 	externalID, _, err := getUIDFromPrincipalID(principalID)
 	if err != nil {
 		return principals, err
 	}
-	logrus.Debugf("[Google OAuth] GetPrincipal: Parsed principalID")
+	log.Debug("Parsed principalID", "provider", "google_oauth", "operation", "get_principal")
 	groupPrincipals, err := g.getGroupsUserBelongsTo(adminSvc, externalID, config.Hostname, config)
 	if err != nil {
 		return principals, err
@@ -290,7 +290,7 @@ func (g *googleOauthProvider) RefetchGroupPrincipals(principalID string, secret 
 func (g *googleOauthProvider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []apiv3.Principal) (bool, error) {
 	config, err := g.getGoogleOAuthConfigCR()
 	if err != nil {
-		logrus.Errorf("Error fetching google OAuth config: %v", err)
+		log.Error("Error fetching google OAuth config", "provider", "google_oauth", "error", err)
 		return false, err
 	}
 	allowed, err := g.userMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipalID, groupPrincipals)
@@ -405,13 +405,13 @@ func (g *googleOauthProvider) getDirectoryService(ctx context.Context, userEmail
 		// using JWTConfigFromJSON method
 		config, err := google.JWTConfigFromJSON(jsonCredentials, admin.AdminDirectoryUserReadonlyScope, admin.AdminDirectoryGroupReadonlyScope)
 		if err != nil {
-			logrus.Errorf("[Google OAuth] error unmarshaling service account creds: %v", err)
+			log.Error("Error unmarshaling service account creds", "provider", "google_oauth", "error", err)
 			return nil, fmt.Errorf("invalid Service Account Credentials provided")
 		}
 		config.Subject = userEmail
 		srv, err := admin.NewService(ctx, option.WithTokenSource(config.TokenSource(ctx)))
 		if err != nil {
-			logrus.Errorf("[Google OAuth] error generating tokenSource for service account creds: %v", err)
+			log.Error("Error generating tokenSource for service account creds", "provider", "google_oauth", "error", err)
 			return nil, fmt.Errorf("invalid Service Account Credentials provided")
 		}
 		return srv, nil

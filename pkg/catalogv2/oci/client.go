@@ -16,7 +16,7 @@ import (
 	catalogv1 "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/catalogv2/oci/capturewindowclient"
 	"github.com/rancher/rancher/pkg/catalogv2/roundtripper"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	helmregistry "helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
@@ -211,7 +211,7 @@ func (o *Client) SetAuthClient() error {
 		}
 		pool, err := x509.SystemCertPool()
 		if err != nil {
-			logrus.Debugf("getting system cert pool failed: %v", err)
+			log.Debug("Getting system cert pool failed", "operation", "new_client", "error", err)
 			pool = x509.NewCertPool()
 		}
 		pool.AddCert(cert)
@@ -302,7 +302,7 @@ func (o *Client) addToIndex(indexFile *repo.IndexFile, chartTarFilePath string) 
 	// This is misleading and so emptying the created date field
 	indexFile.Entries[chart.Metadata.Name][len(indexFile.Entries[chart.Metadata.Name])-1].Created = time.Time{}
 
-	logrus.Debugf("Added chart %s %s to index", chart.Metadata.Name, chart.Metadata.Version)
+	log.Debug("Added chart to index", "operation", "add_chart", "chart", chart.Metadata.Name, "version", chart.Metadata.Version)
 	return nil
 }
 

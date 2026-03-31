@@ -28,7 +28,7 @@ import (
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/sirupsen/logrus"
+	log "github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -247,7 +247,7 @@ func (a *tokenAuthenticator) Authenticate(req *http.Request) (*AuthenticatorResp
 		Extras:        extras,
 	}
 
-	logrus.Debugf("Extras returned %v", authResp.Extras)
+	log.Debug("Extras returned", "extras", authResp.Extras)
 
 	now := a.now().Truncate(time.Second) // Use the second precision.
 	lastUsed := token.GetLastUsedAt()
@@ -282,11 +282,11 @@ func (a *tokenAuthenticator) Authenticate(req *http.Request) (*AuthenticatorResp
 		return fmt.Errorf("unknown token type")
 	}(); err != nil {
 		// Log the error and move on to avoid failing the request.
-		logrus.Errorf("auth: Error updating lastUsedAt for token %s: %v", token.GetName(), err)
+		log.Error("auth: Error updating lastUsedAt for token", "token", token.GetName(), "error", err)
 		return authResp, nil
 	}
 
-	logrus.Debugf("auth: Updated lastUsedAt for token %s", token.GetName())
+	log.Debug("auth: Updated lastUsedAt for token", "token", token.GetName())
 	return authResp, nil
 }
 
@@ -368,16 +368,16 @@ func (a *tokenAuthenticator) TokenFromRequest(req *http.Request) (accessor.Token
 			return nil, ErrMustAuthenticate
 		}
 
-		logrus.Debug("Could not parse tokenName and tokenKey from request - attempting JWT authentication")
+		log.Debug("Could not parse tokenName and tokenKey from request - attempting JWT authentication")
 		claims, err := a.parseTokenFromJWT(tokenAuthValue)
 		if err != nil {
-			logrus.Debugf("TokenFromRequest failed to parse JWT for %s: %s", req.URL, err)
+			log.Debug("TokenFromRequest failed to parse JWT", "url", req.URL, "error", err)
 			return nil, ErrMustAuthenticate
 		}
 
 		obj, exists, err := a.tokenIndexer.GetByKey(claims.Token)
 		if err != nil || !exists {
-			logrus.Errorf("Unknown token in OAuth Token: %s", claims.Token)
+			log.Error("Unknown token in OAuth Token", "token", claims.Token)
 			return nil, ErrMustAuthenticate
 		}
 
@@ -385,10 +385,10 @@ func (a *tokenAuthenticator) TokenFromRequest(req *http.Request) (accessor.Token
 
 		tokenClaims = claims
 		tokenName, tokenKey = token.Name, token.Token
-		logrus.Debug("Parsed tokenName and TokenKey from JWT")
+		log.Debug("Parsed tokenName and TokenKey from JWT")
 	}
 
-	logrus.Debugf("TokenFromRequest: Using tokenName %q", tokenName)
+	log.Debug("TokenFromRequest: Using tokenName", "tokenName", tokenName)
 
 	lookupUsingClient := false
 
@@ -444,7 +444,7 @@ func (a *tokenAuthenticator) TokenFromRequest(req *http.Request) (accessor.Token
 	}
 
 	if _, err := tokens.VerifyToken(storedToken, tokenName, tokenKey); err != nil {
-		logrus.Debugf("auth: Error verifying token %s: %v", tokenName, err)
+		log.Debug("auth: Error verifying token", "tokenName", tokenName, "error", err)
 		return nil, errors.Wrapf(ErrMustAuthenticate, "failed to verify token: %v", err)
 	}
 
@@ -479,13 +479,13 @@ func extVerifyToken(storedToken *ext.Token, tokenName, tokenKey string) (int, er
 	// Ext token always has a hash. Only a hash.
 	hasher, err := hashers.GetHasherForHash(storedToken.Status.Hash)
 	if err != nil {
-		logrus.Errorf("unable to get a hasher for token with error %v", err)
+		log.Error("unable to get a hasher for token", "error", err)
 		return http.StatusInternalServerError,
 			fmt.Errorf("unable to verify hash '%s'", storedToken.Status.Hash)
 	}
 
 	if err := hasher.VerifyHash(storedToken.Status.Hash, tokenKey); err != nil {
-		logrus.Errorf("VerifyHash failed with error: %v", err)
+		log.Error("VerifyHash failed", "error", err)
 		return http.StatusUnprocessableEntity, invalidAuthTokenErr
 	}
 

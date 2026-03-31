@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -80,7 +80,7 @@ type scimUser struct {
 //   - 200 on success
 //   - 400 for invalid requests.
 func (s *SCIMServer) ListUsers(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::ListUsers: url %s", r.URL)
+	log.Trace("ListUsers", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 
@@ -110,11 +110,11 @@ func (s *SCIMServer) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if filter != nil {
 		filterValue = filter.Value
 	}
-	logrus.Tracef("scim::ListUsers: userName=%s, startIndex=%d, count=%d", filterValue, pagination.startIndex, pagination.count)
+	log.Trace("ListUsers", "userName", filterValue, "startIndex", pagination.startIndex, "count", pagination.count)
 
 	list, err := s.userCache.List(labels.Everything())
 	if err != nil {
-		logrus.Errorf("scim::ListUsers: failed to list users: %s", err)
+		log.Error("failed to list users", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -137,7 +137,7 @@ func (s *SCIMServer) ListUsers(w http.ResponseWriter, r *http.Request) {
 			if apierrors.IsNotFound(err) {
 				continue
 			}
-			logrus.Errorf("scim::ListUsers: failed to get user attributes for %s: %s", user.Name, err)
+			log.Error("failed to get user attributes", "user", user.Name, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -212,14 +212,14 @@ func (s *SCIMServer) ListUsers(w http.ResponseWriter, r *http.Request) {
 // - active=false -> "this user no longer has access, deprovision them" (via PATCH/PUT).
 // We could reject such requests, but it could potentially break poorly-behaved IdPs.
 func (s *SCIMServer) CreateUser(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::CreateUser: url %s", r.URL)
+	log.Trace("CreateUser", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 
 	payload := scimUser{}
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		logrus.Errorf("scim::CreateUser: failed to decode request body: %s", err)
+		log.Error("failed to decode request body", "error", err)
 		writeError(w, NewError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
@@ -231,7 +231,7 @@ func (s *SCIMServer) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	list, err := s.userCache.List(labels.Everything())
 	if err != nil {
-		logrus.Errorf("scim::CreateUser: failed to list users: %s", err)
+		log.Error("failed to list users", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -243,7 +243,7 @@ func (s *SCIMServer) CreateUser(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			logrus.Errorf("scim::CreateUser: failed to get user attributes for %s: %s", user.Name, err)
+			log.Error("failed to get user attributes", "user", user.Name, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -258,7 +258,7 @@ func (s *SCIMServer) CreateUser(w http.ResponseWriter, r *http.Request) {
 	principalName := provider + "_user://" + payload.UserName
 	user, err := s.userMGR.EnsureUser(principalName, payload.UserName)
 	if err != nil {
-		logrus.Errorf("scim::CreateUser: failed to ensure user %s: %s", principalName, err)
+		log.Error("failed to ensure user", "user", principalName, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -281,7 +281,7 @@ func (s *SCIMServer) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	err = s.userMGR.UserAttributeCreateOrUpdate(user.Name, provider, groupPrincipals, extras)
 	if err != nil {
-		logrus.Errorf("scim::CreateUser: failed to ensure user attributes for %s: %s", user.Name, err)
+		log.Error("failed to ensure user attributes", "user", user.Name, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -318,7 +318,7 @@ func (s *SCIMServer) CreateUser(w http.ResponseWriter, r *http.Request) {
 //   - 400 for invalid requests
 //   - 404 if the user is not found or is a system user.
 func (s *SCIMServer) GetUser(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::GetUser: query %s", r.URL)
+	log.Trace("GetUser", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 	id := mux.Vars(r)["id"]
@@ -330,7 +330,7 @@ func (s *SCIMServer) GetUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		logrus.Errorf("scim::GetUser: failed to get user: %s", err)
+		log.Error("failed to get user", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -342,7 +342,7 @@ func (s *SCIMServer) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	attr, err := s.userAttributeCache.Get(user.Name)
 	if err != nil {
-		logrus.Errorf("scim::GetUsers: failed to get user attributes for %s: %s", user.Name, err)
+		log.Error("failed to get user attributes", "user", user.Name, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -380,7 +380,7 @@ func (s *SCIMServer) GetUser(w http.ResponseWriter, r *http.Request) {
 //   - 404 if the user is not found or is a system user
 //   - 409 if attempting to deprovision the default admin user.
 func (s *SCIMServer) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::UpdateUser: url %s", r.URL)
+	log.Trace("UpdateUser", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 	id := mux.Vars(r)["id"]
@@ -388,7 +388,7 @@ func (s *SCIMServer) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	payload := scimUser{}
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		logrus.Errorf("scim::UpdateUser: failed to decode request body: %s", err)
+		log.Error("failed to decode request body", "error", err)
 		writeError(w, NewError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
@@ -405,14 +405,14 @@ func (s *SCIMServer) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		logrus.Errorf("scim::UpdateUser: failed to get user: %s", err)
+		log.Error("failed to get user", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
 
 	attr, err := s.userAttributeCache.Get(user.Name)
 	if err != nil {
-		logrus.Errorf("scim::UpdateUsers: failed to get user attributes for %s: %s", user.Name, err)
+		log.Error("failed to get user attributes", "user", user.Name, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -449,14 +449,14 @@ func (s *SCIMServer) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if shouldUpdateAttr {
 		if attr, err = s.userAttributes.Update(attr); err != nil {
-			logrus.Errorf("scim::UpdateUser: failed to update user attributes for %s: %s", user.Name, err)
+			log.Error("failed to update user attributes", "user", user.Name, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
 	}
 	if shouldUpdateUser {
 		if _, err = s.users.Update(user); err != nil {
-			logrus.Errorf("scim::UpdateUser: failed to update user %s: %s", user.Name, err)
+			log.Error("failed to update user", "user", user.Name, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -496,7 +496,7 @@ func (s *SCIMServer) UpdateUser(w http.ResponseWriter, r *http.Request) {
 //   - 404 if the user is not found or is a system user
 //   - 409 if attempting to delete the default admin user.
 func (s *SCIMServer) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::DeleteUser: url %s", r.URL)
+	log.Trace("DeleteUser", "url", r.URL)
 	// provider := mux.Vars(r)["provider"]
 	id := mux.Vars(r)["id"]
 
@@ -507,7 +507,7 @@ func (s *SCIMServer) DeleteUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		logrus.Errorf("scim::DeleteUser: failed to get user: %s", err)
+		log.Error("failed to get user", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -523,7 +523,7 @@ func (s *SCIMServer) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.users.Delete(user.Name, &metav1.DeleteOptions{}); err != nil {
-		logrus.Errorf("scim::DeleteUser: failed to delete user %s: %s", user.Name, err)
+		log.Error("failed to delete user", "user", user.Name, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -540,7 +540,7 @@ func (s *SCIMServer) DeleteUser(w http.ResponseWriter, r *http.Request) {
 //   - 404 if the user is not found or is a system user
 //   - 409 if attempting to deprovision the default admin user.
 func (s *SCIMServer) PatchUser(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::PatchUser: url %s", r.URL)
+	log.Trace("PatchUser", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 	id := mux.Vars(r)["id"]
@@ -552,7 +552,7 @@ func (s *SCIMServer) PatchUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		logrus.Errorf("scim::PatchUser: failed to get user: %s", err)
+		log.Error("failed to get user", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -568,14 +568,14 @@ func (s *SCIMServer) PatchUser(w http.ResponseWriter, r *http.Request) {
 	}{}
 	err = json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		logrus.Errorf("scim::PatchUser: failed to decode request body: %s", err)
+		log.Error("failed to decode request body", "error", err)
 		writeError(w, NewError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	attr, err := s.userAttributeCache.Get(user.Name)
 	if err != nil {
-		logrus.Errorf("scim::PatchUser: failed to get user attributes for %s: %s", user.Name, err)
+		log.Error("failed to get user attributes", "user", user.Name, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -589,7 +589,7 @@ func (s *SCIMServer) PatchUser(w http.ResponseWriter, r *http.Request) {
 		case "replace":
 			updateAttr, updateUser, err := applyReplaceUser(provider, attr, user, op)
 			if err != nil {
-				logrus.Errorf("scim::PatchUser: failed to apply replace operation: %s", err)
+				log.Error("failed to apply replace operation", "error", err)
 				writeError(w, NewError(http.StatusBadRequest, fmt.Sprintf("Failed to apply replace operation: %s", err)))
 				return
 			}
@@ -607,14 +607,14 @@ func (s *SCIMServer) PatchUser(w http.ResponseWriter, r *http.Request) {
 
 	if shouldUpdateAttr {
 		if attr, err = s.userAttributes.Update(attr); err != nil {
-			logrus.Errorf("scim::PatchUser: failed to update user attributes for %s: %s", user.Name, err)
+			log.Error("failed to update user attributes", "user", user.Name, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
 	}
 	if shouldUpdateUser {
 		if _, err = s.users.Update(user); err != nil {
-			logrus.Errorf("scim::PatchUser: failed to update user %s: %s", user.Name, err)
+			log.Error("failed to update user", "user", user.Name, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}

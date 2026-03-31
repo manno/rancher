@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -9,15 +10,14 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/ehazlett/simplelog"
 	_ "github.com/rancher/norman/controller"
 	"github.com/rancher/norman/pkg/kwrapper/k8s"
 	"github.com/rancher/rancher/pkg/data/management"
+	rancherlog "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/logserver"
 	"github.com/rancher/rancher/pkg/rancher"
 	"github.com/rancher/rancher/pkg/version"
 	"github.com/rancher/wrangler/v3/pkg/signals"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -92,8 +92,8 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "log-format",
-			Usage: "Log formatter used (json, text, simple)",
-			Value: "simple",
+			Usage: "Log formatter used (json, text)",
+			Value: "text",
 		},
 		cli.StringSliceFlag{
 			Name:   "acme-domain",
@@ -193,41 +193,50 @@ func main() {
 	}
 
 	app.ExitErrHandler = func(c *cli.Context, err error) {
-		logrus.Fatal(err)
+		rancherlog.Fatal("Application exited with error", "error", err)
 	}
 
 	app.Run(os.Args)
 }
 
 func initLogs(c *cli.Context, cfg rancher.Options) {
-	switch c.String("log-format") {
-	case "simple":
-		logrus.SetFormatter(&simplelog.StandardFormatter{})
-	case "text":
-		logrus.SetFormatter(&logrus.TextFormatter{})
-	case "json":
-		logrus.SetFormatter(&logrus.JSONFormatter{})
+	format := c.String("log-format")
+
+	switch format {
+	case "json", "text", "":
+	default:
+		// Use fmt here since the logger isn't initialized yet.
+		fmt.Fprintf(os.Stderr, "Invalid --log-format %q: must be one of json, text\n", format)
+		os.Exit(1)
 	}
-	logrus.SetOutput(os.Stdout)
+
+	level := "info"
+
+	if cfg.Trace {
+		level = "trace"
+	} else if cfg.Debug {
+		level = "debug"
+	}
+
+	rancherlog.Init(format, level, os.Stdout)
+
 	if cfg.Debug {
-		logrus.SetLevel(logrus.DebugLevel)
-		logrus.Debugf("Loglevel set to [%v]", logrus.DebugLevel)
+		rancherlog.Debug("Loglevel set", "level", level)
 	}
 	if cfg.Trace {
-		logrus.SetLevel(logrus.TraceLevel)
-		logrus.Tracef("Loglevel set to [%v]", logrus.TraceLevel)
+		rancherlog.Trace("Loglevel set", "level", level)
 	}
 
 	logserver.StartServerWithDefaults()
 }
 
 func run(cli *cli.Context, cfg rancher.Options) error {
-	logrus.Infof("Rancher version %s is starting", version.FriendlyVersion())
-	logrus.Infof("Rancher arguments %+v", cfg)
+	rancherlog.Info("Rancher is starting", "version", version.FriendlyVersion())
+	rancherlog.Info("Rancher arguments", "config", cfg)
 	ctx := signals.SetupSignalContext()
 
 	if cfg.AddLocal != "true" && cfg.AddLocal != "auto" {
-		logrus.Fatal("add-local flag must be set to 'true', see Rancher 2.5.0 release notes for more information")
+		rancherlog.Fatal("Add-local flag must be set to 'true', see Rancher 2.5.0 release notes for more information")
 	}
 
 	embedded, clientConfig, err := k8s.GetConfig(ctx, cfg.K8sMode, kubeConfig)

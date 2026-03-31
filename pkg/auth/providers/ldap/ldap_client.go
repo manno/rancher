@@ -12,15 +12,15 @@ import (
 	"github.com/rancher/norman/httperror"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/providers/common/ldap"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var operationalAttrList = []string{"1.1", "+", "*"}
 
 func (p *ldapProvider) loginUser(lConn ldapv3.Client, credentials *v3.BasicLogin, config *v3.LdapConfig) (v3.Principal, []v3.Principal, error) {
-	logrus.Debug("Now generating Ldap token")
+	log.Debug("Generating LDAP token", "provider", p.providerName, "operation", "generate_token")
 
 	if credentials.Password == "" {
 		return v3.Principal{}, nil, apierror.NewAPIError(validation.MissingRequired, "password not provided")
@@ -66,7 +66,7 @@ func (p *ldapProvider) loginUser(lConn ldapv3.Client, credentials *v3.BasicLogin
 		return v3.Principal{}, nil, apierror.WrapAPIError(err, validation.Unauthorized, "Unauthorized")
 	}
 
-	logrus.Debug("Binding username password")
+	log.Debug("Binding username password", "provider", p.providerName, "operation", "login_user")
 	userDN := result.Entries[0].DN // userDN is externalID
 	err = lConn.Bind(userDN, credentials.Password)
 	if err != nil {
@@ -132,17 +132,17 @@ func (p *ldapProvider) getPrincipalsFromSearchResult(result *ldapv3.SearchResult
 		return v3.Principal{}, nil, fmt.Errorf("permission denied")
 	}
 
-	logrus.Debugf("getPrincipals: user attributes: %v ", userAttributes)
+	log.Debug("User attributes retrieved", "provider", p.providerName, "operation", "get_principals", "attributes", userAttributes)
 
 	userMemberAttribute := entry.GetAttributeValues(config.UserMemberAttribute)
 	if len(userMemberAttribute) == 0 {
 		userMemberAttribute = opResult.Entries[0].GetAttributeValues(config.UserMemberAttribute)
 	}
 
-	logrus.Debugf("SearchResult memberOf attribute {%s}", userMemberAttribute)
+	log.Debug("Search result memberOf attribute", "provider", p.providerName, "operation", "get_principals", "member_attribute", userMemberAttribute)
 
 	if !ldap.IsType(userAttributes, config.UserObjectClass) {
-		logrus.Debugf("The objectClass %s was not found in the user attributes", config.UserObjectClass)
+		log.Debug("ObjectClass not found in user attributes", "provider", p.providerName, "object_class", config.UserObjectClass)
 		return v3.Principal{}, nil, nil
 	}
 
@@ -167,7 +167,7 @@ func (p *ldapProvider) getPrincipalsFromSearchResult(result *ldapv3.SearchResult
 		query += ")"
 		query = fmt.Sprintf("(&%s%s)", filter, query)
 		// Pulling user's groups
-		logrus.Debugf("Ldap: Query for pulling user's groups: %s", query)
+		log.Debug("Query for pulling user groups", "provider", p.providerName, "operation", "get_principals", "query", query)
 		userMemberGroupPrincipals, err := p.searchLdap(query, groupScope, config, lConn)
 		groupPrincipals = append(groupPrincipals, userMemberGroupPrincipals...)
 		if err != nil {
@@ -207,7 +207,7 @@ func (p *ldapProvider) getPrincipalsFromSearchResult(result *ldapv3.SearchResult
 		// So we run a separate query with the filer: (&(member=uid of user logging in)(objectclass=groupofnames))
 		// This returns all details of a user's groups that we need to create principals, but doesn't return nested membership,
 		// so we derive nested membership using the logic we have for openldap
-		logrus.Debugf("EntryDN attribute not returned, retrieving group membership using the member attribute")
+		log.Debug("EntryDN attribute not returned, using member attribute", "provider", p.providerName, "operation", "get_principals")
 		// didn't get the entrydn as expected, so use query with member attribute and manually gather nested group
 		query := fmt.Sprintf(
 			"(&(%s=%s)(%s=%s))",
@@ -221,7 +221,7 @@ func (p *ldapProvider) getPrincipalsFromSearchResult(result *ldapv3.SearchResult
 			return userPrincipal, groupPrincipals, err
 		}
 
-		logrus.Debugf("Retrieved following groups using member attribute: %v", groupPrincipals)
+		log.Debug("Retrieved groups using member attribute", "provider", p.providerName, "operation", "get_principals", "count", len(groupPrincipals))
 		freeipaNonEntrydnApproach = true
 	}
 	// Handle nestedgroups for openldap, filter operationalAttrList already handles nestedgroups for freeipa
@@ -280,7 +280,7 @@ func (p *ldapProvider) getPrincipal(distinguishedName string, scope string, conf
 	}
 
 	if !ldap.IsType(attribs, scope) && !p.permissionCheck(attribs, config) {
-		logrus.Errorf("Failed to get object %s", distinguishedName)
+		log.Error("Failed to get object", "provider", p.providerName, "operation", "get_principal", "dn", distinguishedName, "error", err)
 		return nil, nil
 	}
 
@@ -291,7 +291,7 @@ func (p *ldapProvider) getPrincipal(distinguishedName string, scope string, conf
 		filter = fmt.Sprintf("(%s=%s)", ObjectClass, ldap.SanitizeAttr(config.GroupObjectClass))
 	}
 
-	logrus.Debugf("Query for getPrincipal(%s): %s", distinguishedName, filter)
+	log.Debug("Query for getPrincipal", "provider", p.providerName, "operation", "get_principal", "dn", distinguishedName, "filter", filter)
 
 	lConn, err := ldap.Connect(config, caPool)
 	if err != nil {
@@ -409,7 +409,7 @@ func (p *ldapProvider) searchUser(name string, config *v3.LdapConfig, lConn ldap
 	// The user search filter will be added as another clause
 	// and is expected to follow ldap syntax and enclosed in parentheses.
 	query += srchAttrs + ")" + config.UserSearchFilter + ")"
-	logrus.Debugf("%s searchUser query: %s", p.providerName, query)
+	log.Debug("SearchUser query", "provider", p.providerName, "operation", "search_user", "query", query)
 	return p.searchLdap(query, p.userScope, config, lConn)
 }
 
@@ -436,7 +436,7 @@ func (p *ldapProvider) searchGroup(name string, config *v3.LdapConfig, lConn lda
 		config.GroupSearchFilter,
 	)
 
-	logrus.Debugf("%s searchGroup query: %s scope: %s", p.providerName, query, p.groupScope)
+	log.Debug("SearchGroup query", "provider", p.providerName, "operation", "search_group", "query", query, "scope", p.groupScope)
 	return p.searchLdap(query, p.groupScope, config, lConn)
 }
 

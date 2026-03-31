@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -38,18 +38,10 @@ func GetClusterHost(clientCfg clientcmd.ClientConfig) (string, []byte, error) {
 		return cluster.Server, ca, err
 	}
 
-	logrus.Warnf(
-		"API server host retrieval: no cluster found for the current context (%s)",
-		rawConfig.CurrentContext,
-	)
+	log.Warn("Api server host retrieval: no cluster found for current context", "operation", "get_cluster_host", "context", rawConfig.CurrentContext)
 
 	for k, v := range rawConfig.Clusters {
-		logrus.Warnf(
-			"API server host retrieval: picking server %s "+
-				"with reference %s randomly from set of configured clusters",
-			v.Server,
-			k,
-		)
+		log.Warn("Api server host retrieval: picking server randomly from configured clusters", "operation", "get_cluster_host", "server", v.Server, "reference", k)
 		ca, err := getCA(v)
 		return v.Server, ca, err
 	}

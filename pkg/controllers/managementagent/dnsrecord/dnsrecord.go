@@ -14,8 +14,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/types/convert"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +92,7 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 	err := json.Unmarshal([]byte(value), &records)
 	if err != nil {
 		// just log the error, can't really do anything here.
-		logrus.Debugf("Failed to unmarshal targetDnsRecordIds, error: %v", err)
+		log.Debug("Failed to unmarshal targetDnsRecordIds", "operation", "ensure_service_dns_record", "error", err)
 		return nil
 	}
 	if records == nil {
@@ -120,7 +120,7 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 			}
 			aliasExtType := obj.Spec.Type == SvcTypeExternalName
 			if aliasExtType && beingDeleted {
-				logrus.Debugf("Cannot fetch dns hostName service [%s] in namespace [%s] : it is being deleted", service, namespace)
+				log.Debug("Cannot fetch dns hostName service, it is being deleted", "operation", "ensure_service_dns_record", "service", service, "namespace", namespace)
 			}
 			if exists || aliasExtType {
 				toHandleExternalName = true
@@ -129,11 +129,11 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 				serviceUUIDToHostNameAlias.Store(svcKey, key)
 				continue
 			}
-			logrus.Warnf("Failed to fetch endpoints for dns record [%s]: [%v]", groomed, err)
+			log.Warn("Failed to fetch endpoints for dns record", "operation", "ensure_service_dns_record", "record", groomed, "error", err)
 			continue
 		}
 		if targetEndpoint.DeletionTimestamp != nil {
-			logrus.Warnf("Failed to fetch endpoints for dns record [%s]: endpoint is being removed", groomed)
+			log.Warn("Failed to fetch endpoints for dns record, endpoint is being removed", "operation", "ensure_service_dns_record", "record", groomed)
 			continue
 		}
 		for _, subset := range targetEndpoint.Subsets {
@@ -161,20 +161,20 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 
 	if toHandleExternalName {
 		if externalName == "" {
-			logrus.Infof("Deleting dns record [%s] HostName, externalName empty", obj.Name)
+			log.Info("Deleting dns record HostName, externalName empty", "operation", "ensure_service_dns_record", "record", obj.Name)
 			if err := c.services.DeleteNamespaced(obj.Namespace, obj.Name, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 				return errors.Wrapf(err, "Error deleting dns record [%s]", obj.Name)
 			}
 		} else if obj.Spec.Type == SvcTypeExternalName &&
 			obj.Spec.ExternalName == externalName &&
 			obj.Spec.ClusterIP == "" {
-			logrus.Infof("HostName dns record [%s] up to date", obj.Name)
+			log.Info("HostName dns record up to date", "operation", "ensure_service_dns_record", "record", obj.Name)
 		} else {
 			svcAlias := obj.DeepCopy()
 			svcAlias.Spec.Type = SvcTypeExternalName
 			svcAlias.Spec.ExternalName = externalName
 			svcAlias.Spec.ClusterIP = ""
-			logrus.Infof("Updating HostName of dns record [%s] to %s", obj.Name, externalName)
+			log.Info("Updating HostName of dns record", "operation", "ensure_service_dns_record", "record", obj.Name, "external_name", externalName)
 			if _, err := c.services.Update(svcAlias); err != nil && !apierrors.IsNotFound(err) {
 				return errors.Wrapf(err, "Error updating dns record [%s]", obj.Name)
 			}
@@ -207,16 +207,16 @@ func (c *Controller) reconcileEndpoints(key string, obj *corev1.Service) error {
 			},
 			Subsets: newEndpointSubsets,
 		}
-		logrus.Infof("Creating endpoints for targetDnsRecordIds service [%s]: %v", key, ep.Subsets)
+		log.Info("Creating endpoints for targetDnsRecordIds service", "operation", "ensure_service_dns_record", "service", key, "subsets_count", len(ep.Subsets))
 		if _, err := c.endpoints.Create(ep); err != nil {
 			return err
 		}
 	} else {
 		if reflect.DeepEqual(ep.Subsets, newEndpointSubsets) {
-			logrus.Debugf("Endpoints are up to date for DNSRecord service [%s]", obj.Name)
+			log.Debug("Endpoints are up to date for DNSRecord service", "operation", "ensure_service_dns_record", "service", obj.Name)
 			return nil
 		}
-		logrus.Infof("Updating endpoints for DNSRecord service [%s]. Old: [%v], new: [%v]", obj.Name, ep.Subsets, newEndpointSubsets)
+		log.Info("Updating endpoints for DNSRecord service", "operation", "ensure_service_dns_record", "service", obj.Name, "old_subsets_count", len(ep.Subsets), "new_subsets_count", len(newEndpointSubsets))
 		toUpdate := ep.DeepCopy()
 		toUpdate.Subsets = newEndpointSubsets
 		_, err = c.endpoints.Update(toUpdate)

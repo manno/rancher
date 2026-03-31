@@ -9,9 +9,9 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/channelserver"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
 )
 
 type MetadataController struct {
@@ -102,7 +102,7 @@ func getKubernetesVersionRange(ctx context.Context, runtime, serverVersion strin
 	for _, release := range config.Releases {
 		versionParsed, err := semver.ParseTolerant(release.Version)
 		if err != nil {
-			logrus.Tracef("failed to parse release version %s: %v", release.Version, err)
+			log.Trace("Failed to parse release version", "operation", "get_kubernetes_version_range", "version", release.Version, "error", err)
 			continue
 		}
 		majorMinorKey := fmt.Sprintf("%d.%d", versionParsed.Major, versionParsed.Minor)
@@ -111,12 +111,12 @@ func getKubernetesVersionRange(ctx context.Context, runtime, serverVersion strin
 		}
 		minVersionParsed, err := semver.ParseTolerant(release.ChannelServerMinVersion)
 		if err != nil {
-			logrus.Tracef("failed to parse ChannelServerMinVersion '%s': %v", release.ChannelServerMinVersion, err)
+			log.Trace("Failed to parse ChannelServerMinVersion", "operation", "get_kubernetes_version_range", "version", release.ChannelServerMinVersion, "error", err)
 			continue
 		}
 		maxVersionParsed, err := semver.ParseTolerant(release.ChannelServerMaxVersion)
 		if err != nil {
-			logrus.Tracef("failed to parse ChannelServerMaxVersion '%s': %v", release.ChannelServerMaxVersion, err)
+			log.Trace("Failed to parse ChannelServerMaxVersion", "operation", "get_kubernetes_version_range", "version", release.ChannelServerMaxVersion, "error", err)
 			continue
 		}
 		if serverVersionParsed.LT(minVersionParsed) || serverVersionParsed.GT(maxVersionParsed) {

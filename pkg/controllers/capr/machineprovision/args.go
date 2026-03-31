@@ -13,13 +13,13 @@ import (
 	"strings"
 
 	"github.com/rancher/rancher/pkg/controllers/management/drivers/nodedriver"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/data"
 	"github.com/rancher/wrangler/v3/pkg/data/convert"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/kv"
 	wranglername "github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -275,11 +275,11 @@ func addAwsClusterOwnedTag(args map[string]any, clusterID string) {
 	tagValue := fmt.Sprintf("%s%s,owned", awsClusterTagPrefix, clusterID)
 	if tags, ok := args["tags"]; !ok || convert.ToString(tags) == "" {
 		args["tags"] = tagValue
-		logrus.Tracef("Adding cluster id tag [%s] to machine args", tagValue)
+		log.Trace("Adding cluster id tag to machine args", "operation", "add_tags", "tag", tagValue)
 	} else {
 		tagString := convert.ToString(tags)
 		if !strings.Contains(tagString, awsClusterTagPrefix) {
-			logrus.Tracef("Appending cluster id tag [%s] to machine args", tagValue)
+			log.Trace("Appending cluster id tag to machine args", "operation", "add_tags", "tag", tagValue)
 			args["tags"] = tagString + "," + tagValue
 		}
 	}
@@ -402,11 +402,11 @@ func getHostname(infra infraObject) string {
 	if limitAnno != "" {
 		l, err := strconv.Atoi(limitAnno)
 		if err != nil {
-			logrus.Errorf("[machineprovision] failed to parse annotation %s=%s as int for %s %s/%s: %v", capr.HostnameLengthLimitAnnotation, limitAnno, infra.obj.GetObjectKind(), infra.meta.GetNamespace(), infra.meta.GetName(), err)
+			log.Error("Failed to parse annotation as int", "operation", "parse_hostname_limit", "annotation", capr.HostnameLengthLimitAnnotation, "value", limitAnno, "kind", infra.obj.GetObjectKind(), "namespace", infra.meta.GetNamespace(), "name", infra.meta.GetName(), "error", err)
 		} else if l < capr.MinimumHostnameLengthLimit {
-			logrus.Debugf("[machineprovision] parsed annotation %s was %d, which is less than the minimum of %d", capr.HostnameLengthLimitAnnotation, l, capr.MinimumHostnameLengthLimit)
+			log.Debug("Parsed annotation less than minimum", "operation", "parse_hostname_limit", "annotation", capr.HostnameLengthLimitAnnotation, "value", l, "minimum", capr.MinimumHostnameLengthLimit)
 		} else if l > capr.MaximumHostnameLengthLimit {
-			logrus.Debugf("[machineprovision] parsed annotation %s was %d, which is greater than the maximum of %d", capr.HostnameLengthLimitAnnotation, l, capr.MaximumHostnameLengthLimit)
+			log.Debug("Parsed annotation greater than maximum", "operation", "parse_hostname_limit", "annotation", capr.HostnameLengthLimitAnnotation, "value", l, "maximum", capr.MaximumHostnameLengthLimit)
 		} else {
 			limit = l
 		}

@@ -9,11 +9,11 @@ import (
 	"github.com/rancher/rancher/pkg/features"
 	capi "github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io"
 	capicontrollers "github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io/v1beta2"
+	log "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/settings"
 	wapiextv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/apiextensions.k8s.io/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/sirupsen/logrus"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,7 +45,7 @@ func NewCAPIInitializer(clients *Context) *DeferredCAPIInitializer {
 func (d *DeferredCAPIInitializer) WaitForClient(ctx context.Context) (*CAPIContext, error) {
 	var done atomic.Bool
 	ready := make(chan struct{})
-	logrus.Info("[deferred-capi - WaitForClient] waiting for CAPI CRDs to be established...")
+	log.Info("Waiting for CAPI CRDs to be established", "operation", "deferred_capi_wait_for_client")
 	d.context.CRD.CustomResourceDefinition().OnChange(ctx, "capi-deferred-registration", func(key string, crd *apiextv1.CustomResourceDefinition) (*apiextv1.CustomResourceDefinition, error) {
 		if done.Load() {
 			return crd, nil
@@ -68,13 +68,14 @@ func (d *DeferredCAPIInitializer) WaitForClient(ctx context.Context) (*CAPIConte
 		return nil, ctx.Err()
 	}
 
-	logrus.Info("[deferred-capi - WaitForClient] waiting for CAPI catalog App to be ready with correct version...")
+	log.Info("waiting for CAPI catalog App to be ready with correct version", "operation", "deferred_capi_wait_for_client")
 
 	if err := waitForCAPIAppVersion(ctx, d.context); err != nil {
 		return nil, err
 	}
 
-	logrus.Info("[deferred-capi - WaitForClient] CAPI catalog App version is correct, initializing CAPI factory")
+	log.Info("CAPI catalog App version is correct, initializing CAPI factory", "operation", "deferred_capi_wait_for_client")
+
 
 	opts := &generic.FactoryOptions{
 		SharedControllerFactory: d.context.ControllerFactory,
@@ -82,7 +83,7 @@ func (d *DeferredCAPIInitializer) WaitForClient(ctx context.Context) (*CAPIConte
 
 	capiFactory, err := capi.NewFactoryFromConfigWithOptions(d.context.RESTConfig, opts)
 	if err != nil {
-		logrus.Fatalf("Encountered unexpected error while creating capi factory: %v", err)
+		log.Fatal("Encountered unexpected error while creating capi factory", "operation", "deferred_capi_wait_for_client", "error", err)
 	}
 
 	// Create controller-runtime client for CAPI operations using the wrangler Scheme.
@@ -101,7 +102,7 @@ func (d *DeferredCAPIInitializer) WaitForClient(ctx context.Context) (*CAPIConte
 		Scheme: Scheme,
 	})
 	if err != nil {
-		logrus.Fatalf("Encountered unexpected error while creating controller-runtime client: %v", err)
+		log.Fatal("Encountered unexpected error while creating controller-runtime client", "error", err)
 	}
 
 	return &CAPIContext{
@@ -121,17 +122,17 @@ func capiCRDsReady(crdCache wapiextv1.CustomResourceDefinitionCache) bool {
 		"machinehealthchecks.cluster.x-k8s.io",
 	}
 
-	logrus.Tracef("[deferred-capi] Checking CAPI CRDs availability and establishment status")
+	log.Trace("Checking CAPI CRDs availability and establishment status", "operation", "capi_crds_ready")
 	allCRDsReady := true
 	for _, crdName := range requiredCRDs {
 		crd, err := crdCache.Get(crdName)
 		if err != nil {
 			if k8serr.IsNotFound(err) {
-				logrus.Tracef("[deferred-capi] CRD %s not found, continuing to wait", crdName)
+				log.Trace("CAPI CRD not found, continuing to wait", "operation", "capi_crds_ready", "crd", crdName)
 				allCRDsReady = false
 				break
 			}
-			logrus.Errorf("[deferred-capi] Error checking for CAPI CRD %s: %v", crdName, err)
+			log.Error("Error checking for CAPI CRD", "operation", "capi_crds_ready", "crd", crdName, "error", err)
 			allCRDsReady = false
 			break
 		}
@@ -145,12 +146,12 @@ func capiCRDsReady(crdCache wapiextv1.CustomResourceDefinitionCache) bool {
 		}
 
 		if !established {
-			logrus.Tracef("[deferred-capi] CRD %s exists but is not yet established, continuing to wait", crdName)
+			log.Trace("CAPI CRD exists but not yet established, continuing to wait", "operation", "capi_crds_ready", "crd", crdName)
 			allCRDsReady = false
 			break
 		}
 
-		logrus.Tracef("[deferred-capi] CRD %s is available and established", crdName)
+		log.Trace("CAPI CRD is available and established", "operation", "capi_crds_ready", "crd", crdName)
 	}
 
 	return allCRDsReady
@@ -160,7 +161,7 @@ func capiCRDsReady(crdCache wapiextv1.CustomResourceDefinitionCache) bool {
 // to be running with the correct version specified in settings.
 // It also enqueues the rancher-charts ClusterRepo on version mismatches or errors to trigger a refresh.
 func waitForCAPIAppVersion(ctx context.Context, wContext *Context) error {
-	logrus.Info("[deferred-capi] Checking CAPI catalog App version...")
+	log.Info("Checking CAPI catalog App version", "operation", "deferred_capi_wait_for_app_version")
 
 	var (
 		name    string
@@ -175,7 +176,7 @@ func waitForCAPIAppVersion(ctx context.Context, wContext *Context) error {
 	}
 
 	if name == "" || ns == "" || version == "" {
-		logrus.Debugf("[deferred-capi] Turtles feature is disabled, skipping CAPI App version wait")
+		log.Debug("Turtles feature is disabled, skipping CAPI App version wait", "operation", "deferred_capi_wait_for_app_version")
 		return nil
 	}
 
@@ -184,28 +185,28 @@ func waitForCAPIAppVersion(ctx context.Context, wContext *Context) error {
 		if err != nil {
 			if k8serr.IsNotFound(err) {
 				wContext.Catalog.ClusterRepo().Enqueue("rancher-charts")
-				logrus.Tracef("[deferred-capi] App %s/%s not found, continuing to wait...", ns, name)
+				log.Trace("CAPI App not found, continuing to wait", "operation", "deferred_capi_wait_for_app_version", "namespace", ns, "name", name)
 			} else {
-				logrus.Warnf("[deferred-capi] Error getting App %s/%s: %v", ns, name, err)
+				log.Warn("Error getting CAPI App", "operation", "deferred_capi_wait_for_app_version", "namespace", ns, "name", name, "error", err)
 			}
 			return false
 		}
 
 		if app.Spec.Chart == nil || app.Spec.Chart.Metadata == nil {
 			wContext.Catalog.ClusterRepo().Enqueue("rancher-charts")
-			logrus.Tracef("[deferred-capi] App %s/%s has no chart metadata, continuing to wait...", ns, name)
+			log.Trace("CAPI App has no chart metadata, continuing to wait", "operation", "deferred_capi_wait_for_app_version", "namespace", ns, "name", name)
 			return false
 		}
 
 		currentVersion := app.Spec.Chart.Metadata.Version
 		if currentVersion != version {
 			wContext.Catalog.ClusterRepo().Enqueue("rancher-charts")
-			logrus.Tracef("[deferred-capi] App %s/%s version mismatch: current=%s, expected=%s, continuing to wait...", ns, name, currentVersion, version)
+			log.Trace("CAPI App version mismatch, continuing to wait", "operation", "deferred_capi_wait_for_app_version", "namespace", ns, "name", name, "current", currentVersion, "expected", version)
 			return false
 		}
 
 		if app.Status.Summary.State != string(v1.StatusDeployed) {
-			logrus.Tracef("[deferred-capi] App %s/%s is not yet deployed (current state: %s), continuing to wait...", ns, name, app.Status.Summary.State)
+			log.Trace("CAPI App not yet deployed, continuing to wait", "operation", "deferred_capi_wait_for_app_version", "namespace", ns, "name", name, "state", app.Status.Summary.State)
 			return false
 		}
 

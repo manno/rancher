@@ -9,9 +9,9 @@ import (
 	"github.com/pkg/errors"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v1 "github.com/rancher/rancher/pkg/apis/provisioning.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/rbac"
 	"github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,7 +40,7 @@ func (h *handler) OnPRTB(key string, prtb *v3.ProjectRoleTemplateBinding) (*v3.P
 		// the provisioning cluster to be created. If we don't try again
 		// permissions for the provisioning objects won't be created until an
 		// update to the PRTB happens again.
-		logrus.Debugf("[auth-prov-v2-prtb] No provisioning cluster found for cluster %v, enqueuing PRTB %v ", clusterName, prtb.Name)
+		log.Debug("No provisioning cluster found, enqueuing PRTB", "operation", "on_prtb", "cluster", clusterName, "prtb", prtb.Name)
 		h.projectRoleTemplateBindingController.EnqueueAfter(prtb.Namespace, prtb.Name, 10*time.Second)
 		return prtb, nil
 	}

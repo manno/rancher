@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,7 +111,7 @@ func (h *handler) syncHarvesterFeature(obj *v3.Feature) error {
 // exists. If it doesn't exist, the node driver is created.
 func (h *handler) syncHarvesterNodeDriver(feature *v3.Feature) error {
 	if feature.Spec.Value == nil {
-		logrus.Debugf("feature %s contains nil value", feature.Name)
+		log.Debug("Feature contains nil value", "feature", feature.Name)
 		return nil
 	}
 
@@ -131,7 +131,7 @@ func (h *handler) syncHarvesterNodeDriver(feature *v3.Feature) error {
 	driver = driver.DeepCopy()
 	driver.Spec.Active = *feature.Spec.Value
 
-	logrus.Infof("updating node driver %s", driver.Name)
+	log.Info("Updating node driver", "driver", driver.Name)
 	_, err = h.nodeDriverController.Update(driver)
 	if err != nil {
 		h.featureEnqueue(feature.Name, 10*time.Second)

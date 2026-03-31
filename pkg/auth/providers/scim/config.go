@@ -3,7 +3,7 @@ package scim
 import (
 	"net/http"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 // authenticationType defines the type of authentication scheme.
@@ -95,7 +95,7 @@ func (c ServiceProviderConfig) getRawAuthenticationSchemes() []map[string]any {
 
 // GetServiceProviderConfig returns the SCIM Service Provider Configuration.
 func (s *SCIMServer) GetServiceProviderConfig(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::GetServiceProviderConfig: url %s", r.URL)
+	log.Trace("GetServiceProviderConfig", "url", r.URL)
 
 	config := &ServiceProviderConfig{
 		AuthenticationSchemes: []authenticationScheme{

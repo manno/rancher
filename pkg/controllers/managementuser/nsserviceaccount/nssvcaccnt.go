@@ -8,11 +8,11 @@ import (
 	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/controllers/managementagent/nsserviceaccount"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/project"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
 	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -28,7 +28,7 @@ type defaultSvcAccountHandler struct {
 }
 
 func Register(ctx context.Context, cluster *config.UserContext) {
-	logrus.Debugf("Registering defaultSvcAccountHandler for checking default service account of system namespaces")
+	log.Debug("Registering defaultSvcAccountHandler for checking default service account of system namespaces", "operation", "register_default_sa_handler")
 	nsh := &defaultSvcAccountHandler{
 		namespaces:    cluster.Corew.Namespace(),
 		clusterName:   cluster.ClusterName,
@@ -41,11 +41,11 @@ func (nsh *defaultSvcAccountHandler) Sync(key string, ns *corev1.Namespace) (*co
 	if ns == nil || ns.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	logrus.Debugf("defaultSvcAccountHandler: Sync service account: key=%v", key)
+	log.Debug("DefaultSvcAccountHandler sync service account", "operation", "sync_default_sa", "key", key)
 	//handle default svcAccount of system namespaces only
 	ret, err := nsh.handleIfSystemNSDefaultSA(ns)
 	if err != nil {
-		logrus.Errorf("defaultSvcAccountHandler: Sync: error handling default ServiceAccount of namespace key=%v, err=%v", key, err)
+		log.Error("Error handling default ServiceAccount", "operation", "sync_default_sa", "key", key, "error", err)
 	}
 	return ret, err
 }

@@ -6,9 +6,9 @@ import (
 	"github.com/rancher/norman/types/slice"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/controllers/managementuser/rbac/roletemplates"
+	"github.com/rancher/rancher/pkg/log"
 	pkgrbac "github.com/rancher/rancher/pkg/rbac"
 	wrbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
-	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +32,7 @@ func (m *manager) reconcileProjectAccessToGlobalResources(binding *v3.ProjectRol
 		crbKey := rbRoleSubjectKey(role, subject)
 		crbs, _ := m.crbIndexer.ByIndex(crbByRoleAndSubjectIndex, crbKey)
 		if len(crbs) == 0 {
-			logrus.Infof("Creating clusterRoleBinding for project access to global resource for subject %v role %v.", subject.Name, role)
+			log.Info("Creating clusterrolebinding for project access to global resource", "operation", "reconcile_project_access", "subject", subject.Name, "role", role)
 			roleRef := rbacv1.RoleRef{
 				Kind: "ClusterRole",
 				Name: role,
@@ -84,7 +84,7 @@ func (m *manager) reconcileProjectAccessToGlobalResources(binding *v3.ProjectRol
 				crb.Labels = map[string]string{}
 			}
 			crb.Labels[rtbUID] = owner
-			logrus.Infof("Updating clusterRoleBinding %v for project access to global resource for subject %v role %v.", crb.Name, subject.Name, role)
+			log.Info("Updating clusterrolebinding for project access to global resource", "operation", "reconcile_project_access", "crb", crb.Name, "subject", subject.Name, "role", role)
 			_, err := bindingCli.Update(crb)
 			if err != nil {
 				return nil, err

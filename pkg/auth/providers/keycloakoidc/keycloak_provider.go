@@ -14,9 +14,9 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers/oidc"
 	"github.com/rancher/rancher/pkg/auth/tokens"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,7 +44,6 @@ func Configure(ctx context.Context, mgmtCtx *config.ScaledContext, userMGR user.
 			TokenMgr:    tokenMGR,
 		},
 	}
-
 	p.GetConfig = p.GetOIDCConfig
 	return p
 }
@@ -86,12 +85,12 @@ func (k *keyCloakOIDCProvider) SearchPrincipals(searchValue, principalType strin
 	}
 	keyCloakClient, err := k.newClient(config, token)
 	if err != nil {
-		logrus.Errorf("[keycloak oidc] SearchPrincipals: error creating new http client: %v", err)
+		log.Error("Error creating new http client", "provider", "keycloak_oidc", "operation", "search_principals", "error", err)
 		return principals, err
 	}
 	accts, err := keyCloakClient.searchPrincipals(searchValue, principalType, config)
 	if err != nil {
-		logrus.Errorf("[keycloak oidc] SearchPrincipals: problem searching keycloak: %v", err)
+		log.Error("Problem searching keycloak", "provider", "keycloak_oidc", "operation", "search_principals", "error", err)
 		return principals, err
 	}
 	for _, acct := range accts {
@@ -147,7 +146,7 @@ func (k *keyCloakOIDCProvider) GetPrincipal(principalID string, token accessor.T
 	principalType := parts[1]
 	keyCloakClient, err := k.newClient(config, token)
 	if err != nil {
-		logrus.Warnf("[keycloak oidc] GetPrincipal: error creating new http client: %v", err)
+		log.Warn("Error creating new http client", "provider", "keycloak_oidc", "operation", "get_principal", "error", err)
 		return apiv3.Principal{}, err
 	}
 	acct, err := keyCloakClient.getFromKeyCloakByID(externalID, principalType, config)
@@ -174,7 +173,7 @@ func (k *keyCloakOIDCProvider) getRefreshAndUpdateToken(ctx context.Context, oau
 	if !oauthToken.Valid() {
 		// since token is not valid, the TokenSource func used in the Client func will attempt to refresh the access token
 		// if the refresh token has not expired
-		logrus.Debugf("[generic oidc] RefeshAndUpdateToken: attempting to refresh access token")
+		log.Debug("Attempting to refresh access token", "provider", "keycloak_oidc", "operation", "get_refresh_and_update_token")
 	}
 	reusedToken, err := oauth2.ReuseTokenSource(oauthToken, oauthConfig.TokenSource(ctx, oauthToken)).Token()
 	if err != nil {

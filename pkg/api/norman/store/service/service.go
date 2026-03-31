@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
 	v3 "github.com/rancher/rancher/pkg/client/generated/project/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -36,13 +36,13 @@ func (p *Store) Create(apiContext *types.APIContext, schema *types.Schema, data 
 	// Check for unset ipFamilyPolicy, for headless services this defaults to dual stack but will not function if the cluster does not have dual stack properly configured (IPv6 CIDRs)
 	// If its not explicitly configured in the request, we default to SingleStack
 	if schema.ID == "service" || schema.ID == "dnsRecord" {
-		logrus.Tracef("Service: Create: data [%v]", data)
+		log.Trace("Service create", "operation", "create", "data", data)
 		if val, ok := data["kind"]; ok {
 			if val == "ClusterIP" {
 				if val, ok := data["clusterIp"]; ok {
 					if val == nil || val == "None" {
 						if val, ok := data["ipFamilyPolicy"]; !ok || val == nil {
-							logrus.Debugf("Setting ipFamilyPolicy to SingleStack for service name [%s] service kind [%s]", data["name"], data["kind"])
+							log.Debug("Setting ipfamilypolicy to singlestack", "operation", "create", "service_name", data["name"], "service_kind", data["kind"])
 							data["ipFamilyPolicy"] = "SingleStack"
 						}
 					}
@@ -73,7 +73,7 @@ func formatData(schema *types.Schema, data map[string]interface{}) {
 		}
 		m, err := convert.EncodeToMap(servicePort)
 		if err != nil {
-			logrus.Warnf("Failed to transform service port to map: %v", err)
+			log.Warn("Failed to transform service port to map", "operation", "format_data", "error", err)
 			return
 		}
 		ports = append(ports, m)

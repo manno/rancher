@@ -21,7 +21,7 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers/oidc"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"golang.org/x/oauth2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,39 +78,39 @@ func (p *AuthProviderServer) redirectToIdP(w http.ResponseWriter, req *http.Requ
 	vars := mux.Vars(req)
 	provider := vars["provider"]
 
-	logrus.Debugf("[oidc] Redirecting to IdP for provider: %s", provider)
+	log.Debug("Redirecting to IdP", "provider", provider)
 
 	authConfig, err := p.authConfigs.Get(provider, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logrus.Debugf("[oidc] Provider not found: %s", provider)
+			log.Debug("Provider not found", "provider", provider)
 			http.NotFound(w, req)
 			return
 		}
-		logrus.Errorf("[oidc] Failed to get provider configuration for %s: %v", provider, err)
+		log.Error("Failed to get provider configuration", "provider", provider, "error", err)
 		http.Error(w, "Failed to get provider configuration", http.StatusBadRequest)
 		return
 	}
 
 	authConfigData, ok := authConfig.(runtime.Unstructured)
 	if !ok {
-		logrus.Errorf("[oidc] Invalid auth config format for provider %s: expected runtime.Unstructured", provider)
+		log.Error("Invalid auth config format", "provider", provider, "expected", "runtime.Unstructured")
 		http.Error(w, "Invalid auth config format", http.StatusInternalServerError)
 		return
 	}
 	data := authConfigData.UnstructuredContent()
-	logrus.Debugf("[oidc] Retrieved auth config for provider: %s", provider)
+	log.Debug("Retrieved auth config", "provider", provider)
 
 	// Validate that the provider is enabled
 	if enabledRaw := data[client.GenericOIDCConfigFieldEnabled]; enabledRaw != nil {
 		enabled, ok := enabledRaw.(bool)
 		if !ok {
-			logrus.Errorf("[oidc] Invalid enabled field type for provider %s: expected bool, got %T", provider, enabledRaw)
+			log.Error("Invalid enabled field type", "provider", provider, "expected", "bool", "got", enabledRaw)
 			http.Error(w, "Invalid provider configuration", http.StatusInternalServerError)
 			return
 		}
 		if !enabled {
-			logrus.Debugf("[oidc] Provider %s is disabled", provider)
+			log.Debug("Provider is disabled", "provider", provider)
 			http.Error(w, "Provider is disabled", http.StatusNotFound)
 			return
 		}
@@ -121,24 +121,24 @@ func (p *AuthProviderServer) redirectToIdP(w http.ResponseWriter, req *http.Requ
 	if pkceMethodRaw := data[client.GenericOIDCConfigFieldPKCEMethod]; pkceMethodRaw != nil {
 		pkceMethod, ok := pkceMethodRaw.(string)
 		if !ok {
-			logrus.Errorf("[oidc] Invalid PKCE method type for provider %s: expected string, got %T", provider, pkceMethodRaw)
+			log.Error("Invalid PKCE method type", "provider", provider, "expected", "string", "got", pkceMethodRaw)
 			http.Error(w, "Invalid PKCE method type", http.StatusInternalServerError)
 			return
 		}
 
 		// Validate supported PKCE methods
 		if pkceMethod != "" && pkceMethod != oidc.PKCES256Method {
-			logrus.Warnf("[oidc] Unsupported PKCE method '%s' for provider %s", pkceMethod, provider)
+			log.Warn("Unsupported PKCE method", "method", pkceMethod, "provider", provider)
 			http.Error(w, "Unsupported PKCE method. Supported methods: S256", http.StatusBadRequest)
 			return
 		}
 
 		if pkceMethod != "" {
-			logrus.Debugf("[oidc] Enabling PKCE with method '%s' for provider %s", pkceMethod, provider)
+			log.Debug("Enabling PKCE", "method", pkceMethod, "provider", provider)
 			pkceVerifier = oauth2.GenerateVerifier()
 			oidc.SetPKCEVerifier(req, w, pkceVerifier)
 		} else {
-			logrus.Debugf("[oidc] PKCE not configured for provider %s", provider)
+			log.Debug("PKCE not configured", "provider", provider)
 		}
 	}
 	values := url.Values{
@@ -147,7 +147,7 @@ func (p *AuthProviderServer) redirectToIdP(w http.ResponseWriter, req *http.Requ
 	}
 
 	redirectURL := oidc.GetOIDCRedirectionURL(data, pkceVerifier, &values)
-	logrus.Debugf("[oidc] Redirecting to IdP for provider %s: %s", provider, redirectURL)
+	log.Debug("Redirecting to IdP", "provider", provider, "url", redirectURL)
 
 	http.Redirect(w, req, redirectURL, http.StatusFound)
 }

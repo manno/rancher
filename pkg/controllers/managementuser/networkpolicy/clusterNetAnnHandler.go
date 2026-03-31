@@ -4,7 +4,7 @@ import (
 	"github.com/rancher/norman/types/convert"
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -34,8 +34,8 @@ func (cn *clusterNetAnnHandler) Sync(key string, cluster *v3.Cluster) (runtime.O
 		return nil, nil
 	}
 
-	logrus.Infof("clusterNetAnnHandler: updating EnableNetworkPolicy of cluster %s to %v", cluster.Name,
-		*cluster.Spec.EnableNetworkPolicy)
+	log.Info("Clusternetannhandler: updating enablenetworkpolicy", "operation", "sync", "cluster", cluster.Name,
+		"enable_network_policy", *cluster.Spec.EnableNetworkPolicy)
 
 	cluster.Annotations[netPolAnnotation] = convert.ToString(*cluster.Spec.EnableNetworkPolicy)
 

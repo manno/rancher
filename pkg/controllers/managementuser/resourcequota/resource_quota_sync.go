@@ -10,11 +10,11 @@ import (
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	wmgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	namespaceutil "github.com/rancher/rancher/pkg/namespace"
 	validate "github.com/rancher/rancher/pkg/resourcequota"
 	"github.com/rancher/rancher/pkg/utils"
 	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -211,7 +211,7 @@ func (c *SyncController) CreateResourceQuota(ns *corev1.Namespace) (*corev1.Name
 	}
 
 	if operationErr != nil {
-		logrus.Errorf("Failed to perform operation %q on namespace %q: %v", operation, ns.Name, operationErr)
+		log.Error("Failed to perform operation on namespace", "operation", "apply_ns_resources", "ns", ns.Name, "error", operationErr)
 		return updated, operationErr
 	}
 
@@ -235,7 +235,7 @@ func (c *SyncController) updateResourceQuota(quota *corev1.ResourceQuota, spec *
 	}
 	toUpdate := quota.DeepCopy()
 	toUpdate.Spec = *spec
-	logrus.Infof("Updating default resource quota for namespace %v", toUpdate.Namespace)
+	log.Info("Updating default resource quota for namespace", "operation", "apply_ns_resources", "namespace", toUpdate.Namespace)
 	_, err := c.ResourceQuotas.Update(toUpdate)
 	return err
 }
@@ -253,18 +253,18 @@ func (c *SyncController) updateDefaultLimitRange(limitRange *corev1.LimitRange, 
 	}
 	toUpdate := limitRange.DeepCopy()
 	toUpdate.Spec = *spec
-	logrus.Infof("Updating default limit range for namespace %v", toUpdate.Namespace)
+	log.Info("Updating default limit range for namespace", "operation", "apply_ns_resources", "namespace", toUpdate.Namespace)
 	_, err := c.LimitRange.Update(toUpdate)
 	return true, err
 }
 
 func (c *SyncController) deleteResourceQuota(quota *corev1.ResourceQuota) error {
-	logrus.Infof("Deleting default resource quota for namespace %v", quota.Namespace)
+	log.Info("Deleting default resource quota for namespace", "operation", "apply_ns_resources", "namespace", quota.Namespace)
 	return c.ResourceQuotas.Delete(quota.Namespace, quota.Name, &metav1.DeleteOptions{})
 }
 
 func (c *SyncController) deleteDefaultLimitRange(limitRange *corev1.LimitRange) error {
-	logrus.Infof("Deleting limit range %v for namespace %v", limitRange.Name, limitRange.Namespace)
+	log.Info("Deleting limit range for namespace", "operation", "apply_ns_resources", "limit_range", limitRange.Name, "namespace", limitRange.Namespace)
 	return c.LimitRange.Delete(limitRange.Namespace, limitRange.Name, &metav1.DeleteOptions{})
 }
 
@@ -341,7 +341,7 @@ func (c *SyncController) createResourceQuota(ns *corev1.Namespace, spec *corev1.
 		},
 		Spec: *spec,
 	}
-	logrus.Infof("Creating default resource quota for namespace %v", ns.Name)
+	log.Info("Creating default resource quota for namespace", "operation", "apply_ns_resources", "namespace", ns.Name)
 	_, err := c.ResourceQuotas.Create(resourceQuota)
 	return err
 }
@@ -374,7 +374,7 @@ func (c *SyncController) createDefaultLimitRange(ns *corev1.Namespace, spec *cor
 		},
 		Spec: *spec,
 	}
-	logrus.Infof("Creating limit range %v for namespace %v", limitRange.Spec, ns.Name)
+	log.Info("Creating limit range for namespace", "operation", "apply_ns_resources", "limit_range_spec", limitRange.Spec, "namespace", ns.Name)
 	_, err := c.LimitRange.Create(limitRange)
 	return err
 }

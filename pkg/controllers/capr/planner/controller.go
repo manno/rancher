@@ -12,10 +12,10 @@ import (
 	"github.com/rancher/rancher/pkg/capr"
 	caprplanner "github.com/rancher/rancher/pkg/capr/planner"
 	v1 "github.com/rancher/rancher/pkg/generated/controllers/rke.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,7 +44,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 			var relatedResources []relatedresource.Key
 			clusterName := secret.Labels[capr.ClusterNameLabel]
 			if clusterName != "" {
-				logrus.Tracef("[planner] rkecluster %s/%s enqueue triggered by secret %s/%s", secret.Namespace, clusterName, secret.Namespace, secret.Name)
+				log.Trace("Rkecluster enqueue triggered by secret", "namespace", secret.Namespace, "cluster", clusterName, "secret_namespace", secret.Namespace, "secret_name", secret.Name)
 				relatedResources = append(relatedResources, relatedresource.Key{
 					Namespace: secret.Namespace,
 					Name:      clusterName,
@@ -53,7 +53,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 			authorizedObjects := secret.Annotations[capr.AuthorizedObjectAnnotation]
 			if authorizedObjects != "" {
 				for _, clusterName = range strings.Split(authorizedObjects, ",") {
-					logrus.Tracef("[planner] rkecluster %s/%s enqueue triggered by authorized secret %s/%s", secret.Namespace, clusterName, secret.Namespace, secret.Name)
+					log.Trace("Rkecluster enqueue triggered by authorized secret", "namespace", secret.Namespace, "cluster", clusterName, "secret_namespace", secret.Namespace, "secret_name", secret.Name)
 					relatedResources = append(relatedResources, relatedresource.Key{
 						Namespace: secret.Namespace,
 						Name:      clusterName,
@@ -64,7 +64,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 		} else if machine, ok := obj.(*capi.Machine); ok {
 			clusterName := machine.Labels[capi.ClusterNameLabel]
 			if clusterName != "" {
-				logrus.Tracef("[planner] rkecluster %s/%s enqueue triggered by machine %s/%s", machine.Namespace, clusterName, machine.Namespace, machine.Name)
+				log.Trace("Rkecluster enqueue triggered by machine", "namespace", machine.Namespace, "cluster", clusterName, "machine_namespace", machine.Namespace, "machine_name", machine.Name)
 				return []relatedresource.Key{{
 					Namespace: machine.Namespace,
 					Name:      clusterName,
@@ -75,7 +75,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 			authorizedObjects := configmap.Annotations[capr.AuthorizedObjectAnnotation]
 			if authorizedObjects != "" {
 				for _, clusterName := range strings.Split(authorizedObjects, ",") {
-					logrus.Tracef("[planner] rkecluster %s/%s enqueue triggered by authorized configmap %s/%s", configmap.Namespace, clusterName, configmap.Namespace, configmap.Name)
+					log.Trace("Rkecluster enqueue triggered by authorized configmap", "namespace", configmap.Namespace, "cluster", clusterName, "configmap_namespace", configmap.Namespace, "configmap_name", configmap.Name)
 					relatedResources = append(relatedResources, relatedresource.Key{
 						Namespace: configmap.Namespace,
 						Name:      clusterName,
@@ -89,7 +89,7 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext, planner *caprp
 }
 
 func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlaneStatus) (rkev1.RKEControlPlaneStatus, error) {
-	logrus.Debugf("[planner] rkecluster %s/%s: handler WaitForClient called", cp.Namespace, cp.Name)
+	log.Debug("Rkecluster handler WaitForClient called", "namespace", cp.Namespace, "name", cp.Name)
 	if !cp.DeletionTimestamp.IsZero() {
 		return status, nil
 	}
@@ -112,7 +112,7 @@ func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPla
 	}
 
 	if !scalingUpFound || !scalingDownFound || !rollingOutFound {
-		logrus.Debugf("[planner] rkecluster %s/%s: setting CAPI v1beta2 conditions", cp.Namespace, cp.Name)
+		log.Debug("Rkecluster setting CAPI v1beta2 conditions", "namespace", cp.Namespace, "name", cp.Name)
 		capiScalingUpCondition.False(&status)
 		capiScalingDownCondition.False(&status)
 		capiRollingOutCondition.False(&status)
@@ -121,7 +121,7 @@ func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPla
 
 	status.ObservedGeneration = cp.Generation
 
-	logrus.Debugf("[planner] rkecluster %s/%s: calling planner process", cp.Namespace, cp.Name)
+	log.Debug("Rkecluster calling planner process", "namespace", cp.Namespace, "name", cp.Name)
 	status, err := h.planner.Process(cp, status)
 	if err != nil {
 		// planner.Process can encounter 3 types of errors:
@@ -129,7 +129,7 @@ func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPla
 		// * generic.ErrSkip - These will cause the object to be re-enqueued after 5 seconds.
 		// * error - All other errors. This should be an actual error during planner processing.
 		if caprplanner.IsErrWaiting(err) {
-			logrus.Infof("[planner] rkecluster %s/%s: %v", cp.Namespace, cp.Name, err)
+			log.Info("Rkecluster waiting for resources", "namespace", cp.Namespace, "name", cp.Name, "error", err)
 			capr.Ready.SetStatus(&status, "Unknown")
 			capr.Ready.Message(&status, err.Error())
 			capr.Ready.Reason(&status, "Waiting")
@@ -143,18 +143,18 @@ func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPla
 			return status, nil
 		}
 		if errors.Is(err, generic.ErrSkip) {
-			logrus.Debugf("[planner] rkecluster %s/%s: ErrSkip: %v", cp.Namespace, cp.Name, err)
+			log.Debug("Rkecluster skip processing", "namespace", cp.Namespace, "name", cp.Name, "error", err)
 			h.controlPlanes.EnqueueAfter(cp.Namespace, cp.Name, 5*time.Second)
 			return status, err
 		}
 		// An actual error occurred, so set the Ready and Reconciled conditions to this error and return
-		logrus.Errorf("[planner] rkecluster %s/%s: error during plan processing: %v", cp.Namespace, cp.Name, err)
+		log.Error("Rkecluster error during plan processing", "namespace", cp.Namespace, "name", cp.Name, "error", err)
 		capr.Ready.SetError(&status, "", err)
 		capr.Reconciled.SetError(&status, "", err)
 		return status, err
 	}
 	// No error encountered during planner.Process
-	logrus.Debugf("[planner] rkecluster %s/%s: reconciliation complete", cp.Namespace, cp.Name)
+	log.Debug("Rkecluster reconciliation complete", "namespace", cp.Namespace, "name", cp.Name)
 	capr.Ready.True(&status)
 	capr.Ready.Message(&status, "")
 	capr.Ready.Reason(&status, "")

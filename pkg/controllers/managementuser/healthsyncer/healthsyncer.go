@@ -15,10 +15,10 @@ import (
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/controllers/management/clusterconnected"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/ticker"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,7 +73,7 @@ func (h *HealthSyncer) syncHealth(ctx context.Context, syncHealth time.Duration)
 	for range ticker.Context(ctx, syncHealth) {
 		err := h.updateClusterHealth()
 		if err != nil && !apierrors.IsConflict(err) {
-			logrus.Error(err)
+			log.Error("Error updating cluster health", "operation", "syncHealth", "error", err)
 		}
 	}
 }
@@ -154,13 +154,13 @@ func (h *HealthSyncer) updateClusterHealth() error {
 	}
 	cluster := oldCluster.DeepCopy()
 	if !v32.ClusterConditionProvisioned.IsTrue(cluster) {
-		logrus.Debugf("Skip updating cluster health - cluster [%s] not provisioned yet", h.clusterName)
+		log.Debug("Skip updating cluster health - cluster not provisioned yet", "operation", "updateClusterHealth", "cluster_name", h.clusterName)
 		return nil
 	}
 
 	// cluster condition ready is set to false if connected is false, return to avoid setting it to true incorrectly
 	if clusterconnected.Connected.IsFalse(cluster) {
-		logrus.Debugf("Skip updating cluster condition ready - cluster agent for [%s] isn't connected yet", h.clusterName)
+		log.Debug("Skip updating cluster condition ready - cluster agent isn't connected yet", "operation", "updateClusterHealth", "cluster_name", h.clusterName)
 		return nil
 	}
 
@@ -184,7 +184,7 @@ func (h *HealthSyncer) updateClusterHealth() error {
 	}
 
 	if !reflect.DeepEqual(oldCluster, newObj) {
-		logrus.Tracef("[healthSyncer] update cluster %s", cluster.Name)
+		log.Trace("HealthSyncer update cluster", "operation", "updateClusterHealth", "cluster_name", cluster.Name)
 		if _, err := h.clusters.Update(newObj.(*v3.Cluster)); err != nil {
 			return errors.Wrapf(err, "[updateClusterHealth] Failed to update cluster [%s]", cluster.Name)
 		}

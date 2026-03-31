@@ -15,9 +15,9 @@ import (
 	apisv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/controllers/management/clusteroperator"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	typesDialer "github.com/rancher/rancher/pkg/types/config/dialer"
 	"github.com/rancher/wrangler/v3/pkg/generic/fake"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/mock/gomock"
 	secretv1 "k8s.io/api/core/v1"
@@ -84,7 +84,7 @@ func getMockEksOperatorController(t *testing.T, clusterState string) mockEksOper
 // test setInitialUpstreamSpec
 
 func (m *mockEksOperatorController) setInitialUpstreamSpec(cluster *mgmtv3.Cluster) (*mgmtv3.Cluster, error) {
-	logrus.Infof("setting initial upstreamSpec on cluster [%s]", cluster.Name)
+	log.Info("Setting initial upstream spec on cluster", "cluster_name", cluster.Name)
 
 	// mock
 	upstreamSpec := &v1.EKSClusterConfigSpec{}

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
@@ -56,7 +56,7 @@ func (n *NsEnqueuer) RoleTemplateEnqueueNamespace(_, _ string, obj runtime.Objec
 	}
 	rt, ok := obj.(*v3.RoleTemplate)
 	if !ok {
-		logrus.Errorf("unable to convert object: %[1]v, type %[1]T to a cluster", obj)
+		log.Error("Unable to convert object to role template", "operation", "role_template_enqueue_namespace", "object", obj, "type", fmt.Sprintf("%T", obj))
 		return nil, nil
 	}
 
@@ -72,7 +72,7 @@ func (n *NsEnqueuer) RoleTemplateEnqueueNamespace(_, _ string, obj runtime.Objec
 	for _, obj := range prtbs {
 		prtb, ok := obj.(*v3.ProjectRoleTemplateBinding)
 		if !ok {
-			logrus.Errorf("unable to convert object: %[1]v, type %[1]T to a cluster", obj)
+			log.Error("Unable to convert object to project role template binding", "operation", "role_template_enqueue_namespace", "object", obj, "type", fmt.Sprintf("%T", obj))
 			return nil, nil
 		}
 

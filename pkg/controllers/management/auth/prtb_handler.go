@@ -9,9 +9,9 @@ import (
 	"github.com/rancher/rancher/pkg/features"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	typesrbacv1 "github.com/rancher/rancher/pkg/generated/norman/rbac.authorization.k8s.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	pkgrbac "github.com/rancher/rancher/pkg/rbac"
 	"github.com/rancher/rancher/pkg/user"
-	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -178,7 +178,7 @@ func (p *prtbLifecycle) reconcileBindings(binding *v3.ProjectRoleTemplateBinding
 	isOwnerRole, err := p.mgr.checkReferencedRoles(binding.RoleTemplateName, projectContext, 0)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logrus.Warnf("ProjectRoleTemplateBinding %s sets a non-existing role template %s. Skipping.", binding.Name, binding.RoleTemplateName)
+			log.Warn("ProjectRoleTemplateBinding sets a non-existing role template, skipping", "operation", "sync_prtb", "prtb", binding.Name, "role_template", binding.RoleTemplateName)
 			return nil
 		}
 		return err
@@ -228,7 +228,7 @@ func (p *prtbLifecycle) removeMGMTProjectScopedPrivilegesInClusterNamespace(bind
 			removeBinding = true
 		}
 		if removeBinding {
-			logrus.Infof("[%v] Deleting rolebinding %v in namespace %v for prtb %v", ptrbMGMTController, rb.Name, clusterName, binding.Name)
+			log.Info("Deleting rolebinding in namespace for prtb", "operation", "sync_prtb", "controller", ptrbMGMTController, "rolebinding", rb.Name, "cluster", clusterName, "prtb", binding.Name)
 			if err := p.rbClient.DeleteNamespaced(clusterName, rb.Name, &v1.DeleteOptions{}); err != nil {
 				return err
 			}

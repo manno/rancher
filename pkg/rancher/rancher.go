@@ -44,6 +44,7 @@ import (
 	"github.com/rancher/rancher/pkg/generated/controllers/auditlog.cattle.io"
 	mgmntv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/kontainerdrivermetadata"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/multiclustermanager"
 	"github.com/rancher/rancher/pkg/multiclustermanager/whitelist"
 	"github.com/rancher/rancher/pkg/namespace"
@@ -66,7 +67,6 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/k8scheck"
 	"github.com/rancher/wrangler/v3/pkg/unstructured"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"gopkg.in/natefinch/lumberjack.v2"
 	v1 "k8s.io/api/core/v1"
@@ -224,7 +224,7 @@ func New(ctx context.Context, clientConfg clientcmd.ClientConfig, opts *Options)
 	}
 
 	if features.MCM.Enabled() && !features.Fleet.Enabled() {
-		logrus.Info("fleet can't be turned off when MCM is enabled. Turning on fleet feature")
+		log.Info("Fleet can't be turned off when mcm is enabled, turning on fleet feature")
 		if err := features.SetFeature(wranglerContext.Mgmt.Feature(), features.Fleet.Name(), true); err != nil {
 			return nil, err
 		}
@@ -263,7 +263,7 @@ func New(ctx context.Context, clientConfg clientcmd.ClientConfig, opts *Options)
 
 	if !features.Turtles.Enabled() {
 		// turtles needs to be enabled or else rancher will not work correctly due to lack of capi controllers
-		logrus.Warnf("turtles is not enabled, cluster provisioning will not work correctly")
+		log.Warn("Turtles is not enabled, cluster provisioning will not work correctly")
 	}
 
 	steveControllers, err := steveserver.NewController(restConfig, &generic.FactoryOptions{SharedControllerFactory: wranglerContext.SharedControllerFactory})
@@ -419,11 +419,11 @@ func getSQLCacheGCValues(wranglerContext *wrangler.Context) (time.Duration, int)
 	interval, _ := time.ParseDuration(settings.SQLCacheGCInterval.Default)
 	gcIntervalSetting, err := wranglerContext.Mgmt.Setting().Get(settings.SQLCacheGCInterval.Name, metav1.GetOptions{})
 	if err != nil {
-		logrus.Warnf("Unable to fetch %s setting (will use default): %v", settings.SQLCacheGCInterval.Name, err)
+		log.Warn("Unable to fetch setting, will use default", "setting", settings.SQLCacheGCInterval.Name, "error", err)
 	} else if gcIntervalSetting.Value != "" {
 		dur, err := time.ParseDuration(gcIntervalSetting.Value)
 		if err != nil {
-			logrus.Warnf("Invalid GC interval %q: %v", gcIntervalSetting.Value, err)
+			log.Warn("Invalid GC interval", "value", gcIntervalSetting.Value, "error", err)
 		} else {
 			interval = dur
 		}
@@ -432,11 +432,11 @@ func getSQLCacheGCValues(wranglerContext *wrangler.Context) (time.Duration, int)
 	keepCount, _ := strconv.Atoi(settings.SQLCacheGCKeepCount.Default)
 	gcKeepCountSetting, err := wranglerContext.Mgmt.Setting().Get(settings.SQLCacheGCKeepCount.Name, metav1.GetOptions{})
 	if err != nil {
-		logrus.Warnf("Unable to fetch %s setting (will use default): %v", settings.SQLCacheGCKeepCount.Name, err)
+		log.Warn("Unable to fetch setting, will use default", "setting", settings.SQLCacheGCKeepCount.Name, "error", err)
 	} else if gcKeepCountSetting.Value != "" {
 		count, err := strconv.Atoi(gcKeepCountSetting.Value)
 		if err != nil {
-			logrus.Warnf("Invalid GC keep count %q: %v", gcKeepCountSetting.Value, err)
+			log.Warn("Invalid GC keep count", "value", gcKeepCountSetting.Value, "error", err)
 		} else {
 			keepCount = count
 		}
@@ -514,7 +514,7 @@ func (r *Rancher) Start(ctx context.Context) error {
 			}); err != nil {
 				return errors.New("telemetrycontrollers.RegisterControllers() failed: " + err.Error())
 			}
-			logrus.Debug("[rancher::Start] starting RancherSCCRegistrationExtension")
+			log.Debug("Starting RancherSCCRegistrationExtension")
 
 			return scc.StartDeployer(ctx, r.Wrangler)
 		})
@@ -536,8 +536,8 @@ func (r *Rancher) Start(ctx context.Context) error {
 
 func (r *Rancher) startTelemetryManager(ctx context.Context) {
 	if r.telemetryManager == nil {
-		logrus.Info("telemetry manager not enabled")
-		logrus.Debug("not starting telemetry manager because it is disabled")
+		log.Info("Telemetry manager not enabled")
+		log.Debug("Not starting telemetry manager because it is disabled")
 		return
 	}
 
@@ -547,21 +547,19 @@ func (r *Rancher) startTelemetryManager(ctx context.Context) {
 		initcond.WaitForInfo(r.Wrangler, initInfo, initChan)
 	}()
 	go func() {
-		logrus.Info("waiting for telemetry manager to start...")
+		log.Info("Waiting for telemetry manager to start")
 		<-initChan
-		log := logrus.WithFields(
-			logrus.Fields{
-				"server-url":      initInfo.ServerURL,
-				"cluster-uuid":    initInfo.ClusterUUID,
-				"install-uuid":    initInfo.InstallUUID,
-				"rancher-version": initInfo.RancherVersion,
-				"git-hash":        initInfo.GitHash,
-			},
+		tlog := log.L().With(
+			"server-url", initInfo.ServerURL,
+			"cluster-uuid", initInfo.ClusterUUID,
+			"install-uuid", initInfo.InstallUUID,
+			"rancher-version", initInfo.RancherVersion,
+			"git-hash", initInfo.GitHash,
 		)
 		if err := r.telemetryManager.Start(ctx, *initInfo); err != nil {
-			log.Errorf("failed to start telemetry manager : %s", err)
+			tlog.Error("Failed to start telemetry manager", "error", err)
 		}
-		log.Info("telemetry manager started")
+		tlog.Info("Telemetry manager started")
 	}()
 }
 
@@ -596,7 +594,7 @@ func (r *Rancher) ListenAndServe(ctx context.Context) error {
 // checkAPIAggregationOrDie will wait for the kubeapi server to contact the configured APIService endpoints.
 // If the condition is not met within the aggregationRegistrationTimeout the Rancher process will exit with an error.
 func (r *Rancher) checkAPIAggregationOrDie() {
-	logrus.Infof("Waiting for %s imperative API to be ready", r.aggregationRegistrationTimeout)
+	log.Info("Waiting for imperative API to be ready", "timeout", r.aggregationRegistrationTimeout)
 
 	ctxTimeout, cancel := context.WithTimeout(context.Background(), r.aggregationRegistrationTimeout)
 	defer cancel()
@@ -608,24 +606,24 @@ func (r *Rancher) checkAPIAggregationOrDie() {
 		// Case 3: Fatal - the Kube API didn't contact the Extension Server within the configured timeout, interpreted as API Aggregation not being supported in the cluster.
 		select {
 		case <-r.kubeAggregationReadyChan:
-			logrus.Info("kube-apiserver connected to imperative api")
+			log.Info("Kube-apiserver connected to imperative api")
 
 			if err := ext.SetAggregationCheck(apiserviceClient, true); err != nil {
-				logrus.Warnf("failed to set aggregation pre-check: %s", err)
+				log.Warn("Failed to set aggregation pre-check", "error", err)
 			}
 
 			return
 		case <-time.After(5 * time.Second):
 			if ext.AggregationPreCheck(apiserviceClient) {
-				logrus.Info("kube-apiserver connected to imperative api")
+				log.Info("Kube-apiserver connected to imperative api")
 				return
 			}
 		case <-ctxTimeout.Done():
 			if err := ext.SetAggregationCheck(apiserviceClient, false); err != nil {
-				logrus.Warnf("failed to unset aggregation pre-check: %s", err)
+				log.Warn("Failed to unset aggregation pre-check", "error", err)
 			}
 
-			logrus.Fatal("kube-apiserver did not contact the rancher imperative api in time, please see https://ranchermanager.docs.rancher.com/api/extension-apiserver for more information")
+			log.Fatal("Kube-apiserver did not contact the rancher imperative api in time, please see https://ranchermanager.docs.rancher.com/api/extension-apiserver for more information")
 		}
 	}
 }
@@ -669,8 +667,9 @@ func createOrUpdateService(ctx context.Context, k8sClient *kubernetes.Clientset,
 			return err
 		}
 		if !equality.Semantic.DeepEqual(existing.Spec.Ports, svc.Spec.Ports) {
-			logrus.Debugf("service %s/%s ports did not match, refreshing service, (existing: %v vs desired: %v)",
-				svc.Namespace, svc.Name, existing.Spec.Ports, svc.Spec.Ports)
+			log.Debug("Service ports did not match, refreshing service",
+				"namespace", svc.Namespace, "name", svc.Name,
+				"existing", existing.Spec.Ports, "desired", svc.Spec.Ports)
 			existing.Spec.Ports = svc.Spec.Ports
 			_, err := k8sClient.CoreV1().Services(svc.Namespace).Update(ctx, existing, metav1.UpdateOptions{})
 			return err
@@ -692,8 +691,9 @@ func createOrUpdateEndpoint(ctx context.Context, k8sClient *kubernetes.Clientset
 		}
 
 		if !equality.Semantic.DeepEqual(existing.Subsets, ep.Subsets) {
-			logrus.Debugf("endpoint %s/%s subsets did not match, refreshing endpoint (existing: %v vs desired: %v)",
-				ep.Namespace, ep.Name, existing.Subsets, ep.Subsets)
+			log.Debug("Endpoint subsets did not match, refreshing endpoint",
+				"namespace", ep.Namespace, "name", ep.Name,
+				"existing", existing.Subsets, "desired", ep.Subsets)
 			existing.Subsets = ep.Subsets
 			_, err := k8sClient.CoreV1().Endpoints(ep.Namespace).Update(ctx, existing, metav1.UpdateOptions{})
 			return err
@@ -922,8 +922,8 @@ func validateRKE1Resources(wranglerContext *wrangler.Context) error {
 func checkForRKE1Resources(wranglerContext *wrangler.Context) ([]string, error) {
 	var found []string
 
-	logrus.Infof("Scanning NodeTemplates in namespace: %s, group: nodetemplates.management.cattle.io", namespace.NodeTemplateGlobalNamespace)
-	logrus.Infof("Scanning ClusterTemplates in namespace: %s, group: clustertemplates.management.cattle.io", namespace.GlobalNamespace)
+	log.Info("Scanning NodeTemplates", "namespace", namespace.NodeTemplateGlobalNamespace, "group", "nodetemplates.management.cattle.io")
+	log.Info("Scanning ClusterTemplates", "namespace", namespace.GlobalNamespace, "group", "clustertemplates.management.cattle.io")
 
 	// Check for RKE1 clusters
 	clusters, err := wranglerContext.Mgmt.Cluster().List(metav1.ListOptions{})

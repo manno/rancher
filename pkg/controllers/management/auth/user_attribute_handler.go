@@ -11,8 +11,8 @@ import (
 	"github.com/rancher/rancher/pkg/auth/userretention"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,7 +82,7 @@ func (c *UserAttributeController) sync(key string, attribs *v3.UserAttribute) (r
 		// Stop retrying if the token has expired.
 		if errors.As(err, &retrieveErr) {
 			if retrieveErr.ErrorCode == "invalid_grant" {
-				logrus.Warnf("Token has expired. UserAttributes won't be refreshed until the user %s logs in. Error message: %s", name, err)
+				log.Warn("Token has expired, UserAttributes will not be refreshed until user logs in", "operation", "sync_user_attribute", "user", name, "error", err)
 				return nil, nil
 			}
 		}
@@ -103,7 +103,7 @@ func (c *UserAttributeController) sync(key string, attribs *v3.UserAttribute) (r
 
 	newAttribs, nerr := c.userAttributes.Get(name, metav1.GetOptions{})
 	if nerr != nil {
-		logrus.Errorf("error getting new version of user attribute %s: %v", name, nerr)
+		log.Error("Error getting new version of user attribute", "operation", "sync_user_attribute", "user_attribute", name, "error", nerr)
 		return nil, err // Deliberately return the original error.
 	}
 
@@ -114,7 +114,7 @@ func (c *UserAttributeController) sync(key string, attribs *v3.UserAttribute) (r
 
 	updated, nerr = c.userAttributes.Update(newAttribs)
 	if nerr != nil {
-		logrus.Errorf("error updating new version of user attribute %s: %v", name, nerr)
+		log.Error("Error updating new version of user attribute", "operation", "sync_user_attribute", "user_attribute", name, "error", nerr)
 		return nil, err // Deliberately return the original error.
 	}
 

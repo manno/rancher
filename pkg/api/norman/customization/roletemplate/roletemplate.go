@@ -8,7 +8,7 @@ import (
 	"github.com/rancher/norman/types/convert"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -55,7 +55,7 @@ func (w Wrapper) Validator(request *types.APIContext, schema *types.Schema, data
 func (w Wrapper) Formatter(apiContext *types.APIContext, resource *types.RawResource) {
 	roleTemplates, err := w.RoleTemplateLister.List("", labels.Everything())
 	if err != nil {
-		logrus.Warnf("[roletemplate formatter] Failed to list roletemplates. Error: %v", err)
+		log.Warn("Failed to list roletemplates", "operation", "roletemplate_formatter", "error", err)
 		return
 	}
 

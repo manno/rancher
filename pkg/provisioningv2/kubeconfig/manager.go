@@ -15,13 +15,13 @@ import (
 	"github.com/rancher/rancher/pkg/auth/tokens/hashers"
 	"github.com/rancher/rancher/pkg/features"
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/wrangler"
 	appcontroller "github.com/rancher/wrangler/v3/pkg/generated/controllers/apps/v1"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/name"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -244,7 +244,7 @@ func (m *Manager) kubeConfigValid(kcData []byte, cluster *v1.Cluster, currentSer
 	}
 	kc, err := clientcmd.Load(kcData)
 	if err != nil {
-		logrus.Errorf("error while loading kubeconfig in kubeconfigmanager for validation: %v", err)
+		log.Error("Error while loading kubeconfig for validation", "operation", "kubeconfig_valid", "error", err)
 		return true, false
 	}
 	var serverURL, managementCluster string
@@ -255,11 +255,11 @@ func (m *Manager) kubeConfigValid(kcData []byte, cluster *v1.Cluster, currentSer
 
 	serverURL = splitServer[0]
 	managementCluster = splitServer[1]
-	logrus.Tracef("[kubeconfigmanager] cluster %s/%s: parsed serverURL: %s and managementServer: %s from existing kubeconfig", cluster.Namespace, cluster.Name, serverURL, managementCluster)
+	log.Trace("Parsed serverURL and managementServer from existing kubeconfig", "operation", "kubeconfig_valid", "namespace", cluster.Namespace, "cluster", cluster.Name, "server_url", serverURL, "mgmt_cluster", managementCluster)
 
 	userName, token, err := m.getCachedToken(cluster.Namespace, cluster.Name)
 	if err != nil {
-		logrus.Errorf("error while retrieving cached token in kubeconfigmanager for validation: %v", err)
+		log.Error("Error while retrieving cached token for validation", "operation", "kubeconfig_valid", "error", err)
 		return true, false
 	}
 
@@ -268,7 +268,7 @@ func (m *Manager) kubeConfigValid(kcData []byte, cluster *v1.Cluster, currentSer
 		// if tokenHashing is enabled, the stored token will be hashed. So we instead make sure it's up-to-date by checking if the token is valid for the hash
 		hasher, err := hashers.GetHasherForHash(token.Token)
 		if err != nil {
-			logrus.Errorf("[kubeconfigmanager] error when retrieving hasher for token hash, %s", err.Error())
+			log.Error("Error when retrieving hasher for token hash", "operation", "kubeconfig_valid", "error", err)
 			return true, false
 		}
 		_, tokenKey := tokens.SplitTokenParts(kc.AuthInfos["user"].Token)
@@ -279,15 +279,15 @@ func (m *Manager) kubeConfigValid(kcData []byte, cluster *v1.Cluster, currentSer
 	// Check if the required CAPI cluster label is present in the secretLabels map
 	capiClusterLabelValue, labelPresent := secretLabels[capi.ClusterNameLabel]
 	if !labelPresent || capiClusterLabelValue != cluster.Name {
-		logrus.Tracef("[kubeconfigmanager] cluster %s/%s: kubeconfig secret failed validation due to missing or incorrect label", cluster.Namespace, cluster.Name)
+		log.Trace("Kubeconfig secret failed validation due to missing or incorrect label", "operation", "kubeconfig_valid", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return false, false
 	}
 
 	if serverURL != currentServerURL || !bytes.Equal([]byte(strings.TrimSpace(currentServerCA)), kc.Clusters["cluster"].CertificateAuthorityData) || managementCluster != currentManagementClusterName || !tokenMatches {
-		logrus.Tracef("[kubeconfigmanager] cluster %s/%s: kubeconfig secret failed validation, did not match provided data", cluster.Namespace, cluster.Name)
+		log.Trace("Kubeconfig secret failed validation, did not match provided data", "operation", "kubeconfig_valid", "namespace", cluster.Namespace, "cluster", cluster.Name)
 		return false, false
 	}
-	logrus.Tracef("[kubeconfigmanager] cluster %s/%s: kubeconfig secret passed validation", cluster.Namespace, cluster.Name)
+	log.Trace("Kubeconfig secret passed validation", "operation", "kubeconfig_valid", "namespace", cluster.Namespace, "cluster", cluster.Name)
 	return false, true
 }
 
@@ -301,7 +301,7 @@ func (m *Manager) getKubeConfigData(cluster *v1.Cluster, secretName, managementC
 	if err == nil {
 		retrievalError, isValid := m.kubeConfigValid(secret.Data["value"], cluster, serverURL, cacert, managementClusterName, secret.Labels)
 		if (!retrievalError && !isValid) || secret.Data == nil || secret.Data["token"] == nil || len(secret.OwnerReferences) == 0 {
-			logrus.Infof("[kubeconfigmanager] deleting kubeconfig secret for cluster %s/%s", cluster.Namespace, cluster.Name)
+			log.Info("Deleting kubeconfig secret for cluster", "operation", "get_kubeconfig_data", "namespace", cluster.Namespace, "cluster", cluster.Name)
 			// Check if we require a new secret based on the token value and annotation(s). We delete the old secret since it may contain
 			// annotations, owner references, etc. that are out of date. We will then continue to create the new secret.
 			if err := m.secrets.Delete(cluster.Namespace, secretName, &metav1.DeleteOptions{}); err != nil && !apierror.IsNotFound(err) {

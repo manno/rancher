@@ -7,8 +7,8 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/clustermanager"
 	mgmtconv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/rbac"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -44,7 +44,7 @@ func DeleteAdminClusterRoleBindings(
 			continue
 		}
 
-		logrus.Infof("Deleting ClusterRoleBinding %s for admin GlobalRoleBinding %s for cluster %s", crbName, grb.Name, cluster.Name)
+		log.Info("Deleting ClusterRoleBinding for admin GlobalRoleBinding", "operation", "delete_admin_grb", "cluster_role_binding", crbName, "global_role_binding", grb.Name, "cluster", cluster.Name)
 
 		err = userContext.RBACw.ClusterRoleBinding().Delete(crb.Name, &metav1.DeleteOptions{})
 		if err != nil {

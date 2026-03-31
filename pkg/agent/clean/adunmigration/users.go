@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
@@ -13,11 +13,15 @@ import (
 )
 
 func describePlannedChanges(workunit migrateUserWorkUnit) {
-	logrus.Debugf("[%v] DRY RUN: changes to user '%v' have NOT been saved.", migrateAdUserOperation, workunit.originalUser.Name)
+	log.Debug("DRY RUN: changes to user have NOT been saved",
+		"operation", migrateAdUserOperation,
+		"user", workunit.originalUser.Name)
 	if len(workunit.duplicateUsers) > 0 {
-		logrus.Infof("[%v] DRY RUN: duplicate users were identified", migrateAdUserOperation)
+		log.Info("DRY RUN: duplicate users were identified", "operation", migrateAdUserOperation)
 		for _, duplicateUser := range workunit.duplicateUsers {
-			logrus.Infof("[%v] DRY RUN: would DELETE user %v", migrateAdUserOperation, duplicateUser.Name)
+			log.Info("DRY RUN: would DELETE user",
+				"operation", migrateAdUserOperation,
+				"user", duplicateUser.Name)
 		}
 	}
 }
@@ -26,14 +30,21 @@ func deleteDuplicateUsers(workunit migrateUserWorkUnit, sc *config.ScaledContext
 	for _, duplicateUser := range workunit.duplicateUsers {
 		err := sc.Management.Users("").Delete(duplicateUser.Name, &metav1.DeleteOptions{})
 		if err != nil {
-			logrus.Errorf("[%v] failed to delete dupliate user '%v' with: %v", migrateAdUserOperation, workunit.originalUser.Name, err)
+			log.Error("Failed to delete duplicate user",
+				"operation", migrateAdUserOperation,
+				"user", duplicateUser.Name,
+				"error", err)
 			// If the duplicate deletion has failed for some reason, it is NOT safe to save the modified user, as
 			// this may result in a duplicate AD principal ID. Notify and skip.
 
-			logrus.Errorf("[%v] cannot safely save modifications to user %v, skipping", migrateAdUserOperation, workunit.originalUser.Name)
+			log.Error("Cannot safely save modifications to user, skipping",
+				"operation", migrateAdUserOperation,
+				"user", workunit.originalUser.Name)
 			return errors.Errorf("failed to delete duplicate users")
 		}
-		logrus.Infof("[%v] deleted duplicate user %v", migrateAdUserOperation, duplicateUser.Name)
+		log.Info("Deleted duplicate user",
+			"operation", migrateAdUserOperation,
+			"user", duplicateUser.Name)
 	}
 	return nil
 }
@@ -43,9 +54,14 @@ func updateModifiedUser(workunit migrateUserWorkUnit, sc *config.ScaledContext) 
 	workunit.originalUser.Labels[adGUIDMigrationLabel] = migratedLabelValue
 	_, err := sc.Management.Users("").Update(workunit.originalUser)
 	if err != nil {
-		logrus.Errorf("[%v] failed to save modified user '%v' with: %v", migrateAdUserOperation, workunit.originalUser.Name, err)
+		log.Error("Failed to save modified user",
+			"operation", migrateAdUserOperation,
+			"user", workunit.originalUser.Name,
+			"error", err)
 	}
-	logrus.Infof("[%v] user %v was successfully migrated", migrateAdUserOperation, workunit.originalUser.Name)
+	log.Info("User was successfully migrated",
+		"operation", migrateAdUserOperation,
+		"user", workunit.originalUser.Name)
 }
 
 func replaceGUIDPrincipalWithDn(user *v3.User, dn string, guid string, dryRun bool) {
@@ -62,17 +78,25 @@ func replaceGUIDPrincipalWithDn(user *v3.User, dn string, guid string, dryRun bo
 
 	if dryRun {
 		// In dry run mode we will merely print the computed list and leave the original user object alone
-		logrus.Infof("[%v] DRY RUN: User '%v' with GUID '%v' would have new principals:", migrateAdUserOperation,
-			user.Name, guid)
+		log.Info("DRY RUN: user with GUID would have new principals",
+			"operation", migrateAdUserOperation,
+			"user", user.Name,
+			"guid", guid)
 		for _, principalID := range principalIDs {
-			logrus.Infof("[%v] DRY RUN:   '%v'", migrateAdUserOperation, principalID)
+			log.Info("DRY RUN: principal",
+				"operation", migrateAdUserOperation,
+				"principal_id", principalID)
 		}
 	} else {
 		user.PrincipalIDs = principalIDs
-		logrus.Debugf("[%v] User '%v' with GUID %v will have new principals:", migrateAdUserOperation,
-			user.Name, guid)
+		log.Debug("User with GUID will have new principals",
+			"operation", migrateAdUserOperation,
+			"user", user.Name,
+			"guid", guid)
 		for _, principalID := range user.PrincipalIDs {
-			logrus.Debugf("[%v]    '%v'", migrateAdUserOperation, principalID)
+			log.Debug("Principal",
+				"operation", migrateAdUserOperation,
+				"principal_id", principalID)
 		}
 	}
 }

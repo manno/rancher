@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -100,10 +100,10 @@ func TestSystemFeatureChartRefreshSecondsDefault(t *testing.T) {
 }
 
 func TestGetMachineProvisionImagePullPolicy(t *testing.T) {
-	defaultLogger := logrus.StandardLogger().Out
-	logrus.SetOutput(io.Discard) // Done this way to avoid printing the error message during wrongValue test
+	originalLevel := log.GetLevel()
+	log.Init("text", "error", io.Discard) // Done this way to avoid printing the error message during wrongValue test
 	defer func() {
-		logrus.SetOutput(defaultLogger)
+		log.Init("text", originalLevel, io.Discard)
 	}()
 
 	testCases := []struct {

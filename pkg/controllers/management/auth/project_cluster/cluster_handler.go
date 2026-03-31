@@ -12,12 +12,12 @@ import (
 	apisv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/controllers"
 	v3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/project"
 	"github.com/rancher/rancher/pkg/types/config"
 	corev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	rbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,7 +102,7 @@ func (l *clusterLifecycle) Sync(key string, orig *apisv3.Cluster) (runtime.Objec
 
 	// update if it has changed
 	if obj != nil && !reflect.DeepEqual(orig, obj) {
-		logrus.Infof("[%s] Updating cluster %s", ClusterCreateController, orig.Name)
+		log.Info("Updating cluster", "operation", "sync_cluster", "controller", ClusterCreateController, "cluster", orig.Name)
 		cluster := obj.(*apisv3.Cluster)
 		_, err = l.clusterClient.Update(cluster)
 		if err != nil {
@@ -121,7 +121,7 @@ func (l *clusterLifecycle) Sync(key string, orig *apisv3.Cluster) (runtime.Objec
 
 	// update if it has changed
 	if obj != nil && !reflect.DeepEqual(orig, obj) {
-		logrus.Infof("[%s] Updating cluster %s", ClusterCreateController, orig.Name)
+		log.Info("Updating cluster", "operation", "sync_cluster", "controller", ClusterCreateController, "cluster", orig.Name)
 		cluster := obj.(*apisv3.Cluster)
 		_, err = l.clusterClient.Update(cluster)
 		if err != nil {
@@ -145,7 +145,7 @@ func (l *clusterLifecycle) Updated(obj *apisv3.Cluster) (runtime.Object, error) 
 // Remove deletes all backing resources created by the cluster
 func (l *clusterLifecycle) Remove(obj *apisv3.Cluster) (runtime.Object, error) {
 	if len(obj.Finalizers) > 1 {
-		logrus.Debugf("Skipping rbac cleanup for cluster [%s] until all other finalizers are removed.", obj.Name)
+		log.Debug("Skipping rbac cleanup for cluster until all other finalizers are removed", "operation", "remove_cluster", "cluster", obj.Name)
 		return obj, generic.ErrSkip
 	}
 
@@ -221,7 +221,7 @@ func (l *clusterLifecycle) createProject(name string, cond condition.Cond, obj r
 
 		project = updated.(*apisv3.Project)
 
-		logrus.Infof("[%s] Creating %s project for cluster %s", ClusterCreateController, name, clusterName)
+		log.Info("Creating project for cluster", "operation", "create_project", "controller", ClusterCreateController, "project_name", name, "cluster", clusterName)
 		_, err = l.projects.Create(project)
 
 		return obj, err
@@ -242,7 +242,7 @@ func (l *clusterLifecycle) deleteSystemProject(cluster *apisv3.Cluster, controll
 	}
 	var deleteError error
 	for _, p := range projects {
-		logrus.Infof("[%s] Deleting project %s", controller, p.Name)
+		log.Info("Deleting project", "operation", "delete_system_project", "controller", controller, "project", p.Name)
 		err = bypassClient.Delete(p.Namespace, p.Name, nil)
 		if err != nil {
 			deleteError = errors.Join(deleteError, fmt.Errorf("[%s] failed to delete project '%s/%s': %w", controller, p.Namespace, p.Name, err))
@@ -308,13 +308,13 @@ func (l *clusterLifecycle) reconcileClusterCreatorRTB(obj runtime.Object) (runti
 	}
 
 	if _, ok := cluster.Annotations[NoCreatorRBACAnnotation]; ok {
-		logrus.Infof("[%s] annotation %s found. Skipping adding creator as owner", ClusterCreateController, NoCreatorRBACAnnotation)
+		log.Info("Skipping adding creator as owner", "operation", "reconcile_cluster_creator_rtb", "controller", ClusterCreateController, "annotation", NoCreatorRBACAnnotation)
 		return obj, nil
 	}
 	return apisv3.CreatorMadeOwner.DoUntilTrue(obj, func() (runtime.Object, error) {
 		creatorID := cluster.Annotations[CreatorIDAnnotation]
 		if creatorID == "" {
-			logrus.Warnf("[%s] cluster %s has no creatorId annotation. Cannot add creator as owner", ClusterCreateController, cluster.Name)
+			log.Warn("Cluster has no creatorId annotation, cannot add creator as owner", "operation", "reconcile_cluster_creator_rtb", "controller", ClusterCreateController, "cluster", cluster.Name)
 			return obj, nil
 		}
 
@@ -364,7 +364,7 @@ func (l *clusterLifecycle) reconcileClusterCreatorRTB(obj runtime.Object) (runti
 				}
 			}
 
-			logrus.Infof("[%s] Creating creator clusterRoleTemplateBinding for user %s for cluster %s", ClusterCreateController, creatorID, cluster.Name)
+			log.Info("Creating creator clusterRoleTemplateBinding for user", "operation", "reconcile_cluster_creator_rtb", "controller", ClusterCreateController, "user", creatorID, "cluster", cluster.Name)
 			_, err := l.crtbClient.Create(crtb)
 			if err != nil && !apierrors.IsAlreadyExists(err) {
 				return obj, err
@@ -406,7 +406,7 @@ func (l *clusterLifecycle) updateClusterAnnotationandCondition(cluster *apisv3.C
 		}
 		// Only log if we successfully updated the cluster
 		if updateCondition {
-			logrus.Infof("[%s] Setting InitialRolesPopulated condition on cluster %s", ClusterCreateController, cluster.Name)
+			log.Info("Setting InitialRolesPopulated condition on cluster", "operation", "update_cluster_annotation_and_condition", "controller", ClusterCreateController, "cluster", cluster.Name)
 		}
 
 		return nil

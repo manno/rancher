@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,7 +60,7 @@ func (c *Controller) CreateService(key string, w *Workload) error {
 	}
 
 	if errs := validation.IsDNS1123Subdomain(w.Name); len(errs) != 0 {
-		logrus.Debugf("Not creating service for workload [%s]: dns name is invalid", w.Name)
+		log.Debug("Not creating service for workload, dns name is invalid", "operation", "ensure_service_for_workload", "workload", w.Name)
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func (c *Controller) CreateServiceForWorkload(workload *Workload) error {
 		} else {
 			// check if the port of the same type
 			if existing.Spec.Type != toCreate.Type {
-				logrus.Warnf("Service [%s/%s] already exists but with diff type. Expected type [%s], actual type [%v]", existing.Name, existing.Namespace, toCreate.Type, existing.Spec.Type)
+				log.Warn("Service already exists with different type", "operation", "create_service_for_workload", "service_name", existing.Name, "namespace", existing.Namespace, "expected_type", toCreate.Type, "actual_type", existing.Spec.Type)
 				return nil
 			}
 			isOwner := false
@@ -140,7 +140,7 @@ func (c *Controller) CreateServiceForWorkload(workload *Workload) error {
 				}
 			}
 			if !isOwner {
-				logrus.Warnf("Service [%s/%s] already exists but with diff owner", existing.Name, existing.Namespace)
+				log.Warn("Service already exists with different owner", "operation", "create_service_for_workload", "service_name", existing.Name, "namespace", existing.Namespace)
 				return nil
 			}
 
@@ -167,8 +167,7 @@ func (c *Controller) CreateServiceForWorkload(workload *Workload) error {
 		toRemove = append(toRemove, existingSvc)
 	}
 	for _, svc := range toRemove {
-		logrus.Infof("Deleting [%s/%s] service of type [%s] for workload [%s/%s]", svc.Namespace, svc.Name, svc.Spec.Type,
-			workload.Namespace, workload.Name)
+		log.Info("Deleting service for workload", "operation", "create_service_for_workload", "namespace", svc.Namespace, "service", svc.Name, "type", svc.Spec.Type, "workload_namespace", workload.Namespace, "workload", workload.Name)
 		if err := c.services.DeleteNamespaced(svc.Namespace, svc.Name, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
@@ -202,7 +201,7 @@ func (c *Controller) updateService(toUpdate Service, existing *corev1.Service) e
 	if existing.Spec.Type == ClusterIPServiceType && existing.Spec.ClusterIP == "None" {
 		existing.Spec.ClusterIP = toUpdate.ClusterIP
 	}
-	logrus.Infof("Updating [%s/%s] service with ports [%v]", existing.Namespace, existing.Name, portsToUpdate)
+	log.Info("Updating service with ports", "operation", "update_service", "namespace", existing.Namespace, "service", existing.Name, "ports_count", len(portsToUpdate))
 	_, err := c.services.Update(existing)
 	if err != nil {
 		return err
@@ -264,8 +263,7 @@ func (c *Controller) createService(toCreate Service, workload *Workload) error {
 		},
 	}
 
-	logrus.Infof("Creating [%s/%s] service of type [%s] with ports [%v] for workload %s", service.Namespace, service.Name,
-		service.Spec.Type, toCreate.ServicePorts, workload.Key)
+	log.Info("Creating service for workload", "operation", "create_service", "namespace", service.Namespace, "service", service.Name, "type", service.Spec.Type, "ports_count", len(toCreate.ServicePorts), "workload", workload.Key)
 	_, err = c.services.Create(service)
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {

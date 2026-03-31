@@ -11,7 +11,7 @@ import (
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/kontainer-engine/logstream"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,8 +48,8 @@ func (p *logger) saveMessage() {
 	p.bufferLock.Lock()
 	defer p.bufferLock.Unlock()
 
-	log := p.buffer.String()
-	if log == "" {
+	logContent := p.buffer.String()
+	if logContent == "" {
 		return
 	}
 	cm, err := p.ConfigMaps.GetNamespaced(p.Cluster.Name, configMapName, v12.GetOptions{})
@@ -60,20 +60,20 @@ func (p *logger) saveMessage() {
 				Namespace: p.Cluster.Name,
 			},
 			Data: map[string]string{
-				"log": log,
+				"log": logContent,
 			},
 		})
-		logrus.Errorf("Failed to save provisioning log for %s: %v", configMapName, err)
+		log.Error("Failed to save provisioning log", "operation", "save_message", "config_map", configMapName, "error", err)
 	} else if err != nil {
-		logrus.Errorf("Failed to get provisioning log for %s: %v", configMapName, err)
-	} else if log != cm.Data["log"] {
+		log.Error("Failed to get provisioning log", "operation", "save_message", "config_map", configMapName, "error", err)
+	} else if logContent != cm.Data["log"] {
 		if cm.Data == nil {
 			cm.Data = map[string]string{}
 		}
-		cm.Data["log"] = log
+		cm.Data["log"] = logContent
 		_, err := p.ConfigMaps.Update(cm)
 		if err != nil {
-			logrus.Errorf("Failed to update provisioning log for %s: %v", configMapName, err)
+			log.Error("Failed to update provisioning log", "operation", "save_message", "config_map", configMapName, "error", err)
 		}
 	}
 }
@@ -98,9 +98,9 @@ func (p *logger) logEvent(cluster *v3.Cluster, event logstream.LogEvent, cond co
 	defer p.bufferLock.Unlock()
 
 	if event.Error {
-		logrus.Errorf("cluster [%s] provisioning: %s", cluster.Name, event.Message)
+		log.Error("Cluster provisioning", "operation", "log_event", "cluster", cluster.Name, "message", event.Message)
 	} else {
-		logrus.Infof("cluster [%s] provisioning: %s", cluster.Name, event.Message)
+		log.Info("Cluster provisioning", "operation", "log_event", "cluster", cluster.Name, "message", event.Message)
 	}
 	p.buffer.WriteString(time.Now().Format(time.RFC3339))
 	p.buffer.WriteString(" ")

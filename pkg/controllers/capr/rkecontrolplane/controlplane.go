@@ -14,9 +14,9 @@ import (
 	mgmtcontrollers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	provcontrollers "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
 	rkecontrollers "github.com/rancher/rancher/pkg/generated/controllers/rke.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -101,7 +101,7 @@ func (h *handler) OnRemove(_ string, cp *rkev1.RKEControlPlane) (*rkev1.RKEContr
 
 func (h *handler) doRemove(cp *rkev1.RKEControlPlane) func() (string, error) {
 	return func() (string, error) {
-		logrus.Debugf("[rkecontrolplane] (%s/%s) Peforming removal of rkecontrolplane", cp.Namespace, cp.Name)
+		log.Debug("Performing removal of rkecontrolplane", "operation", "on_remove", "rkecontrolplane", fmt.Sprintf("%s/%s", cp.Namespace, cp.Name))
 		// Control plane nodes are managed by the control plane object. Therefore, the control plane object shouldn't be cleaned up before the control plane nodes are removed.
 		machines, err := h.machineCache.List(cp.Namespace, labels.SelectorFromSet(labels.Set{capi.ClusterNameLabel: cp.Name, capr.ControlPlaneRoleLabel: "true"}))
 		if err != nil {
@@ -116,8 +116,8 @@ func (h *handler) doRemove(cp *rkev1.RKEControlPlane) func() (string, error) {
 			return "", err
 		}
 
-		logrus.Debugf("[rkecontrolplane] (%s/%s) listed %d machines during removal", cp.Namespace, cp.Name, len(machines))
-		logrus.Tracef("[rkecontrolplane] (%s/%s) machine list: %+v", cp.Namespace, cp.Name, machines)
+		log.Debug("Listed machines during removal", "operation", "on_remove", "rkecontrolplane", fmt.Sprintf("%s/%s", cp.Namespace, cp.Name), "count", len(machines))
+		log.Trace("Machine list", "operation", "on_remove", "rkecontrolplane", fmt.Sprintf("%s/%s", cp.Namespace, cp.Name), "machines", fmt.Sprintf("%+v", machines))
 		allMachines := append(machines, otherMachines...)
 
 		for _, machine := range allMachines {

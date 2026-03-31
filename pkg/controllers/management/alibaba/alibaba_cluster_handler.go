@@ -24,7 +24,7 @@ import (
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -124,7 +124,7 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 
 	// check for changes between ali spec on cluster and the ali spec on the aliClusterConfig object
 	if !reflect.DeepEqual(aliClusterConfigMap, aliClusterConfigDynamic.Object["spec"]) {
-		logrus.Infof("change detected for cluster [%s], updating AliClusterConfig", cluster.Name)
+		log.Info("Change detected for cluster, updating AliClusterConfig", "cluster", cluster.Name)
 		return e.updateAliClusterConfig(cluster, aliClusterConfigDynamic, aliClusterConfigMap)
 	}
 
@@ -148,10 +148,10 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			logrus.Infof("waiting for cluster ACK [%s] to finish creating", cluster.Name)
+			log.Info("Waiting for cluster ACK to finish creating", "cluster", cluster.Name)
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		logrus.Infof("waiting for cluster ACK [%s] create failure to be resolved", cluster.Name)
+		log.Info("Waiting for cluster ACK create failure to be resolved", "cluster", cluster.Name)
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	case "active":
 		if cluster.Spec.AliConfig.Imported {
@@ -237,10 +237,10 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			logrus.Infof("waiting for cluster ACK [%s] to update", cluster.Name)
+			log.Info("Waiting for cluster ACK to update", "cluster", cluster.Name)
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionUpdated, "")
 		}
-		logrus.Infof("waiting for cluster ACK [%s] update failure to be resolved", cluster.Name)
+		log.Info("Waiting for cluster ACK update failure to be resolved", "cluster", cluster.Name)
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionUpdated, failureMessage)
 	default:
 		if cluster.Spec.AliConfig.Imported {
@@ -248,9 +248,9 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 			if err != nil {
 				return cluster, err
 			}
-			logrus.Infof("waiting for cluster import [%s] to start", cluster.Name)
+			log.Info("Waiting for cluster import to start", "cluster", cluster.Name)
 		} else {
-			logrus.Infof("waiting for cluster create [%s] to start", cluster.Name)
+			log.Info("Waiting for cluster create to start", "cluster", cluster.Name)
 		}
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
@@ -260,13 +260,13 @@ func (e *aliOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 				if err != nil {
 					return cluster, err
 				}
-				logrus.Infof("waiting for cluster import [%s] to start", cluster.Name)
+				log.Info("Waiting for cluster import to start", "cluster", cluster.Name)
 			} else {
-				logrus.Infof("waiting for cluster create [%s] to start", cluster.Name)
+				log.Info("Waiting for cluster create to start", "cluster", cluster.Name)
 			}
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		logrus.Infof("waiting for cluster ACK [%s] pre-create failure to be resolved", cluster.Name)
+		log.Info("Waiting for cluster ACK pre-create failure to be resolved", "cluster", cluster.Name)
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	}
 }
@@ -343,7 +343,7 @@ func (e *aliOperatorController) updateAliClusterConfig(cluster *apimgmtv3.Cluste
 }
 
 func (e *aliOperatorController) setInitialUpstreamSpec(cluster *apimgmtv3.Cluster) (*apimgmtv3.Cluster, error) {
-	logrus.Infof("setting initial upstreamSpec on cluster [%s]", cluster.Name)
+	log.Info("Setting initial upstreamSpec on cluster", "cluster", cluster.Name)
 	cluster = cluster.DeepCopy()
 	upstreamSpec, err := clusterupstreamrefresher.BuildAlibabaUpstreamSpec(e.SecretsCache, cluster)
 	if err != nil {

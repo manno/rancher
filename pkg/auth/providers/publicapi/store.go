@@ -15,10 +15,10 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers/common"
 	"github.com/rancher/rancher/pkg/auth/util"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -146,7 +146,7 @@ func newV1AuthProviderStore(wContext *wrangler.Context) (*v1AuthProviderStore, e
 func (s *v1AuthProviderStore) List(w http.ResponseWriter, r *http.Request) {
 	list, err := s.authConfigCache.List(labels.Everything())
 	if err != nil {
-		logrus.Errorf("v1AuthProviderStore: Listing authconfigs: %s", err)
+		log.Error("Error listing authconfigs", "operation", "v1_auth_provider_store_list", "error", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -162,7 +162,7 @@ func (s *v1AuthProviderStore) List(w http.ResponseWriter, r *http.Request) {
 
 		raw, err := s.authConfigsUnstructured.Get(r.Context(), authConfig.Name, metav1.GetOptions{})
 		if err != nil {
-			logrus.Errorf("v1AuthProviderStore: Getting authconfig %s: %s", authConfig.Name, err)
+			log.Error("Error getting authconfig", "operation", "v1_auth_provider_store_list", "authconfig_name", authConfig.Name, "error", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -171,7 +171,7 @@ func (s *v1AuthProviderStore) List(w http.ResponseWriter, r *http.Request) {
 
 		authProvider, err := s.getProviderByType(authConfig.Type).TransformToAuthProvider(raw.Object)
 		if err != nil {
-			logrus.Errorf("v1AuthProviderStore: Getting authprovider %s: %s", authConfig.Type, err)
+			log.Error("Error getting authprovider", "operation", "v1_auth_provider_store_list", "authconfig_type", authConfig.Type, "error", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -182,7 +182,7 @@ func (s *v1AuthProviderStore) List(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(&response); err != nil {
-		logrus.Errorf("v1AuthProviderStore: Encoding authproviders response: %s", err)
+		log.Error("Error encoding authproviders response", "operation", "v1_auth_provider_store_list", "error", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
@@ -205,7 +205,7 @@ func (s *v1AuthTokenStore) Get(w http.ResponseWriter, r *http.Request) {
 		if apierrors.IsNotFound(err) {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		} else {
-			logrus.Errorf("v1AuthTokenStore: Getting authtoken %s: %v", id, err)
+			log.Error("Error getting authtoken", "operation", "v1_auth_token_store_get", "token_id", id, "error", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
 		return
@@ -220,7 +220,7 @@ func (s *v1AuthTokenStore) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(&response); err != nil {
-		logrus.Errorf("v1AuthTokenStore: Encoding response for authtoken %s: %v", id, err)
+		log.Error("Error encoding response for authtoken", "operation", "v1_auth_token_store_get", "token_id", id, "error", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
@@ -230,7 +230,7 @@ func (s *v1AuthTokenStore) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := s.tokens.Delete(namespace.GlobalNamespace, id, &metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
-		logrus.Errorf("v1AuthTokenStore: Deleting authtoken %s: %v", id, err)
+		log.Error("Error deleting authtoken", "operation", "v1_auth_token_store_delete", "token_id", id, "error", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }

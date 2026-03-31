@@ -26,7 +26,7 @@ import (
 	"github.com/rancher/rancher/pkg/types/config/systemtokens"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corew "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -287,7 +287,7 @@ func (m *nodesSyncer) reconcileAll() error {
 			return err
 		}
 		if node == nil {
-			logrus.Debugf("Failed to get node for machine [%s], preparing to delete", machine.Name)
+			log.Debug("Failed to get node for machine", "machine", machine.Name)
 			toDelete[machine.Name] = machine
 			continue
 		}
@@ -344,7 +344,7 @@ func (m *nodesSyncer) removeNode(machine *apimgmtv3.Node) error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to delete machine [%s]", machine.Name)
 	}
-	logrus.Infof("Deleted cluster node %s [%s]", machine.Name, machine.Status.NodeName)
+	log.Info("Deleted cluster node", "machine", machine.Name, "node", machine.Status.NodeName)
 	return nil
 }
 
@@ -357,19 +357,19 @@ func (m *nodesSyncer) updateNode(existing *apimgmtv3.Node, node *corev1.Node) er
 	if objectsAreEqual(existing, toUpdate) {
 		return nil
 	}
-	logrus.Debugf("Updating machine for node [%s]", node.Name)
+	log.Debug("Updating machine for node", "node", node.Name)
 	_, err = m.machines.Update(toUpdate)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to update machine for node [%s]", node.Name)
 	}
-	logrus.Debugf("Updated machine for node [%s]", node.Name)
+	log.Debug("Updated machine for node", "node", node.Name)
 	return nil
 }
 
 func (m *nodesSyncer) createNode(node *corev1.Node, nodeCache *NodeCache) error {
 	// respect user defined name or label
 	if nodehelper.IgnoreNode(node.Name, node.Labels) {
-		logrus.Debugf("Skipping apimgmtv3.Node creation for [%v] node", node.Name)
+		log.Debug("Skipped apimgmtv3.Node creation for node", "node", node.Name)
 		return nil
 	}
 
@@ -395,7 +395,7 @@ func (m *nodesSyncer) createNode(node *corev1.Node, nodeCache *NodeCache) error 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create machine for node [%s]", node.Name)
 	}
-	logrus.Infof("Created machine for node [%s]", node.Name)
+	log.Info("Created machine for node", "node", node.Name)
 	return nil
 }
 
@@ -481,9 +481,7 @@ func objectsAreEqual(existing *apimgmtv3.Node, toUpdate *apimgmtv3.Node) bool {
 
 	retVal := statusEqual && conditionsEqual && specEqual && nodeNameEqual && labelsEqual && annotationsEqual && requestsEqual && limitsEqual && rolesEqual
 	if !retVal {
-		logrus.Debugf("ObjectsAreEqualResults for %s: statusEqual: %t conditionsEqual: %t specEqual: %t"+
-			" nodeNameEqual: %t labelsEqual: %t annotationsEqual: %t requestsEqual: %t limitsEqual: %t rolesEqual: %t",
-			toUpdate.Name, statusEqual, conditionsEqual, specEqual, nodeNameEqual, labelsEqual, annotationsEqual, requestsEqual, limitsEqual, rolesEqual)
+		log.Debug("Objects are equal results", "node", toUpdate.Name, "status_equal", statusEqual, "conditions_equal", conditionsEqual, "spec_equal", specEqual, "node_name_equal", nodeNameEqual, "labels_equal", labelsEqual, "annotations_equal", annotationsEqual, "requests_equal", requestsEqual, "limits_equal", limitsEqual, "roles_equal", rolesEqual)
 	}
 	return retVal
 }
@@ -506,37 +504,37 @@ func statusEqualTest(proposed, existing corev1.NodeStatus) bool {
 
 	// Capacity
 	if !reflect.DeepEqual(proposed.Capacity, existing.Capacity) {
-		logrus.Debugf("Changes in Capacity, proposed %#v, existing: %#v", proposed.Capacity, existing.Capacity)
+		log.Debug("Detected changes in Capacity", "proposed", proposed.Capacity, "existing", existing.Capacity)
 		return false
 	}
 
 	// Allocatable
 	if !reflect.DeepEqual(proposed.Allocatable, existing.Allocatable) {
-		logrus.Debugf("Changes in Allocatable, proposed %#v, existing: %#v", proposed.Allocatable, existing.Allocatable)
+		log.Debug("Detected changes in Allocatable", "proposed", proposed.Allocatable, "existing", existing.Allocatable)
 		return false
 	}
 
 	// Conditions
 	if !reflect.DeepEqual(proposed.Conditions, existing.Conditions) {
-		logrus.Debugf("Changes in Conditions, proposed %#v, existing: %#v", proposed.Conditions, existing.Conditions)
+		log.Debug("Detected changes in Conditions", "proposed", proposed.Conditions, "existing", existing.Conditions)
 		return false
 	}
 
 	// Addresses
 	if !reflect.DeepEqual(proposed.Addresses, existing.Addresses) {
-		logrus.Debugf("Changes in Addresses, proposed %#v, existing: %#v", proposed.Addresses, existing.Addresses)
+		log.Debug("Detected changes in Addresses", "proposed", proposed.Addresses, "existing", existing.Addresses)
 		return false
 	}
 
 	// Volumes in use (This test might prove to be an issue if order is not returned consistently.)
 	if !reflect.DeepEqual(proposed.VolumesInUse, existing.VolumesInUse) {
-		logrus.Debugf("Changes in VolumesInUse, proposed %#v, existing: %#v", proposed.VolumesInUse, existing.VolumesInUse)
+		log.Debug("Detected changes in VolumesInUse", "proposed", proposed.VolumesInUse, "existing", existing.VolumesInUse)
 		return false
 	}
 
 	// VolumesAttached (This test might prove to cause excessive updates if order is not returned consistently.)
 	if !reflect.DeepEqual(proposed.VolumesAttached, existing.VolumesAttached) {
-		logrus.Debugf("Changes in VolumesAttached, proposed %#v, existing: %#v", proposed.VolumesAttached, existing.VolumesAttached)
+		log.Debug("Detected changes in VolumesAttached", "proposed", proposed.VolumesAttached, "existing", existing.VolumesAttached)
 		return false
 	}
 
@@ -544,13 +542,7 @@ func statusEqualTest(proposed, existing corev1.NodeStatus) bool {
 	if proposed.NodeInfo.KubeletVersion != existing.NodeInfo.KubeletVersion ||
 		proposed.NodeInfo.KubeProxyVersion != existing.NodeInfo.KubeProxyVersion ||
 		proposed.NodeInfo.ContainerRuntimeVersion != existing.NodeInfo.ContainerRuntimeVersion {
-		logrus.Debugf("Changes in KubernetesInfo, "+
-			"KubeletVersion proposed %#v, existing: %#v"+
-			"KubeProxyVersion proposed %#v, existing: %#v"+
-			"ContainerRuntimeVersion proposed %#v, existing: %#v",
-			proposed.NodeInfo.KubeletVersion, existing.NodeInfo.KubeletVersion,
-			proposed.NodeInfo.KubeProxyVersion, existing.NodeInfo.KubeProxyVersion,
-			proposed.NodeInfo.ContainerRuntimeVersion, existing.NodeInfo.ContainerRuntimeVersion)
+		log.Debug("Detected changes in KubernetesInfo", "proposed_kubelet", proposed.NodeInfo.KubeletVersion, "existing_kubelet", existing.NodeInfo.KubeletVersion, "proposed_proxy", proposed.NodeInfo.KubeProxyVersion, "existing_proxy", existing.NodeInfo.KubeProxyVersion, "proposed_runtime", proposed.NodeInfo.ContainerRuntimeVersion, "existing_runtime", existing.NodeInfo.ContainerRuntimeVersion)
 		return false
 	}
 
@@ -711,7 +703,7 @@ func (m *nodesSyncer) isClusterRestoring() (bool, error) {
 		// capiClusterCache should not be nil for non-local clusters since we defer
 		// registration until CAPI is ready. Return an error if it is nil.
 		if m.capiClusterCache == nil {
-			logrus.Errorf("[nodessyncer][isClusterRestoring] capiClusterCache is nil for non-local cluster %s", cluster.Name)
+			log.Error("capiClusterCache was nil for non-local cluster", "operation", "nodessyncer.isClusterRestoring", "cluster", cluster.Name)
 			return false, errors.Errorf("capiClusterCache is nil for non-local cluster %s", cluster.Name)
 		}
 		provCluster, err := m.provClusterCache.Get(cluster.Spec.FleetWorkspaceName, cluster.Spec.DisplayName)

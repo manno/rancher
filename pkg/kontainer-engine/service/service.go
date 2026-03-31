@@ -17,7 +17,7 @@ import (
 	"github.com/rancher/rancher/pkg/kontainer-engine/cluster"
 	kubeimport "github.com/rancher/rancher/pkg/kontainer-engine/drivers/import"
 	"github.com/rancher/rancher/pkg/kontainer-engine/types"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"gopkg.in/yaml.v2"
 )
 
@@ -110,9 +110,9 @@ func flatten(data map[string]interface{}, driverOptions *types.DriverOptions) {
 				flatten(v, driverOptions)
 			}
 		case nil:
-			logrus.Debugf("could not convert %v because value is nil %v=%v", reflect.TypeOf(v), k, v)
+			log.Debug("could not convert value because it is nil", "type", reflect.TypeOf(v), "key", k, "value", v)
 		default:
-			logrus.Warnf("could not convert %v %v=%v", reflect.TypeOf(v), k, v)
+			log.Warn("could not convert value", "type", reflect.TypeOf(v), "key", k, "value", v)
 		}
 	}
 }
@@ -439,7 +439,7 @@ func (r *RunningDriver) Start() (string, error) {
 		r.cmd = cmd
 	}
 
-	logrus.Infof("kontainerdriver %v listening on address %v", r.Name, r.listenAddress)
+	log.Info("kontainerdriver listening on address", "driver", r.Name, "address", r.listenAddress)
 
 	return r.listenAddress, nil
 }
@@ -477,7 +477,7 @@ func (r *RunningDriver) Stop() {
 		r.cmd = nil
 	}
 
-	logrus.Infof("kontainerdriver %v stopped", r.Name)
+	log.Info("kontainerdriver stopped", "driver", r.Name)
 }
 
 func (e *EngineService) ETCDSave(ctx context.Context, name string, kontainerDriver *v3.KontainerDriver, clusterSpec v3.ClusterSpec, snapshotName string) error {

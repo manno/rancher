@@ -7,8 +7,8 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/features"
 	v3ctrl "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/telemetry/initcond"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/labels"
@@ -175,7 +175,7 @@ func (r *rancherTelemetryImpl) PerManagedClusterTelemetry() iter.Seq2[ClusterID,
 		for _, cl := range r.managedClusters {
 			nodes, ok := r.managedNodes[ClusterID(cl.Name)]
 			if !ok {
-				logrus.Warnf("detected no associated nodes for cluster : %s", cl.Name)
+				log.Warn("Detected no associated nodes for cluster", "operation", "gather_cluster_metrics", "cluster", cl.Name)
 			}
 
 			if !yield(ClusterID(cl.Name), &clusterTelemetryImpl{

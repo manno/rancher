@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/rbac"
 	"github.com/rancher/rancher/pkg/types/config"
 	rbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -37,10 +37,10 @@ type impersonationHandler struct {
 
 // ensureServiceAccountImpersonator ensures a Service Account Impersonator exists for a given user. If not it creates one.
 func (ih *impersonationHandler) ensureServiceAccountImpersonator(username string) error {
-	logrus.Debugf("ensuring service account impersonator for %s", username)
+	log.Debug("Ensuring service account impersonator", "username", username)
 	err := ih.impersonator.SetUpImpersonation(&user.DefaultInfo{UID: username})
 	if apierrors.IsNotFound(err) {
-		logrus.Warnf("could not find user %s, will not create impersonation account on cluster", username)
+		log.Warn("Could not find user, will not create impersonation account on cluster", "username", username)
 		return nil
 	}
 	return err

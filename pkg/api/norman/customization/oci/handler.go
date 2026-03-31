@@ -17,11 +17,11 @@ import (
 	provcluster "github.com/rancher/rancher/pkg/controllers/provisioningv2/cluster"
 	provv1 "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/ref"
 	schema "github.com/rancher/rancher/pkg/schemas/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 )
 
 type Credentials struct {
@@ -84,49 +84,49 @@ func (handler *handler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	switch resourceType {
 	case "vcns":
 		if serialized, errCode, err = processVcns(provider, creds.Compartment); err != nil {
-			logrus.Debugf("[oci-handler] error processing VCNs: %v", err)
+			log.Debug("Oci-handler: error processing VCNs", "operation", "handle", "resource_type", resourceType, "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "okeVersions":
 		if serialized, errCode, err = processOkeVersions(provider); err != nil {
-			logrus.Debugf("[oci-handler] error processing OKE versions: %v", err)
+			log.Debug("Oci-handler: error processing OKE versions", "operation", "handle", "resource_type", resourceType, "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "availabilityDomains":
 		if serialized, errCode, err = processAvailabilityDomains(provider, creds.Compartment); err != nil {
-			logrus.Debugf("[oci-handler] error processing ADs: %v", err)
+			log.Debug("Oci-handler: error processing ADs", "operation", "handle", "resource_type", resourceType, "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "regions":
 		if serialized, errCode, err = processRegions(provider, creds.Tenancy); err != nil {
-			logrus.Debugf("[oci-handler] error processing regions: %v", err)
+			log.Debug("Oci-handler: error processing regions", "operation", "handle", "resource_type", resourceType, "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "nodeShapes":
 		if serialized, errCode, err = processNodeShapes(provider, creds.Compartment); err != nil {
-			logrus.Debugf("[oci-handler] error processing node shapes: %v", err)
+			log.Debug("Oci-handler: error processing node shapes", "operation", "handle", "resource_type", resourceType, "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "nodeImages":
 		if serialized, errCode, err = processImages(provider, creds.Compartment); err != nil {
-			logrus.Debugf("[oci-handler] error processing images: %v", err)
+			log.Debug("Oci-handler: error processing images", "operation", "handle", "resource_type", resourceType, "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
 		writer.Write(serialized)
 	case "nodeOkeImages":
 		if serialized, errCode, err = processNodeOkeImages(provider); err != nil {
-			logrus.Debugf("[oci-handler] error processing OKE images: %v", err)
+			log.Debug("Oci-handler: error processing OKE images", "operation", "handle", "resource_type", resourceType, "error", err)
 			util.ReturnHTTPError(writer, req, errCode, err.Error())
 			return
 		}
@@ -141,7 +141,7 @@ func (handler *handler) extractCreds(req *http.Request, creds *Credentials) (int
 	if credID := req.URL.Query().Get("cloudCredentialId"); credID != "" {
 		ns, name := ref.Parse(credID)
 		if ns == "" || name == "" {
-			logrus.Debugf("[oci-handler] invalid cloud credential ID %s", credID)
+			log.Debug("Oci-handler: invalid cloud credential ID", "operation", "get_credentials", "cred_id", credID)
 			return httperror.InvalidBodyContent.Status, fmt.Errorf("invalid cloud credential ID %s", credID)
 		}
 
@@ -170,7 +170,7 @@ func (handler *handler) extractCreds(req *http.Request, creds *Credentials) (int
 
 		cc, err := handler.secretsLister.Get(namespace.GlobalNamespace, name)
 		if err != nil {
-			logrus.Debugf("[oci-handler] error accessing cloud credential %s", credID)
+			log.Debug("Oci-handler: error accessing cloud credential", "operation", "get_credentials", "cred_id", credID)
 			return httperror.InvalidBodyContent.Status, fmt.Errorf("error accessing cloud credential %s", credID)
 		}
 
@@ -191,13 +191,13 @@ func (handler *handler) extractCreds(req *http.Request, creds *Credentials) (int
 		// Get credentials from body
 		raw, err := io.ReadAll(req.Body)
 		if err != nil {
-			logrus.Debugf("[oci-handler] cannot read request body: %s", err)
+			log.Debug("Oci-handler: cannot read request body", "operation", "get_credentials", "error", err)
 			return httperror.InvalidBodyContent.Status, fmt.Errorf("cannot read request body: %w", err)
 		}
 
 		err = json.Unmarshal(raw, &creds)
 		if err != nil {
-			logrus.Debugf("[oci-handler] cannot parse request body: %s", err)
+			log.Debug("Oci-handler: cannot parse request body", "operation", "get_credentials", "error", err)
 			return httperror.InvalidBodyContent.Status, fmt.Errorf("cannot parse request body: %w", err)
 		}
 	} else {
@@ -221,20 +221,20 @@ func (handler *handler) validateCreds(creds *Credentials) error {
 
 	// The rest are required
 	if creds.PrivateKey == "" {
-		logrus.Debugf("[oci-handler] OCI API private key is required")
+		log.Debug("Oci-handler: OCI API private key is required", "operation", "validate")
 		return fmt.Errorf("OCI API private key is required")
 	}
 	if creds.FingerPrint == "" {
-		logrus.Debugf("[oci-handler] OCI fingerprint is required")
+		log.Debug("Oci-handler: OCI fingerprint is required", "operation", "validate")
 		return fmt.Errorf("OCI fingerprint is required")
 	}
 	if creds.Tenancy == "" {
-		logrus.Debugf("[oci-handler] OCI tenancy is required")
+		log.Debug("Oci-handler: OCI tenancy is required", "operation", "validate")
 		return fmt.Errorf("OCI tenancy is required")
 	}
 
 	if creds.User == "" {
-		logrus.Debugf("[oci-handler] OCI user is required")
+		log.Debug("Oci-handler: OCI user is required", "operation", "validate")
 		return fmt.Errorf("OCI user is required")
 	}
 

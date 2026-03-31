@@ -3,7 +3,6 @@ package githubapp
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-github/v73/github"
 	"github.com/rancher/rancher/pkg/auth/providers/common"
+	rlog "github.com/rancher/rancher/pkg/log"
 	"golang.org/x/oauth2"
 	"k8s.io/utils/ptr"
 )
@@ -278,7 +278,7 @@ func newClientForApp(ctx context.Context, appID int64, privateKey []byte, endpoi
 func createJWT(appID int64, privateKey []byte) string {
 	key, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
 	if err != nil {
-		log.Fatalf("failed to parse private key: %v", err)
+		rlog.Fatal("Failed to parse GitHub App private key", "error", err)
 	}
 
 	iss := time.Now().Add(-30 * time.Second).Truncate(time.Second)
@@ -291,7 +291,7 @@ func createJWT(appID int64, privateKey []byte) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	ss, err := token.SignedString(key)
 	if err != nil {
-		log.Fatalf("failed to sign JWT: %v", err)
+		rlog.Fatal("Failed to sign GitHub App JWT", "error", err)
 	}
 
 	return ss
@@ -382,7 +382,7 @@ func getDataForApp(ctx context.Context, appID int64, privateKey []byte, installa
 	if installationID > 0 {
 		installation, _, err := client.Apps.GetInstallation(ctx, installationID)
 		if err != nil {
-			log.Fatalf("failed to get installation %v: %s", installationID, err)
+			rlog.Fatal("Failed to get GitHub App installation", "installation_id", installationID, "error", err)
 		}
 		installationClient, err := newClientForInstallation(ctx, appClient, installationID, endpoint)
 		if err != nil {

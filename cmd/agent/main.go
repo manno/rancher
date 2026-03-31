@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -29,11 +30,11 @@ import (
 	"github.com/rancher/rancher/pkg/agent/rancher"
 	"github.com/rancher/rancher/pkg/controllers/managementuser/cavalidator"
 	"github.com/rancher/rancher/pkg/features"
+	rancherlog "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/logserver"
 	"github.com/rancher/rancher/pkg/utils"
 	"github.com/rancher/remotedialer"
 	"github.com/rancher/wrangler/v3/pkg/signals"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -50,7 +51,7 @@ func main() {
 	var err error
 	ctx := context.Background()
 
-	configureLogrus()
+	configureLog()
 
 	logserver.StartServerWithDefaults()
 
@@ -59,7 +60,7 @@ func main() {
 	// The cleanup is only performed by the cattle-cluster-agent,
 	// in whose template the CATTLE_CREDENTIAL_NAME environment variable is set
 	if os.Getenv("CATTLE_CREDENTIAL_NAME") != "" {
-		logrus.Infof("starting cattle-credential-cleanup goroutine in the background")
+		rancherlog.Info("Starting cattle-credential-cleanup goroutine in the background")
 		go clean.UnusedCattleCredentials()
 	}
 
@@ -79,7 +80,7 @@ func main() {
 	}
 
 	if err != nil {
-		logrus.Fatal(err)
+		rancherlog.Fatal("Agent failed to initialize", "error", err)
 	}
 }
 
@@ -113,7 +114,7 @@ func connected() {
 func run(ctx context.Context) error {
 	topContext := signals.SetupSignalContext()
 
-	logrus.Infof("Rancher agent version %s is starting", VERSION)
+	rancherlog.Info("Rancher agent is starting", "version", VERSION)
 	params, err := getParams()
 	if err != nil {
 		return err
@@ -139,29 +140,31 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	topContext = context.WithValue(topContext, cavalidator.CACertsValidKey, false)
+	topContext = context.WithValue(topContext, cavalidator.CacertsValid, false)
 
 	// Perform root CA verification
 	var transport *http.Transport
 	systemStoreConnectionCheckRequired := true
 	transport = rootCATransport()
 	if transport != nil {
-		logrus.Infof("Testing connection to %s using trusted certificate authorities within: %s", server, caFileLocation)
+		rancherlog.Info("Testing connection to server using trusted certificate authorities", "server", server, "ca_file_location", caFileLocation)
 		var httpClient = &http.Client{
 			Timeout:   time.Second * 5,
 			Transport: transport,
 		}
 		if _, err = httpClient.Get(server); err != nil {
 			if cluster.CAStrictVerify() {
-				logrus.Errorf("Could not securely connect to %s: %v", server, err)
+				rancherlog.Error("Could not securely connect to server", "server", server, "error", err)
 				os.Exit(1)
 			}
+			// onConnect will use the transport later on, so discard it as it doesn't work and fallback to the system store.
+			transport = nil
 		} else {
-			topContext = context.WithValue(topContext, cavalidator.CACertsValidKey, true)
+			topContext = context.WithValue(topContext, cavalidator.CacertsValid, true)
 			systemStoreConnectionCheckRequired = false
 		}
 	} else if cluster.CAStrictVerify() {
-		logrus.Errorf("Strict CA verification is enabled but encountered error finding root CA")
+		rancherlog.Error("Strict CA verification is enabled but encountered error finding root CA")
 		os.Exit(1)
 	}
 
@@ -193,20 +196,20 @@ func run(ctx context.Context) error {
 				}
 				res, err := insecureClient.Get(server)
 				if err != nil {
-					logrus.Errorf("Could not connect to %s: %v", server, err)
+					rancherlog.Error("Could not connect to server", "server", server, "error", err)
 					os.Exit(1)
 				}
 				var lastFoundIssuer string
 				if res.TLS != nil && len(res.TLS.PeerCertificates) > 0 {
-					logrus.Infof("Certificate details from %s", serverURL)
+					rancherlog.Info("Certificate details from server", "server_url", serverURL)
 					var previouscert *x509.Certificate
 					for i := range res.TLS.PeerCertificates {
 						cert := res.TLS.PeerCertificates[i]
-						logrus.Infof("Certificate #%d (%s)", i, serverURL)
+						rancherlog.Info("Certificate info", "index", i, "server_url", serverURL)
 						certinfo(cert)
 						if i > 0 {
 							if previouscert.Issuer.String() != cert.Subject.String() {
-								logrus.Errorf("Certficate's Subject (%s) does not match with previous certificate Issuer (%s). Please check if the configured server certificate contains all needed intermediate certificates and make sure they are in the correct order (server certificate first, intermediates after)", cert.Subject.String(), previouscert.Issuer.String())
+								rancherlog.Error("Certificate subject does not match previous certificate issuer. Please check if the configured server certificate contains all needed intermediate certificates and make sure they are in the correct order (server certificate first, intermediates after)", "subject", cert.Subject.String(), "previous_issuer", previouscert.Issuer.String())
 							}
 						}
 						previouscert = cert
@@ -214,7 +217,7 @@ func run(ctx context.Context) error {
 					}
 				}
 				if _, err := os.Stat(caFileLocation); err == nil {
-					caFile, err := os.ReadFile(caFileLocation)
+					caFile, err := ioutil.ReadFile(caFileLocation)
 					if err != nil {
 						return err
 					}
@@ -231,27 +234,27 @@ func run(ctx context.Context) error {
 						}
 					}
 					if len(blocks) > 1 {
-						logrus.Warnf("Found %d certificates at %s, should be 1", len(blocks), caFileLocation)
+						rancherlog.Warn("Found multiple certificates at CA file location, should be one", "count", len(blocks), "ca_file_location", caFileLocation)
 					}
-					logrus.Infof("Certificate details for %s", caFileLocation)
+					rancherlog.Info("Certificate details for CA file", "ca_file_location", caFileLocation)
 
 					blockcount := 0
 					var lastCACert *x509.Certificate
 					for _, block := range blocks {
 						cert, err := x509.ParseCertificate(block)
 						if err != nil {
-							logrus.Println(err)
+							rancherlog.Error("Failed to parse certificate", "error", err)
 							continue
 						}
 
-						logrus.Infof("Certificate #%d (%s)", blockcount, caFileLocation)
+						rancherlog.Info("Certificate info", "index", blockcount, "ca_file_location", caFileLocation)
 						certinfo(cert)
 
 						blockcount = blockcount + 1
 						lastCACert = cert
 					}
 					if lastFoundIssuer != lastCACert.Issuer.String() {
-						logrus.Errorf("Issuer of last certificate found in chain (%s) does not match with CA certificate Issuer (%s). Please check if the configured server certificate contains all needed intermediate certificates and make sure they are in the correct order (server certificate first, intermediates after)", lastFoundIssuer, lastCACert.Issuer.String())
+						rancherlog.Error("Issuer of last certificate in chain does not match CA certificate issuer. Please check if the configured server certificate contains all needed intermediate certificates and make sure they are in the correct order (server certificate first, intermediates after)", "last_found_issuer", lastFoundIssuer, "ca_certificate_issuer", lastCACert.Issuer.String())
 					}
 				}
 				return certErr
@@ -268,7 +271,7 @@ func run(ctx context.Context) error {
 
 		err = rancher.Run(topContext)
 		if err != nil {
-			logrus.Fatal(err)
+			rancherlog.Fatal("Failed to run rancher agent", "error", err)
 		}
 		return nil
 	}
@@ -287,7 +290,8 @@ func run(ctx context.Context) error {
 			wsURL += "/register"
 		}
 
-		logrus.Infof("Connecting to %s with token starting with %s", wsURL, token[:len(token)/2])
+		rancherlog.Info("Connecting to server", "url", wsURL, "token_prefix", token[:len(token)/2])
+		rancherlog.Trace("Connecting to server", "url", wsURL, "token", token)
 		remotedialer.ClientConnect(ctx, wsURL, headers, nil, func(proto, address string) bool {
 			switch proto {
 			case "tcp":
@@ -315,10 +319,10 @@ func exitCertWriter(ctx context.Context) {
 		os.Exit(0)
 	}()
 
-	logrus.Info("attempting to stop the share-mnt container so it can reboot on startup")
+	rancherlog.Info("Attempting to stop share-mnt container")
 	c, err := client.NewClientWithOpts(client.WithAPIVersionNegotiation(), client.FromEnv)
 	if err != nil {
-		logrus.Error(err)
+		rancherlog.Error("Operation failed", "error", err)
 		os.Exit(0)
 	}
 
@@ -329,7 +333,7 @@ func exitCertWriter(ctx context.Context) {
 		Filters: args,
 	})
 	if err != nil {
-		logrus.Error(err)
+		rancherlog.Error("Operation failed", "error", err)
 		os.Exit(0)
 	}
 
@@ -337,7 +341,7 @@ func exitCertWriter(ctx context.Context) {
 		if len(container.Names) > 0 && strings.Contains(container.Names[0], "share-mnt") {
 			err := c.ContainerKill(ctx, container.ID, "SIGTERM")
 			if err != nil {
-				logrus.Error(err)
+				rancherlog.Error("Operation failed", "error", err)
 				os.Exit(0) // only need to write certs so exit cleanly
 			}
 		}
@@ -347,45 +351,47 @@ func exitCertWriter(ctx context.Context) {
 }
 
 func certinfo(cert *x509.Certificate) {
-	logrus.Infof("Subject: %+v", cert.Subject)
-	logrus.Infof("Issuer: %+v", cert.Issuer)
-	logrus.Infof("IsCA: %+v", cert.IsCA)
+	rancherlog.Info("Certificate subject", "subject", cert.Subject)
+	rancherlog.Info("Certificate issuer", "issuer", cert.Issuer)
+	rancherlog.Info("Certificate is CA", "is_ca", cert.IsCA)
 	if len(cert.DNSNames) > 0 {
-		logrus.Infof("DNS Names: %+v", cert.DNSNames)
+		rancherlog.Info("Certificate DNS names", "dns_names", cert.DNSNames)
 	} else {
-		logrus.Infof("DNS Names: <none>")
+		rancherlog.Info("Certificate DNS names", "dns_names", "<none>")
 	}
 	if len(cert.IPAddresses) > 0 {
-		logrus.Infof("IPAddresses: %+v", cert.IPAddresses)
+		rancherlog.Info("Certificate IP addresses", "ip_addresses", cert.IPAddresses)
 	} else {
-		logrus.Info("IPAddresses: <none>")
+		rancherlog.Info("Certificate IP addresses", "ip_addresses", "<none>")
 	}
-	logrus.Infof("NotBefore: %+v", cert.NotBefore)
-	logrus.Infof("NotAfter: %+v", cert.NotAfter)
-	logrus.Infof("SignatureAlgorithm: %+v", cert.SignatureAlgorithm)
-	logrus.Infof("PublicKeyAlgorithm: %+v", cert.PublicKeyAlgorithm)
+	rancherlog.Info("Certificate not before", "not_before", cert.NotBefore)
+	rancherlog.Info("Certificate not after", "not_after", cert.NotAfter)
+	rancherlog.Info("Certificate signature algorithm", "signature_algorithm", cert.SignatureAlgorithm)
+	rancherlog.Info("Certificate public key algorithm", "public_key_algorithm", cert.PublicKeyAlgorithm)
 }
 
-func configureLogrus() {
-	logrus.SetOutput(colorable.NewColorableStdout())
-
+func configureLog() {
+	level := "info"
 	if os.Getenv("CATTLE_TRACE") == "true" || os.Getenv("RANCHER_TRACE") == "true" {
-		logrus.SetLevel(logrus.TraceLevel)
+		level = "trace"
 	} else if os.Getenv("CATTLE_DEBUG") == "true" || os.Getenv("RANCHER_DEBUG") == "true" {
-		logrus.SetLevel(logrus.DebugLevel)
+		level = "debug"
 	}
+
+	// Use text format for agent (colorable output)
+	rancherlog.Init("text", level, colorable.NewColorableStdout())
 }
 
 // rootCATransport generates a http.Transport that contains the contents of the CA file as the Root CA for strict validation.
 func rootCATransport() *http.Transport {
 	caFile, err := os.ReadFile(caFileLocation)
 	if err != nil {
-		logrus.Errorf("unable to read CA file from %s: %v", caFileLocation, err)
+		rancherlog.Error("Unable to read CA file", "location", caFileLocation, "error", err)
 		return nil
 	}
 	certPool := x509.NewCertPool()
 	if ok := certPool.AppendCertsFromPEM(caFile); !ok {
-		logrus.Errorf("unable to parse CA file %s", caFileLocation)
+		rancherlog.Error("Unable to parse CA file", "location", caFileLocation)
 		return nil
 	}
 	return &http.Transport{

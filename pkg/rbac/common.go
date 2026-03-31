@@ -12,12 +12,12 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	provv1 "github.com/rancher/rancher/pkg/apis/provisioning.cattle.io/v1"
 	v32 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/ref"
 	"github.com/rancher/wrangler/pkg/name"
 	k8srbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	wranglerName "github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -203,7 +203,7 @@ func NameForRoleBinding(namespace string, role rbacv1.RoleRef, subject rbacv1.Su
 	name.WriteString("rb-")
 	name.WriteString(getBindingHash(namespace, role, subject))
 	nm := name.String()
-	logrus.Debugf("RoleBinding with namespace=%s role.kind=%s role.name=%s subject.kind=%s subject.name=%s has name: %s", namespace, role.Kind, role.Name, subject.Kind, subject.Name, nm)
+	log.Debug("Role binding name calculated", "operation", "name_for_rolebinding", "namespace", namespace, "role_kind", role.Kind, "role_name", role.Name, "subject_kind", subject.Kind, "subject_name", subject.Name, "name", nm)
 	return nm
 }
 
@@ -213,7 +213,7 @@ func NameForClusterRoleBinding(role rbacv1.RoleRef, subject rbacv1.Subject) stri
 	name.WriteString("crb-")
 	name.WriteString(getBindingHash("", role, subject))
 	nm := name.String()
-	logrus.Debugf("ClusterRoleBinding with role.kind=%s role.name=%s subject.kind=%s subject.name=%s has name: %s", role.Kind, role.Name, subject.Kind, subject.Name, nm)
+	log.Debug("Cluster role binding name calculated", "operation", "name_for_clusterrolebinding", "role_kind", role.Kind, "role_name", role.Name, "subject_kind", subject.Kind, "subject_name", subject.Name, "name", nm)
 	return nm
 }
 
@@ -370,7 +370,7 @@ func CreateOrUpdateResource[T generic.RuntimeMetaObject, TList runtime.Object](o
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get %s %s: %w", kind, obj.GetName(), err)
 		}
-		logrus.Infof("%s %s is being created", kind, obj.GetName())
+		log.Info("Creating resource", "kind", kind, "name", obj.GetName())
 		// resource doesn't exist, create it
 		_, err = client.Create(obj)
 		if err != nil {
@@ -381,7 +381,7 @@ func CreateOrUpdateResource[T generic.RuntimeMetaObject, TList runtime.Object](o
 
 	// check that the existing resource is the same as the one we want
 	if same, updatedResource := areResourcesTheSame(resource, obj); !same {
-		logrus.Infof("%s %s needs to be updated", kind, obj.GetName())
+		log.Info("Updating resource", "kind", kind, "name", obj.GetName())
 		// if it has changed, update it to the correct version
 		_, err := client.Update(updatedResource)
 		if err != nil {
@@ -403,7 +403,7 @@ func CreateOrUpdateNamespacedResource[T generic.RuntimeMetaObject, TList runtime
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get %s %s in namespace %s: %w", kind, obj.GetName(), obj.GetNamespace(), err)
 		}
-		logrus.Infof("%s %s is being created in namespace %s", kind, obj.GetName(), obj.GetNamespace())
+		log.Info("Creating resource", "kind", kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 		// resource doesn't exist, create it
 		_, err = client.Create(obj)
 		if err != nil {
@@ -414,7 +414,7 @@ func CreateOrUpdateNamespacedResource[T generic.RuntimeMetaObject, TList runtime
 
 	// check that the existing resource is the same as the one we want
 	if same, updatedResource := areResourcesTheSame(resource, obj); !same {
-		logrus.Infof("%s %s in namespace %s needs to be updated", kind, obj.GetName(), obj.GetNamespace())
+		log.Info("Updating resource", "kind", kind, "name", obj.GetName(), "namespace", obj.GetNamespace())
 		// if it has changed, update it to the correct version
 		_, err := client.Update(updatedResource)
 		if err != nil {
@@ -466,7 +466,7 @@ func AreClusterRolesSame(currentCR, wantedCR *rbacv1.ClusterRole) (bool, *rbacv1
 
 // DeleteResource deletes a non namespaced resource
 func DeleteResource[T generic.RuntimeMetaObject, TList runtime.Object](name string, client generic.NonNamespacedClientInterface[T, TList]) error {
-	logrus.Infof("Deleting %T %s", *new(T), name)
+	log.Info("Deleting resource", "type", fmt.Sprintf("%T", *new(T)), "name", name)
 	err := client.Delete(name, &metav1.DeleteOptions{})
 	// If the resource is already gone, don't treat it as an error
 	if apierrors.IsNotFound(err) {
@@ -480,7 +480,7 @@ func DeleteResource[T generic.RuntimeMetaObject, TList runtime.Object](name stri
 
 // DeleteNamespacedResource deletes a namespaced resource
 func DeleteNamespacedResource[T generic.RuntimeMetaObject, TList runtime.Object](namespace, name string, client generic.ClientInterface[T, TList]) error {
-	logrus.Infof("Deleting %T %s in namespace %s", *new(T), name, namespace)
+	log.Info("Deleting resource", "type", fmt.Sprintf("%T", *new(T)), "name", name, "namespace", namespace)
 	err := client.Delete(namespace, name, &metav1.DeleteOptions{})
 	// If the resource is already gone, don't treat it as an error
 	if apierrors.IsNotFound(err) {

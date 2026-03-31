@@ -8,7 +8,7 @@ import (
 
 	"github.com/rancher/norman/condition"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -65,7 +65,7 @@ func (ps *projectSyncer) createDefaultNetworkPolicy(p *v3.Project) (*v3.Project,
 		defaultPolicyName := "pnp-" + projectName
 		existingPolicies, err := ps.pnpLister.List(defaultPolicyName, labels.Everything())
 		if err != nil {
-			logrus.Errorf("projectSyncer: createDefaultNetworkPolicy: error fetching existing project network policy: %v", err)
+			log.Error("Projectsyncer: createdefaultnetworkpolicy: error fetching existing project network policy", "operation", "create_default_network_policy", "error", err)
 			return p, err
 		}
 		if len(existingPolicies) == 0 {
@@ -81,7 +81,7 @@ func (ps *projectSyncer) createDefaultNetworkPolicy(p *v3.Project) (*v3.Project,
 				},
 			})
 			if err == nil {
-				logrus.Infof("projectSyncer: createDefaultNetworkPolicy: successfully created default network policy for project: %v", projectName)
+				log.Info("Projectsyncer: createdefaultnetworkpolicy: successfully created default network policy for project", "operation", "create_default_network_policy", "project", projectName)
 			}
 		}
 

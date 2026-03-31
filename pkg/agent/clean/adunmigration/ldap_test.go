@@ -1,10 +1,12 @@
 package adunmigration
 
 import (
+	"bytes"
+	"io"
+	"strings"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-	logrusTest "github.com/sirupsen/logrus/hooks/test"
+	log "github.com/rancher/rancher/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,8 +21,11 @@ func TestEscapeUUID(t *testing.T) {
 }
 
 func TestIsGUID(t *testing.T) {
-	// Note: because logrus state is global, we cannot use t.Parallel here
-	hook := logrusTest.NewGlobal()
+	// Note: because log state is global, we cannot use t.Parallel here
+	var buf bytes.Buffer
+	originalLevel := log.GetLevel()
+	log.Init("text", "error", &buf)
+	defer log.Init("text", originalLevel, io.Discard)
 
 	tests := []struct {
 		name            string
@@ -63,6 +68,7 @@ func TestIsGUID(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
+			buf.Reset()
 			result := isGUID(test.principalId)
 			if result != test.wantResult {
 				t.Errorf("expected isGUID to be %v, but got %v", test.wantResult, result)
@@ -71,10 +77,10 @@ func TestIsGUID(t *testing.T) {
 			// definition not a valid GUID. We generate a log if this happens, so let's make sure we got
 			// that log:
 			if test.wantLoggedError {
-				assert.GreaterOrEqual(t, len(hook.Entries), 1)
-				assert.Equal(t, hook.LastEntry().Level, logrus.ErrorLevel)
+				output := buf.String()
+				assert.True(t, len(output) > 0, "Expected error log but got none")
+				assert.True(t, strings.Contains(output, "ERROR") || strings.Contains(output, "error"), "Expected ERROR level log, got: %s", output)
 			}
-			hook.Reset()
 		})
 	}
 }

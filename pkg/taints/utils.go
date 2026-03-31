@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -19,12 +19,12 @@ func GetKeyEffectString(taint v1.Taint) string {
 func GetTaintFromString(taintStr string) *v1.Taint {
 	taintStruct := strings.Split(taintStr, "=")
 	if len(taintStruct) != 2 {
-		logrus.Warnf("taint string %s is not validated", taintStr)
+		log.Warn("Taint string not validated", "operation", "get_taint_from_string", "taint", taintStr)
 		return nil
 	}
 	tmp := strings.Split(taintStruct[1], ":")
 	if len(tmp) != 2 {
-		logrus.Warnf("taint string %s is not validated", taintStr)
+		log.Warn("Taint string not validated", "operation", "get_taint_from_string", "taint", taintStr)
 		return nil
 	}
 	key := taintStruct[0]
@@ -89,7 +89,7 @@ func MergeTaints(t1 []v1.Taint, t2 []v1.Taint) []v1.Taint {
 	rtn := t2
 	for key, i := range set1 {
 		if j, ok := set2[key]; ok {
-			logrus.Infof("overriding taint %s with %s", GetTaintsString(t1[i]), GetTaintsString(t2[j]))
+			log.Info("Overriding taint", "operation", "merge_taints", "original", GetTaintsString(t1[i]), "override", GetTaintsString(t2[j]))
 			continue
 		}
 		rtn = append(rtn, t1[i])

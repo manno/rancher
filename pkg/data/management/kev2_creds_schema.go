@@ -6,8 +6,8 @@ import (
 
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -64,7 +64,7 @@ func (csh *KEv2CredsSchemaHandler) createOrUpdateCredSchema(operatorName string,
 	credSchema, err := csh.schemaLister.Get("", name)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			logrus.Infof("creating %s schema", name)
+			log.Info("Creating schema", "name", name)
 
 			credentialSchema := &v32.DynamicSchema{
 				Spec: v32.DynamicSchemaSpec{
@@ -97,7 +97,7 @@ func (csh *KEv2CredsSchemaHandler) addEmbeddedCredentialConfigField(embeddedType
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logrus.Infof("creating %s schema (parent: %s) with field: %s", credentialConfigSchemaID, cloudCredentialSchemaID, fieldName)
+		log.Info("Creating schema with field", "schema", credentialConfigSchemaID, "parent", cloudCredentialSchemaID, "fieldName", fieldName)
 
 		resourceField := map[string]v32.Field{}
 		resourceField[fieldName] = v32.Field{
@@ -125,7 +125,7 @@ func (csh *KEv2CredsSchemaHandler) addEmbeddedCredentialConfigField(embeddedType
 	}
 
 	if _, ok := nodeSchema.Spec.ResourceFields[fieldName]; !ok {
-		logrus.Infof("uploading %s to %s schema", fieldName, credentialConfigSchemaID)
+		log.Info("Uploading field to schema", "fieldName", fieldName, "schema", credentialConfigSchemaID)
 
 		nodeSchema.Spec.ResourceFields[fieldName] = v32.Field{
 			Create:   true,

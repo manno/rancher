@@ -15,7 +15,7 @@ import (
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	wrbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	wrangler "github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
+	log "github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -142,13 +142,13 @@ func (gr *globalRoleLifecycle) reconcileGlobalRole(globalRole *v3.GlobalRole, lo
 		clusterRole = clusterRole.DeepCopy()
 		if !reflect.DeepEqual(globalRole.Rules, clusterRole.Rules) {
 			clusterRole.Rules = globalRole.Rules
-			logrus.Infof("[%v] Updating clusterRole %v. GlobalRole rules have changed. Have: %+v. Want: %+v", grController, clusterRole.Name, clusterRole.Rules, globalRole.Rules)
+			log.Info("Updating clusterRole. GlobalRole rules have changed", "controller", grController, "name", clusterRole.Name, "have", clusterRole.Rules, "want", globalRole.Rules)
 			updated = true
 		}
 		// Ensure existing ClusterRoles have the correct grOwnerLabel pointing to the owning GlobalRole.
 		if grName := clusterRole.Labels[grOwnerLabel]; grName != globalRole.Name {
 			clusterRole.Labels[grOwnerLabel] = globalRole.Name
-			logrus.Infof("[%v] Updating clusterRole %s owner from %s to %s.", grController, clusterRole.Name, grName, globalRole.Name)
+			log.Info("Updating clusterRole owner", "controller", grController, "name", clusterRole.Name, "from", grName, "to", globalRole.Name)
 			updated = true
 		}
 
@@ -162,7 +162,7 @@ func (gr *globalRoleLifecycle) reconcileGlobalRole(globalRole *v3.GlobalRole, lo
 		return nil
 	}
 
-	logrus.Infof("[%v] Creating clusterRole %v for corresponding GlobalRole", grController, crName)
+	log.Info("Creating clusterRole for corresponding GlobalRole", "controller", grController, "name", crName)
 	_, err := gr.crClient.Create(&rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crName,
@@ -209,7 +209,7 @@ func (gr *globalRoleLifecycle) reconcileNamespacedRoles(globalRole *v3.GlobalRol
 		namespace, err := gr.nsCache.Get(ns)
 		if apierrors.IsNotFound(err) || namespace == nil {
 			// When a namespace is not found, don't re-enqueue GlobalRole
-			logrus.Warnf("[%v] Namespace %s not found. Not re-enqueueing GlobalRole %s", grController, ns, globalRole.Name)
+			log.Warn("Namespace not found. Not re-enqueueing GlobalRole", "controller", grController, "namespace", ns, "globalRole", globalRole.Name)
 			continue
 		} else if err != nil {
 			returnError = errors.Join(returnError, fmt.Errorf("couldn't get namespace %s: %w", ns, err))
@@ -226,7 +226,7 @@ func (gr *globalRoleLifecycle) reconcileNamespacedRoles(globalRole *v3.GlobalRol
 
 			// If the namespace is terminating, don't create a Role
 			if namespace.Status.Phase == corev1.NamespaceTerminating {
-				logrus.Warnf("[%v] Namespace %s is terminating. Not creating role %s for %s", grController, ns, roleName, globalRole.Name)
+				log.Warn("Namespace is terminating. Not creating role", "controller", grController, "namespace", ns, "role", roleName, "globalRole", globalRole.Name)
 				continue
 			}
 

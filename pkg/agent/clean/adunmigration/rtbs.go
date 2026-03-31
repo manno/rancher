@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -43,15 +43,19 @@ func identifyCRTBs(workunits *[]migrateUserWorkUnit, crtbList *v3.ClusterRoleTem
 			if workUnitContainsName(&(*workunits)[index], crtb.UserName) {
 				(*workunits)[index].activeDirectoryCRTBs = append((*workunits)[index].activeDirectoryCRTBs, crtb)
 			} else {
-				logrus.Warnf("[%v] found CRTB for user with guid-based principal '%v' and name '%v', but no user object with that name matches the GUID or its associated DN. refusing to process",
-					identifyAdUserOperation, crtb.UserPrincipalName, crtb.UserName)
+				log.Warn("Found CRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+					"operation", identifyAdUserOperation,
+					"principal", crtb.UserPrincipalName,
+					"user", crtb.UserName)
 			}
 		} else if index, exists = duplicateLocalWorkUnitsByPrincipal[crtb.UserPrincipalName]; exists {
 			if workUnitContainsName(&(*workunits)[index], crtb.UserName) {
 				(*workunits)[index].duplicateLocalCRTBs = append((*workunits)[index].duplicateLocalCRTBs, crtb)
 			} else {
-				logrus.Warnf("[%v] found CRTB for user with guid-based principal '%v' and name '%v', but no user object with that name matches the GUID or its associated DN. refusing to process",
-					identifyAdUserOperation, crtb.UserPrincipalName, crtb.UserName)
+				log.Warn("Found CRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+					"operation", identifyAdUserOperation,
+					"principal", crtb.UserPrincipalName,
+					"user", crtb.UserName)
 			}
 		}
 	}
@@ -65,15 +69,19 @@ func identifyPRTBs(workunits *[]migrateUserWorkUnit, prtbList *v3.ProjectRoleTem
 			if workUnitContainsName(&(*workunits)[index], prtb.UserName) {
 				(*workunits)[index].activeDirectoryPRTBs = append((*workunits)[index].activeDirectoryPRTBs, prtb)
 			} else {
-				logrus.Warnf("[%v] found PRTB for user with guid-based principal '%v' and name '%v', but no user object with that name matches the GUID or its associated DN. refusing to process",
-					identifyAdUserOperation, prtb.UserPrincipalName, prtb.UserName)
+				log.Warn("Found PRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+					"operation", identifyAdUserOperation,
+					"principal", prtb.UserPrincipalName,
+					"user", prtb.UserName)
 			}
 		} else if index, exists = duplicateLocalWorkUnitsByPrincipal[prtb.UserPrincipalName]; exists {
 			if workUnitContainsName(&(*workunits)[index], prtb.UserName) {
 				(*workunits)[index].duplicateLocalPRTBs = append((*workunits)[index].duplicateLocalPRTBs, prtb)
 			} else {
-				logrus.Warnf("[%v] found PRTB for user with guid-based principal '%v' and name '%v', but no user object with that name matches the GUID or its associated DN. refusing to process",
-					identifyAdUserOperation, prtb.UserPrincipalName, prtb.UserName)
+				log.Warn("Found PRTB for user with guid-based principal but no user object with that name matches the GUID or its associated DN, refusing to process",
+					"operation", identifyAdUserOperation,
+					"principal", prtb.UserPrincipalName,
+					"user", prtb.UserName)
 			}
 		}
 	}
@@ -140,7 +148,9 @@ func updateCRTB(crtbInterface v3norman.ClusterRoleTemplateBindingInterface, oldC
 		createdCrtb, err = crtbInterface.Create(newCrtb)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				logrus.Errorf("[%v] internal error while creating CRTB, will backoff and retry: %v", migrateCrtbsOperation, err)
+				log.Error("Internal error while creating CRTB, will backoff and retry",
+					"operation", migrateCrtbsOperation,
+					"error", err)
 				return false, err
 			}
 			return true, fmt.Errorf("[%v] unable to create new CRTB: %w", migrateCrtbsOperation, err)
@@ -157,7 +167,9 @@ func updateCRTB(crtbInterface v3norman.ClusterRoleTemplateBindingInterface, oldC
 		err = crtbInterface.DeleteNamespaced(oldCrtb.Namespace, oldCrtb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				logrus.Errorf("[%v] internal error while deleting CRTB, will backoff and retry: %v", migrateCrtbsOperation, err)
+				log.Error("Internal error while deleting CRTB, will backoff and retry",
+					"operation", migrateCrtbsOperation,
+					"error", err)
 				return false, err
 			}
 			return true, fmt.Errorf("[%v] unable to delete old CRTB: %w", migrateCrtbsOperation, err)
@@ -185,7 +197,9 @@ func updateCRTB(crtbInterface v3norman.ClusterRoleTemplateBindingInterface, oldC
 		_, err = crtbInterface.Update(updatedCrtb)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				logrus.Errorf("[%v] internal error while updating CRTB, will backoff and retry: %v", migrateCrtbsOperation, err)
+				log.Error("Internal error while updating CRTB, will backoff and retry",
+					"operation", migrateCrtbsOperation,
+					"error", err)
 				return false, err
 			}
 			return true, fmt.Errorf("[%v] unable to update new CRTB: %w", migrateCrtbsOperation, err)
@@ -205,13 +219,18 @@ func migrateCRTBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRu
 	dnPrincipalID := activeDirectoryPrefix + workunit.distinguishedName
 	for _, oldCrtb := range workunit.activeDirectoryCRTBs {
 		if dryRun {
-			logrus.Infof("[%v] DRY RUN: would migrate CRTB '%v' from GUID principal '%v' to DN principal '%v'. "+
-				"Annotation, %v, and labels %v and %v would be added, including the name of the previous CRTB instance",
-				migrateCrtbsOperation, oldCrtb.Name, oldCrtb.UserPrincipalName, dnPrincipalID, adGUIDMigrationAnnotation, migrationPreviousName, adGUIDMigrationLabel)
+			log.Info("DRY RUN: would migrate CRTB from GUID principal to DN principal",
+				"operation", migrateCrtbsOperation,
+				"crtb_name", oldCrtb.Name,
+				"old_principal", oldCrtb.UserPrincipalName,
+				"new_principal", dnPrincipalID)
 		} else {
 			err := updateCRTB(crtbInterface, &oldCrtb, workunit.originalUser.Name, dnPrincipalID)
 			if err != nil {
-				logrus.Errorf("[%v] error while migrating CRTBs for user '%v': %v", migrateCrtbsOperation, workunit.originalUser.Name, err)
+				log.Error("Error while migrating CRTBs for user",
+					"operation", migrateCrtbsOperation,
+					"user", workunit.originalUser.Name,
+					"error", err)
 			}
 		}
 	}
@@ -220,13 +239,18 @@ func migrateCRTBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRu
 	localPrincipalID := localPrefix + workunit.originalUser.Name
 	for _, oldCrtb := range workunit.duplicateLocalCRTBs {
 		if dryRun {
-			logrus.Infof("[%v] DRY RUN: would migrate CRTB '%v' from duplicate local user '%v' to original user '%v'"+
-				"Annotation, %v, and labels %v and %v would be added, including the name of the previous CRTB instance",
-				migrateCrtbsOperation, oldCrtb.Name, oldCrtb.UserPrincipalName, localPrincipalID, adGUIDMigrationAnnotation, migrationPreviousName, adGUIDMigrationLabel)
+			log.Info("DRY RUN: would migrate CRTB from duplicate local user to original user",
+				"operation", migrateCrtbsOperation,
+				"crtb_name", oldCrtb.Name,
+				"old_principal", oldCrtb.UserPrincipalName,
+				"new_principal", localPrincipalID)
 		} else {
 			err := updateCRTB(crtbInterface, &oldCrtb, workunit.originalUser.Name, localPrincipalID)
 			if err != nil {
-				logrus.Errorf("[%v] error while migrating crtbs for user '%v': %v", migrateCrtbsOperation, workunit.originalUser.Name, err)
+				log.Error("Error while migrating crtbs for user",
+					"operation", migrateCrtbsOperation,
+					"user", workunit.originalUser.Name,
+					"error", err)
 			}
 		}
 	}
@@ -276,7 +300,9 @@ func updatePRTB(prtbInterface v3norman.ProjectRoleTemplateBindingInterface, oldP
 		createdPrtb, err = prtbInterface.Create(newPrtb)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				logrus.Errorf("[%v] internal error while creating prtb, will backoff and retry: %v", migratePrtbsOperation, err)
+				log.Error("Internal error while creating prtb, will backoff and retry",
+					"operation", migratePrtbsOperation,
+					"error", err)
 				return false, err
 			}
 			return true, fmt.Errorf("[%v] unable to create new PRTB: %w", migratePrtbsOperation, err)
@@ -293,7 +319,9 @@ func updatePRTB(prtbInterface v3norman.ProjectRoleTemplateBindingInterface, oldP
 		err = prtbInterface.DeleteNamespaced(oldPrtb.Namespace, oldPrtb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				logrus.Errorf("[%v] internal error while deleting prtb, will backoff and retry: %v", migratePrtbsOperation, err)
+				log.Error("Internal error while deleting prtb, will backoff and retry",
+					"operation", migratePrtbsOperation,
+					"error", err)
 				return false, err
 			}
 			return true, fmt.Errorf("[%v] unable to delete old PRTB: %w", migratePrtbsOperation, err)
@@ -319,7 +347,9 @@ func updatePRTB(prtbInterface v3norman.ProjectRoleTemplateBindingInterface, oldP
 		_, err = prtbInterface.Update(updatedPrtb)
 		if err != nil {
 			if apierrors.IsInternalError(err) {
-				logrus.Errorf("[%v] internal error while updating PRTB, will backoff and retry: %v", migratePrtbsOperation, err)
+				log.Error("Internal error while updating PRTB, will backoff and retry",
+					"operation", migratePrtbsOperation,
+					"error", err)
 				return false, err
 			}
 			return true, fmt.Errorf("[%v] unable to update new PRTB: %w", migratePrtbsOperation, err)
@@ -339,14 +369,19 @@ func migratePRTBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRu
 	dnPrincipalID := activeDirectoryPrefix + workunit.distinguishedName
 	for _, oldPrtb := range workunit.activeDirectoryPRTBs {
 		if dryRun {
-			logrus.Infof("[%v] DRY RUN: would migrate PRTB '%v' from GUID principal '%v' to DN principal '%v'. "+
-				"Annotation, %v, and labels %v and %v would be added, including the name of the previous PRTB instance",
-				migratePrtbsOperation, oldPrtb.Name, oldPrtb.UserPrincipalName, dnPrincipalID, adGUIDMigrationAnnotation, migrationPreviousName, adGUIDMigrationLabel)
+			log.Info("DRY RUN: would migrate PRTB from GUID principal to DN principal",
+				"operation", migratePrtbsOperation,
+				"prtb_name", oldPrtb.Name,
+				"old_principal", oldPrtb.UserPrincipalName,
+				"new_principal", dnPrincipalID)
 
 		} else {
 			err := updatePRTB(prtbInterface, &oldPrtb, workunit.originalUser.Name, dnPrincipalID)
 			if err != nil {
-				logrus.Errorf("[%v] error while migrating prtbs for user '%v': %v", migratePrtbsOperation, workunit.originalUser.Name, err)
+				log.Error("Error while migrating prtbs for user",
+					"operation", migratePrtbsOperation,
+					"user", workunit.originalUser.Name,
+					"error", err)
 			}
 		}
 	}
@@ -355,14 +390,19 @@ func migratePRTBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRu
 	localPrincipalID := localPrefix + workunit.originalUser.Name
 	for _, oldPrtb := range workunit.duplicateLocalPRTBs {
 		if dryRun {
-			logrus.Infof("[%v] DRY RUN: would migrate PRTB '%v' from duplicate local user '%v' to original user '%v'. "+
-				"Annotation, %v, and labels %v and %v would be added, including the name of the previous PRTB instance",
-				migratePrtbsOperation, oldPrtb.Name, oldPrtb.UserPrincipalName, localPrincipalID, adGUIDMigrationAnnotation, migrationPreviousName, adGUIDMigrationLabel)
+			log.Info("DRY RUN: would migrate PRTB from duplicate local user to original user",
+				"operation", migratePrtbsOperation,
+				"prtb_name", oldPrtb.Name,
+				"old_principal", oldPrtb.UserPrincipalName,
+				"new_principal", localPrincipalID)
 
 		} else {
 			err := updatePRTB(prtbInterface, &oldPrtb, workunit.originalUser.Name, localPrincipalID)
 			if err != nil {
-				logrus.Errorf("[%v] error while migrating prtbs for user '%v': %v", migratePrtbsOperation, workunit.originalUser.Name, err)
+				log.Error("Error while migrating prtbs for user",
+					"operation", migratePrtbsOperation,
+					"user", workunit.originalUser.Name,
+					"error", err)
 			}
 		}
 	}
@@ -380,9 +420,11 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 
 	for _, oldGrb := range workunit.duplicateLocalGRBs {
 		if dryRun {
-			logrus.Infof("[%v] DRY RUN: would migrate GRB '%v' from duplicate local user '%v' to original user '%v'. "+
-				"Labels %v and %v would be added, including the name of the previous GRB instance",
-				migrateGrbsOperation, oldGrb.Name, oldGrb.UserName, workunit.originalUser.Name, migrationPreviousName, adGUIDMigrationLabel)
+			log.Info("DRY RUN: would migrate GRB from duplicate local user to original user",
+				"operation", migrateGrbsOperation,
+				"grb_name", oldGrb.Name,
+				"old_user", oldGrb.UserName,
+				"new_user", workunit.originalUser.Name)
 		} else {
 			newAnnotations := oldGrb.Annotations
 			if newAnnotations == nil {
@@ -416,7 +458,9 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				createdGrb, err = grbInterface.Create(newGrb)
 				if err != nil {
 					if apierrors.IsInternalError(err) {
-						logrus.Errorf("[%v] internal error while creating GRB, will backoff and retry: %v", migrateGrbsOperation, err)
+						log.Error("Internal error while creating GRB, will backoff and retry",
+							"operation", migrateGrbsOperation,
+							"error", err)
 						return false, err
 					}
 					return true, fmt.Errorf("[%v] unable to create new GRB: %w", migrateGrbsOperation, err)
@@ -424,7 +468,9 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				return true, nil
 			})
 			if err != nil {
-				logrus.Errorf("[%v] permanent error while creating GRB, giving up: %v", migrateGrbsOperation, err)
+				log.Error("Permanent error while creating GRB, giving up",
+					"operation", migrateGrbsOperation,
+					"error", err)
 				continue
 			}
 
@@ -434,7 +480,9 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				err = sc.Management.GlobalRoleBindings("").Delete(oldGrb.Name, &metav1.DeleteOptions{})
 				if err != nil {
 					if apierrors.IsInternalError(err) {
-						logrus.Errorf("[%v] internal error while deleting GRB, will backoff and retry: %v", migrateGrbsOperation, err)
+						log.Error("Internal error while deleting GRB, will backoff and retry",
+							"operation", migrateGrbsOperation,
+							"error", err)
 						return false, err
 					}
 					return true, fmt.Errorf("[%v] unable to delete old GRB: %w", migrateGrbsOperation, err)
@@ -442,7 +490,9 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				return true, nil
 			})
 			if err != nil {
-				logrus.Errorf("[%v] permanent error when deleting GRB, giving up: %v", migrateGrbsOperation, err)
+				log.Error("Permanent error when deleting GRB, giving up",
+					"operation", migrateGrbsOperation,
+					"error", err)
 				continue
 			}
 
@@ -461,7 +511,9 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				_, err = sc.Management.GlobalRoleBindings("").Update(updatedGrb)
 				if err != nil {
 					if apierrors.IsInternalError(err) {
-						logrus.Errorf("[%v] internal error while updating GRB, will backoff and retry: %v", migrateGrbsOperation, err)
+						log.Error("Internal error while updating GRB, will backoff and retry",
+							"operation", migrateGrbsOperation,
+							"error", err)
 						return false, err
 					}
 					return true, fmt.Errorf("[%v] unable to update GRB: %w", migrateGrbsOperation, err)
@@ -469,7 +521,9 @@ func migrateGRBs(workunit *migrateUserWorkUnit, sc *config.ScaledContext, dryRun
 				return true, nil
 			})
 			if err != nil {
-				logrus.Errorf("[%v] permanent error when updating GRB, giving up: %v", migrateGrbsOperation, err)
+				log.Error("Permanent error when updating GRB, giving up",
+					"operation", migrateGrbsOperation,
+					"error", err)
 			}
 		}
 	}

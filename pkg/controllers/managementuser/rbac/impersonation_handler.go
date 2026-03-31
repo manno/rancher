@@ -2,17 +2,17 @@ package rbac
 
 import (
 	"github.com/rancher/rancher/pkg/impersonation"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
 )
 
 func (m *manager) ensureServiceAccountImpersonator(username string) error {
-	logrus.Debugf("ensuring service account impersonator for %s", username)
+	log.Debug("Ensuring service account impersonator", "operation", "ensure_impersonator", "user", username)
 	err := m.impersonator.SetUpImpersonation(&user.DefaultInfo{UID: username})
 	if apierrors.IsNotFound(err) {
-		logrus.Warnf("could not find user %s, will not create impersonation account on cluster", username)
+		log.Warn("Could not find user, will not create impersonation account on cluster", "operation", "ensure_impersonator", "user", username)
 		return nil
 	}
 	return err
@@ -31,7 +31,7 @@ func (m *manager) deleteServiceAccountImpersonator(username string) error {
 		return nil
 	}
 	roleName := impersonation.ImpersonationPrefix + username
-	logrus.Debugf("deleting service account impersonator for %s", username)
+	log.Debug("Deleting service account impersonator", "operation", "delete_impersonator", "user", username)
 	err = m.workload.RBACw.ClusterRole().Delete(roleName, &metav1.DeleteOptions{})
 	if apierrors.IsNotFound(err) {
 		return nil

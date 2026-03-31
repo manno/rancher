@@ -20,9 +20,9 @@ import (
 	"github.com/rancher/rancher/pkg/clustermanager"
 	"github.com/rancher/rancher/pkg/controllers/managementagent/ingress"
 	"github.com/rancher/rancher/pkg/ingresswrapper"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/ref"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -255,7 +255,7 @@ func getPaths(data map[string]interface{}) (map[hostPath]map[string]interface{},
 func setState(data map[string]interface{}, stateMap map[string]string) {
 	content, err := json.Marshal(stateMap)
 	if err != nil {
-		logrus.Errorf("failed to save state on ingress: %v", data["id"])
+		log.Error("Failed to save state on ingress", "operation", "set_state", "ingress_id", data["id"], "error", err)
 		return
 	}
 

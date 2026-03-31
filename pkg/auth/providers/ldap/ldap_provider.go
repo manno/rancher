@@ -17,9 +17,9 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers/common/ldap"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -173,13 +173,13 @@ func (p *ldapProvider) SearchPrincipals(searchKey, principalType string, myToken
 		if IsNotConfigured(err) {
 			return principals, err
 		}
-		logrus.Warnf("ldap search principals failed to get ldap config: %s\n", err)
+		log.Warn("Search principals failed to get ldap config", "provider", p.providerName, "operation", "search_principals", "error", err)
 		return principals, nil
 	}
 
 	lConn, err := ldap.Connect(config, caPool)
 	if err != nil {
-		logrus.Warnf("ldap search principals failed to connect to ldap: %s\n", err)
+		log.Warn("Search principals failed to connect to ldap", "provider", p.providerName, "operation", "search_principals", "error", err)
 		return principals, nil
 	}
 	defer lConn.Close()
@@ -302,7 +302,7 @@ func (p *ldapProvider) getLDAPConfig(genericClient objectclient.GenericClient) (
 func (p *ldapProvider) CanAccessWithGroupProviders(userPrincipalID string, groupPrincipals []v3.Principal) (bool, error) {
 	config, _, err := p.getLDAPConfig(p.authConfigs.ObjectClient().UnstructuredClient())
 	if err != nil {
-		logrus.Errorf("Error fetching ldap config: %v", err)
+		log.Error("Error fetching ldap config", "provider", p.providerName, "operation", "can_access_with_group_providers", "error", err)
 		return false, err
 	}
 	allowed, err := p.userMGR.CheckAccess(config.AccessMode, config.AllowedPrincipalIDs, userPrincipalID, groupPrincipals)

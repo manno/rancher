@@ -2,7 +2,7 @@ package clustermanager
 
 import (
 	"github.com/rancher/norman/types"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 func (m *Manager) Expire(apiContext *types.APIContext, schema *types.Schema) {
@@ -66,7 +66,7 @@ func (m *Manager) CanDo(apiGroup, resource, verb string, apiContext *types.APICo
 func (m *Manager) Filter(apiContext *types.APIContext, schema *types.Schema, obj map[string]interface{}, context map[string]string) map[string]interface{} {
 	ac, err := m.getAccessControl(apiContext, schema)
 	if err != nil {
-		logrus.Warnf("failed to find access control: %v", err)
+		log.Warn("Failed to find access control", "operation", "filter", "error", err)
 		return nil
 	}
 
@@ -76,7 +76,7 @@ func (m *Manager) Filter(apiContext *types.APIContext, schema *types.Schema, obj
 func (m *Manager) FilterList(apiContext *types.APIContext, schema *types.Schema, obj []map[string]interface{}, context map[string]string) []map[string]interface{} {
 	ac, err := m.getAccessControl(apiContext, schema)
 	if err != nil {
-		logrus.Warnf("failed to find access control: %v", err)
+		log.Warn("Failed to find access control", "operation", "filter_list", "error", err)
 		return nil
 	}
 	return ac.FilterList(apiContext, schema, obj, context)

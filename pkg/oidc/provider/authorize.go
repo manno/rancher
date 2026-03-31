@@ -13,11 +13,11 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers"
 	"github.com/rancher/rancher/pkg/auth/tokens"
 	wrangmgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	oidcerror "github.com/rancher/rancher/pkg/oidc/provider/error"
 	"github.com/rancher/rancher/pkg/oidc/provider/session"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -152,7 +152,7 @@ func (h *authorizeHandler) authEndpoint(w http.ResponseWriter, r *http.Request) 
 
 	code, err := h.codeCreator.GenerateCode()
 	if err != nil {
-		logrus.Errorf("[OIDC provider] error generating code %v", err)
+		log.Error("Error generating code", "error", err)
 		oidcerror.RedirectWithError(params.redirectURI, oidcerror.ServerError, fmt.Sprintf("failed to generate code: %v", err), params.state, w, r)
 		return
 	}
@@ -167,7 +167,7 @@ func (h *authorizeHandler) authEndpoint(w http.ResponseWriter, r *http.Request) 
 		CreatedAt:     h.now(),
 	})
 	if err != nil {
-		logrus.Errorf("[OIDC provider] error adding session %v", err)
+		log.Error("Error adding session", "error", err)
 		oidcerror.RedirectWithError(params.redirectURI, oidcerror.ServerError, fmt.Sprintf("failed to store auth session: %v", err), params.state, w, r)
 		return
 	}

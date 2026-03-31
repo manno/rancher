@@ -9,11 +9,11 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/dashboard/chart"
 	"github.com/rancher/rancher/pkg/features"
 	fleetconst "github.com/rancher/rancher/pkg/fleet"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/wrangler/v3/pkg/data"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -136,7 +136,7 @@ func (h *handler) onSetting(key string, setting *v3.Setting) (*v3.Setting, error
 	// add priority class value
 	if priorityClassName, err := h.chartsConfig.GetGlobalValue(chart.PriorityClassKey); err != nil {
 		if !chart.IsNotFoundError(err) {
-			logrus.Warnf("Failed to get rancher priorityClassName for '%s': %v", fleetChart.ChartName, err)
+			log.Warn("Failed to get rancher priorityClassName", "operation", "deploy_fleet_chart", "chart", fleetChart.ChartName, "error", err)
 		}
 	} else {
 		fleetChartValues[priorityClassKey] = priorityClassName

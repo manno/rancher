@@ -16,9 +16,9 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers/common"
 	"github.com/rancher/rancher/pkg/auth/providers/common/ldap"
 	v3client "github.com/rancher/rancher/pkg/client/generated/management/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -82,7 +82,7 @@ func (sLConn sharedLdapConnection) findLdapUserWithRetries(guid string) (string,
 		if !sLConn.isOpen {
 			sLConn.lConn, err = ldapConnection(sLConn.adConfig)
 			if err != nil {
-				logrus.Warnf("[%v] LDAP connection failed: '%v', retrying...", migrateAdUserOperation, err)
+				log.Warn("LDAP connection failed, retrying", "operation", migrateAdUserOperation, "error", err)
 				return false, err
 			}
 			sLConn.isOpen = true
@@ -95,7 +95,9 @@ func (sLConn sharedLdapConnection) findLdapUserWithRetries(guid string) (string,
 
 		// any other error type almost certainly indicates a connection failure. Close and re-open the connection
 		// before retrying
-		logrus.Warnf("[%v] LDAP connection failed: '%v', retrying...", migrateAdUserOperation, err)
+		log.Warn("LDAP connection failed, retrying",
+			"operation", migrateAdUserOperation,
+			"error", err)
 		sLConn.lConn.Close()
 		sLConn.isOpen = false
 
@@ -188,13 +190,17 @@ func adConfiguration(sc *config.ScaledContext) (*v3.ActiveDirectoryConfig, error
 
 	authConfigObj, err := authConfigs.ObjectClient().UnstructuredClient().Get("activedirectory", metav1.GetOptions{})
 	if err != nil {
-		logrus.Errorf("[%v] failed to obtain activedirectory authConfigObj: %v", migrateAdUserOperation, err)
+		log.Error("Failed to obtain activedirectory authConfigObj",
+			"operation", migrateAdUserOperation,
+			"error", err)
 		return nil, err
 	}
 
 	u, ok := authConfigObj.(runtime.Unstructured)
 	if !ok {
-		logrus.Errorf("[%v] failed to retrieve ActiveDirectoryConfig, cannot read k8s Unstructured data %v", migrateAdUserOperation, err)
+		log.Error("Failed to retrieve ActiveDirectoryConfig, cannot read k8s Unstructured data",
+			"operation", migrateAdUserOperation,
+			"error", err)
 		return nil, err
 	}
 	storedADConfigMap := u.UnstructuredContent()
@@ -202,20 +208,26 @@ func adConfiguration(sc *config.ScaledContext) (*v3.ActiveDirectoryConfig, error
 	storedADConfig := &v3.ActiveDirectoryConfig{}
 	err = common.Decode(storedADConfigMap, storedADConfig)
 	if err != nil {
-		logrus.Errorf("[%v] errors while decoding stored AD config: %v", migrateAdUserOperation, err)
+		log.Error("Errors while decoding stored AD config",
+			"operation", migrateAdUserOperation,
+			"error", err)
 		return nil, err
 	}
 
 	metadataMap, ok := storedADConfigMap["metadata"].(map[string]interface{})
 	if !ok {
-		logrus.Errorf("[%v] failed to retrieve ActiveDirectoryConfig, (second step), cannot read k8s Unstructured data %v", migrateAdUserOperation, err)
+		log.Error("Failed to retrieve ActiveDirectoryConfig, cannot read k8s Unstructured data",
+			"operation", migrateAdUserOperation,
+			"error", err)
 		return nil, err
 	}
 
 	typemeta := &metav1.ObjectMeta{}
 	err = common.Decode(metadataMap, typemeta)
 	if err != nil {
-		logrus.Errorf("[%v] errors while decoding typemeta: %v", migrateAdUserOperation, err)
+		log.Error("Errors while decoding typemeta",
+			"operation", migrateAdUserOperation,
+			"error", err)
 		return nil, err
 	}
 
@@ -251,24 +263,32 @@ func prepareClientContexts(clientConfig *restclient.Config) (*config.ScaledConte
 	} else {
 		restConfig, err = clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 		if err != nil {
-			logrus.Errorf("[%v] failed to build the cluster config: %v", migrateAdUserOperation, err)
+			log.Error("Failed to build the cluster config",
+				"operation", migrateAdUserOperation,
+				"error", err)
 			return nil, nil, err
 		}
 	}
 
 	sc, err := scaledContext(restConfig)
 	if err != nil {
-		logrus.Errorf("[%v] failed to create scaled context: %v", migrateAdUserOperation, err)
+		log.Error("Failed to create scaled context",
+			"operation", migrateAdUserOperation,
+			"error", err)
 		return nil, nil, err
 	}
 	wc, err := wrangler.NewContext(context.Background(), nil, clientConfig)
 	if err != nil {
-		logrus.Errorf("[%v] failed to create wrangler context: %v", migrateAdUserOperation, err)
+		log.Error("Failed to create wrangler context",
+			"operation", migrateAdUserOperation,
+			"error", err)
 	}
 	sc.Wrangler = wc
 	adConfig, err := adConfiguration(sc)
 	if err != nil {
-		logrus.Errorf("[%v] failed to acquire ad configuration: %v", migrateAdUserOperation, err)
+		log.Error("Failed to acquire ad configuration",
+			"operation", migrateAdUserOperation,
+			"error", err)
 		return nil, nil, err
 	}
 
@@ -278,7 +298,9 @@ func prepareClientContexts(clientConfig *restclient.Config) (*config.ScaledConte
 func isGUID(principalID string) bool {
 	parts := strings.Split(principalID, "://")
 	if len(parts) != 2 {
-		logrus.Errorf("[%v] failed to parse invalid PrincipalID: %v", identifyAdUserOperation, principalID)
+		log.Error("Failed to parse invalid PrincipalID",
+			"operation", identifyAdUserOperation,
+			"principal_id", principalID)
 		return false
 	}
 	return validRancherGUIDPattern.MatchString(parts[1])
@@ -287,7 +309,9 @@ func isGUID(principalID string) bool {
 func updateADConfigMigrationStatus(status map[string]string, sc *config.ScaledContext) error {
 	authConfigObj, err := sc.Management.AuthConfigs("").ObjectClient().UnstructuredClient().Get("activedirectory", metav1.GetOptions{})
 	if err != nil {
-		logrus.Errorf("[%v] failed to obtain activedirecotry authConfigObj: %v", migrateAdUserOperation, err)
+		log.Error("Failed to obtain activedirectory authConfigObj",
+			"operation", migrateAdUserOperation,
+			"error", err)
 		return err
 	}
 
@@ -370,7 +394,9 @@ func migrateAllowedUserPrincipals(workunits *[]migrateUserWorkUnit, missingUsers
 
 		scope, err := getScope(principalID)
 		if err != nil {
-			logrus.Errorf("[%v] found invalid principal ID in allowed user list, refusing to process: %v", migrateAdUserOperation, err)
+			log.Error("Found invalid principal ID in allowed user list, refusing to process",
+				"operation", migrateAdUserOperation,
+				"error", err)
 			newPrincipalIDs = append(newPrincipalIDs, principalID)
 		}
 		if scope != activeDirectoryScope {
@@ -396,7 +422,9 @@ func migrateAllowedUserPrincipals(workunits *[]migrateUserWorkUnit, missingUsers
 					guid, err := getExternalID(principalID)
 					if err != nil {
 						// this shouldn't be reachable, as getScope will fail first, but just for consistency...
-						logrus.Errorf("[%v] found invalid principal ID in allowed user list, refusing to process: %v", migrateAdUserOperation, err)
+						log.Error("Found invalid principal ID in allowed user list, refusing to process",
+							"operation", migrateAdUserOperation,
+							"error", err)
 						newPrincipalIDs = append(newPrincipalIDs, principalID)
 					} else {
 						dn, _, err := sharedLConn.findLdapUserWithRetries(guid)
@@ -406,7 +434,10 @@ func migrateAllowedUserPrincipals(workunits *[]migrateUserWorkUnit, missingUsers
 							}
 						} else if err != nil {
 							// Whelp; keep this one as-is and yell about it
-							logrus.Errorf("[%v] ldap error when checking distinguished name for guid-based principal %v, skipping: %v", migrateAdUserOperation, principalID, err)
+							log.Error("Ldap error when checking distinguished name for guid-based principal, skipping",
+								"operation", migrateAdUserOperation,
+								"principal_id", principalID,
+								"error", err)
 							newPrincipalIDs = append(newPrincipalIDs, principalID)
 						} else {
 							newPrincipalID := activeDirectoryPrefix + dn
@@ -430,9 +461,11 @@ func migrateAllowedUserPrincipals(workunits *[]migrateUserWorkUnit, missingUsers
 
 		_, err = sc.Management.AuthConfigs("").ObjectClient().UnstructuredClient().Update("activedirectory", storedADConfig)
 	} else {
-		logrus.Infof("[%v] DRY RUN: new allowed user list will contain these principal IDs:", migrateAdUserOperation)
+		log.Info("DRY RUN: new allowed user list will contain these principal IDs", "operation", migrateAdUserOperation)
 		for _, principalID := range newPrincipalIDs {
-			logrus.Infof("[%v] DRY RUN:   '%v'", migrateAdUserOperation, principalID)
+			log.Info("DRY RUN: principal ID",
+				"operation", migrateAdUserOperation,
+				"principal_id", principalID)
 		}
 	}
 	return err

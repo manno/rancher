@@ -20,8 +20,8 @@ import (
 	"github.com/rancher/norman/types/convert"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -114,7 +114,7 @@ func (t *Authorizer) AuthorizeTunnel(req *http.Request) (string, bool, error) {
 func (t *Authorizer) Authorize(req *http.Request) (*Client, bool, error) {
 	token := req.Header.Get(Token)
 	if token == "" {
-		logrus.Debugf("Authorize: Token header [%s] is empty", Token)
+		log.Debug("Authorize Token header is empty", "operation", "authorize", "header", Token)
 		return nil, false, nil
 	}
 
@@ -159,7 +159,7 @@ func (t *Authorizer) Authorize(req *http.Request) (*Client, bool, error) {
 
 func (t *Authorizer) getMachine(cluster *v3.Cluster, inNode *client.Node) (*v3.Node, error) {
 	machineName := machineName(inNode)
-	logrus.Tracef("getMachine: looking up machine [%s] in cluster [%s]", machineName, cluster.Name)
+	log.Trace("GetMachine looking up machine in cluster", "operation", "get_machine", "machine", machineName, "cluster", cluster.Name)
 	machine, err := t.machineLister.Get(cluster.Name, machineName)
 	if apierrors.IsNotFound(err) {
 		if objs, err := t.nodeIndexer.ByIndex(nodeKeyIndex, fmt.Sprintf("%s/%s", cluster.Name, inNode.RequestedHostname)); err == nil {
@@ -168,17 +168,17 @@ func (t *Authorizer) getMachine(cluster *v3.Cluster, inNode *client.Node) (*v3.N
 			}
 		}
 
-		logrus.Tracef("getMachine: looking up [%s] as node name in cluster [%s]", inNode.RequestedHostname, cluster.Name)
+		log.Trace("GetMachine looking up as node name in cluster", "operation", "get_machine", "hostname", inNode.RequestedHostname, "cluster", cluster.Name)
 		machine, err := t.machineLister.Get(cluster.Name, inNode.RequestedHostname)
 		if err == nil {
-			logrus.Debugf("Found [%s] as node name in cluster [%s], error: %v", inNode.RequestedHostname, cluster.Name, err)
+			log.Debug("Found as node name in cluster", "operation", "get_machine", "hostname", inNode.RequestedHostname, "cluster", cluster.Name, "error", err)
 			return machine, nil
 		}
 
-		logrus.Tracef("getMachine: looking up [%s] as RequestedHostname in cluster [%s]", inNode.RequestedHostname, cluster.Name)
+		log.Trace("GetMachine looking up as RequestedHostname in cluster", "operation", "get_machine", "hostname", inNode.RequestedHostname, "cluster", cluster.Name)
 		machines, _ := t.machineLister.List(cluster.Name, labels.NewSelector())
 		for _, machine := range machines {
-			logrus.Tracef("getMachine: comparing machine.Spec.RequestedHostname [%s] to inNode.RequestedHostname [%s]", machine.Spec.RequestedHostname, inNode.RequestedHostname)
+			log.Trace("GetMachine comparing machine RequestedHostname to inNode RequestedHostname", "operation", "get_machine", "machine_hostname", machine.Spec.RequestedHostname, "innode_hostname", inNode.RequestedHostname)
 			if machine.Spec.RequestedHostname == inNode.RequestedHostname {
 				return machine, nil
 			}
@@ -209,7 +209,7 @@ func (t *Authorizer) authorizeNode(register bool, cluster *v3.Cluster, inNode *c
 		}
 	}
 
-	logrus.Tracef("updateDockerInfo: cluster [%s] node [%s] dockerInfo [%v]", cluster.Name, machine.Name, inNode.DockerInfo)
+	log.Trace("UpdateDockerInfo cluster node dockerInfo", "operation", "update_docker_info", "cluster", cluster.Name, "machine", machine.Name)
 	machine, err = t.updateDockerInfo(machine, inNode)
 	return machine, true, err
 }
@@ -291,7 +291,7 @@ func (t *Authorizer) authorizeCluster(cluster *v3.Cluster, inCluster *cluster, r
 			return cluster, true, err
 		}
 		if driver == "" {
-			logrus.Tracef("Setting the driver to imported for cluster %v %v", cluster.Name, cluster.Spec.DisplayName)
+			log.Trace("Setting driver to imported for cluster", "operation", "import_cluster", "cluster", cluster.Name, "display_name", cluster.Spec.DisplayName)
 			cluster.Status.Driver = v32.ClusterDriverImported
 			changed = true
 		}
@@ -314,7 +314,7 @@ func (t *Authorizer) authorizeCluster(cluster *v3.Cluster, inCluster *cluster, r
 				return cluster, true, err
 			}
 			if currentSecret != nil && secret.GetResourceVersion() != currentSecret.GetResourceVersion() {
-				logrus.Infof("updated service account token for cluster %s (%s)", cluster.Name, cluster.Spec.DisplayName)
+				log.Info("Updated service account token for cluster", "operation", "update_sa_token", "cluster", cluster.Name, "display_name", cluster.Spec.DisplayName)
 			}
 			cluster.Status.APIEndpoint = apiEndpoint
 			cluster.Status.ServiceAccountTokenSecret = secret.Name
@@ -377,7 +377,7 @@ func (t *Authorizer) readInput(cluster *v3.Cluster, req *http.Request) (*input, 
 func machineName(machine *client.Node) string {
 	digest := md5.Sum([]byte(machine.RequestedHostname))
 	machineNameMD5 := fmt.Sprintf("m-%s", hex.EncodeToString(digest[:])[:12])
-	logrus.Tracef("machineName: returning [%s] for node with RequestedHostname [%s]", machineNameMD5, machine.RequestedHostname)
+	log.Trace("MachineName returning for node with RequestedHostname", "operation", "get_machine_name", "machine_name_md5", machineNameMD5, "hostname", machine.RequestedHostname)
 	return machineNameMD5
 }
 

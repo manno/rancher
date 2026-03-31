@@ -10,7 +10,7 @@ import (
 	workloadutil "github.com/rancher/rancher/pkg/controllers/managementagent/workload"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	"github.com/rancher/rancher/pkg/ingresswrapper"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -115,7 +115,7 @@ func (c *WorkloadEndpointsController) UpdateEndpoints(key string, obj *workloadu
 				var workloadIDs []string
 				err := json.Unmarshal([]byte(value), &workloadIDs)
 				if err != nil {
-					logrus.WithError(err).Errorf("Unmarshalling %s workloadIDs of %s Error", value, svc.Name)
+					log.Error("Failed to unmarshal workload IDs", "operation", "update_endpoints", "value", value, "service", svc.Name, "error", err)
 					continue
 				}
 				for _, workloadID := range workloadIDs {
@@ -169,7 +169,7 @@ func (c *WorkloadEndpointsController) UpdateEndpoints(key string, obj *workloadu
 			return err
 		}
 
-		logrus.Infof("Updating workload [%s] with public endpoints [%v]", key, epsToUpdate)
+		log.Info("Updating workload with public endpoints", "operation", "update_endpoints", "workload", key, "endpoints", epsToUpdate)
 
 		annotations := map[string]string{
 			endpointsAnnotation: epsToUpdate,

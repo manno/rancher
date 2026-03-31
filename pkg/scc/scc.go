@@ -3,6 +3,7 @@ package scc
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/rancher/rancher/pkg/scc/controllers"
 	"github.com/rancher/rancher/pkg/scc/deployer"
@@ -14,19 +15,19 @@ import (
 // StartDeployer sets up the SCCDeployer and registers the related scoped controllers
 func StartDeployer(ctx context.Context, wContext *wrangler.Context) error {
 	operatorLogger := log.NewLog()
-	operatorLogger.Debug("Preparing to deploy scc-operator")
+	operatorLogger.Debug("preparing to deploy scc-operator")
 
-	sccDeployer, err := deployer.NewSCCDeployer(wContext, operatorLogger.WithField("component", "scc-deployer"))
+	sccDeployer, err := deployer.NewSCCDeployer(wContext, operatorLogger.With(slog.String("component", "scc-deployer")))
 	if err != nil {
 		return fmt.Errorf("error creating scc deployer: %v", err)
 	}
 
 	initialParams, err := params.ExtractSccOperatorParams()
 	if err != nil {
-		operatorLogger.Errorf("Failed to extract SCC operator params: %v", err)
+		operatorLogger.Error("failed to extract SCC operator params", "error", err)
 		return err
 	}
-	operatorLogger.Debugf("SCC operator params: %v", initialParams)
+	operatorLogger.Debug("scc operator params", "params", fmt.Sprintf("%v", initialParams))
 
 	if err = sccDeployer.EnsureDependenciesConfigured(ctx, initialParams); err != nil {
 		return fmt.Errorf("cannot start scc-operator deployer, failed to ensure dependencies: %w", err)

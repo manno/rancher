@@ -10,7 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -40,7 +40,7 @@ type scimGroup struct {
 //   - 200 on success
 //   - 400 for invalid requests.
 func (s *SCIMServer) ListGroups(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::ListGroups: url %s", r.URL)
+	log.Trace("ListGroups", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 
@@ -76,11 +76,11 @@ func (s *SCIMServer) ListGroups(w http.ResponseWriter, r *http.Request) {
 	if filter != nil {
 		filterValue = filter.Value
 	}
-	logrus.Tracef("scim::ListGroups: displayName=%s, startIndex=%d, count=%d", filterValue, pagination.startIndex, pagination.count)
+	log.Trace("ListGroups", "displayName", filterValue, "startIndex", pagination.startIndex, "count", pagination.count)
 
 	groups, err := s.groupsCache.List(labels.Set{authProviderLabel: provider}.AsSelector())
 	if err != nil {
-		logrus.Errorf("scim::ListGroups: failed to list groups for provider %s: %s", provider, err)
+		log.Error("failed to list groups", "provider", provider, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -98,7 +98,7 @@ func (s *SCIMServer) ListGroups(w http.ResponseWriter, r *http.Request) {
 		if !excludeMembers {
 			uniqueGroups, err = s.getAllRancherGroupMembers(provider)
 			if err != nil {
-				logrus.Errorf("scim::ListGroups: %s", err)
+				log.Error("failed to get group members", "error", err)
 				writeError(w, NewInternalError())
 				return
 			}
@@ -158,14 +158,14 @@ func (s *SCIMServer) ListGroups(w http.ResponseWriter, r *http.Request) {
 //   - 400 for invalid requests
 //   - 409 if the group already exists.
 func (s *SCIMServer) CreateGroup(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::CreateGroup: url %s", r.URL)
+	log.Trace("CreateGroup", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 
 	payload := scimGroup{}
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		logrus.Errorf("scim::CreateGroup: failed to unmarshal request body: %s", err)
+		log.Error("failed to unmarshal request body", "error", err)
 		writeError(w, NewError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
@@ -177,7 +177,7 @@ func (s *SCIMServer) CreateGroup(w http.ResponseWriter, r *http.Request) {
 
 	group, created, err := s.ensureRancherGroup(provider, payload)
 	if err != nil {
-		logrus.Errorf("scim::CreateGroup: failed to ensure rancher group: %s", err)
+		log.Error("failed to ensure rancher group", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -196,7 +196,7 @@ func (s *SCIMServer) CreateGroup(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			logrus.Errorf("scim::CreateGroup: failed to sync group members: %s", err)
+			log.Error("failed to sync group members", "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -230,7 +230,7 @@ func (s *SCIMServer) CreateGroup(w http.ResponseWriter, r *http.Request) {
 //   - 400 for invalid requests
 //   - 404 if the group is not found.
 func (s *SCIMServer) GetGroup(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::GetGroup: url %s", r.URL)
+	log.Trace("GetGroup", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 	id := mux.Vars(r)["id"]
@@ -247,7 +247,7 @@ func (s *SCIMServer) GetGroup(w http.ResponseWriter, r *http.Request) {
 			writeError(w, NewError(http.StatusNotFound, fmt.Sprintf("Group %s not found", id)))
 			return
 		}
-		logrus.Errorf("scim::GetGroup: failed to get group %s: %s", id, err)
+		log.Error("failed to get group", "group", id, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -256,7 +256,7 @@ func (s *SCIMServer) GetGroup(w http.ResponseWriter, r *http.Request) {
 	if !excludeMembers {
 		members, err = s.getRancherGroupMembers(provider, group.DisplayName)
 		if err != nil {
-			logrus.Errorf("scim::GetGroups: %s", err)
+			log.Error("failed to get group members", "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -288,7 +288,7 @@ func (s *SCIMServer) GetGroup(w http.ResponseWriter, r *http.Request) {
 //   - 200 on success
 //   - 400 for invalid requests.
 func (s *SCIMServer) UpdateGroup(w http.ResponseWriter, r *http.Request) {
-	logrus.Tracef("scim::UpdateGroup: url %s", r.URL)
+	log.Trace("UpdateGroup", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 	id := mux.Vars(r)["id"]
@@ -296,13 +296,13 @@ func (s *SCIMServer) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	payload := scimGroup{}
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		logrus.Errorf("scim::UpdateGroup: failed to unmarshal request body: %s", err)
+		log.Error("failed to unmarshal request body", "error", err)
 		writeError(w, NewError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
 
 	if id != payload.ID {
-		logrus.Errorf("scim::UpdateGroup: id in URL %s does not match id in body %s", id, payload.ID)
+		log.Error("id in URL does not match id in body", "urlID", id, "bodyID", payload.ID)
 		writeError(w, NewError(http.StatusBadRequest, "Mismatched Group id"))
 		return
 	}
@@ -319,14 +319,14 @@ func (s *SCIMServer) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		logrus.Errorf("scim::UpdateGroup: failed to ensure rancher group %s: %s", id, err)
+		log.Error("failed to ensure rancher group", "group", id, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
 
 	err = s.syncGroupMembers(provider, group.DisplayName, payload.Members)
 	if err != nil {
-		logrus.Errorf("scim::UpdateGroup: failed to sync group members for %s: %s", id, err)
+		log.Error("failed to sync group members", "group", id, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -362,7 +362,7 @@ func (s *SCIMServer) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 //   - 200 on success
 //   - 400 for invalid requests.
 func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
-	logrus.Infof("scim::PatchGroup: url %s", r.URL)
+	log.Info("PatchGroup", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 	id := mux.Vars(r)["id"]
@@ -374,7 +374,7 @@ func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		logrus.Errorf("scim::PatchGroup: failed to get group: %s", err)
+		log.Error("failed to get group", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -385,7 +385,7 @@ func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
 	}{}
 	err = json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		logrus.Errorf("scim::PatchGroup: failed to decode request body: %s", err)
+		log.Error("failed to decode request body", "error", err)
 		writeError(w, NewError(http.StatusBadRequest, "Invalid request body"))
 		return
 	}
@@ -401,7 +401,7 @@ func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
 		case "replace":
 			updated, err := applyReplaceGroup(group, op)
 			if err != nil {
-				logrus.Errorf("scim::PatchGroup: failed to apply replace operation: %s", err)
+				log.Error("failed to apply replace operation", "error", err)
 				writeError(w, NewError(http.StatusBadRequest, fmt.Sprintf("Failed to apply replace operation: %s", err)))
 				return
 			}
@@ -476,7 +476,7 @@ func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
 				writeError(w, NewError(http.StatusNotFound, fmt.Sprintf("User %s not found", member.Value)))
 				return
 			}
-			logrus.Errorf("scim::PatchGroup: failed to look up member %s: %s", member.Value, err)
+			log.Error("failed to look up member", "member", member.Value, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -485,7 +485,7 @@ func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
 	// Apply group updates
 	if shouldUpdateGroup {
 		if group, err = s.groups.Update(group); err != nil {
-			logrus.Errorf("scim::PatchGroup: failed to update group %s: %s", group.Name, err)
+			log.Error("failed to update group", "group", group.Name, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -500,7 +500,7 @@ func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			logrus.Errorf("scim::PatchGroup: failed to add member %s: %s", member.Value, err)
+			log.Error("failed to add member", "member", member.Value, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -509,7 +509,7 @@ func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
 	// Apply member removals
 	for _, memberValue := range membersToRemove {
 		if err := s.removeGroupMember(provider, group.DisplayName, memberValue); err != nil {
-			logrus.Errorf("scim::PatchGroup: failed to remove member %s: %s", memberValue, err)
+			log.Error("failed to remove member", "member", memberValue, "error", err)
 			writeError(w, NewInternalError())
 			return
 		}
@@ -518,7 +518,7 @@ func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
 	// Fetch current members for response
 	members, err := s.getRancherGroupMembers(provider, group.DisplayName)
 	if err != nil {
-		logrus.Errorf("scim::PatchGroup: failed to get group members: %s", err)
+		log.Error("failed to get group members", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
@@ -546,7 +546,7 @@ func (s *SCIMServer) PatchGroup(w http.ResponseWriter, r *http.Request) {
 //   - 204 on successful deletion
 //   - 404 if the group is not found
 func (s *SCIMServer) DeleteGroup(w http.ResponseWriter, r *http.Request) {
-	logrus.Infof("scim::DeleteGroup: url %s", r.URL)
+	log.Info("DeleteGroup", "url", r.URL)
 
 	provider := mux.Vars(r)["provider"]
 	id := mux.Vars(r)["id"]
@@ -558,20 +558,20 @@ func (s *SCIMServer) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		logrus.Errorf("scim::DeleteGroup: failed to get group: %s", err)
+		log.Error("failed to get group", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
 
 	err = s.removeAllGroupMembers(provider, group.DisplayName)
 	if err != nil {
-		logrus.Errorf("scim::DeleteGroup: failed to remove group members: %s", err)
+		log.Error("failed to remove group members", "error", err)
 		writeError(w, NewInternalError())
 		return
 	}
 
 	if err := s.groups.Delete(group.Name, &metav1.DeleteOptions{}); err != nil {
-		logrus.Errorf("scim::DeleteGroup: failed to delete group %s: %s", group.Name, err)
+		log.Error("failed to delete group", "group", group.Name, "error", err)
 		writeError(w, NewInternalError())
 		return
 	}

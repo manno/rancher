@@ -19,7 +19,7 @@ import (
 	"github.com/rancher/rancher/pkg/clustermanager"
 	managementschema "github.com/rancher/rancher/pkg/schemas/management.cattle.io/v3"
 	projectschema "github.com/rancher/rancher/pkg/schemas/project.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -245,7 +245,7 @@ func setPorts(workloadName string, data map[string]interface{}) error {
 	for _, c := range convert.ToInterfaceSlice(containers) {
 		cMap, err := convert.EncodeToMap(c)
 		if err != nil {
-			logrus.Warnf("Failed to transform container to map: %v", err)
+			log.Warn("Failed to transform container to map", "error", err)
 			continue
 		}
 		v, ok := values.GetValue(cMap, "ports")
@@ -256,7 +256,7 @@ func setPorts(workloadName string, data map[string]interface{}) error {
 			for _, p := range ports {
 				port, err := convert.EncodeToMap(p)
 				if err != nil {
-					logrus.Warnf("Failed to transform port to map %v", err)
+					log.Warn("Failed to transform port to map", "error", err)
 					continue
 				}
 
@@ -358,7 +358,7 @@ func getNodeName(apiContext *types.APIContext, nodeID string) string {
 func setState(data map[string]interface{}, stateMap map[string]string) {
 	content, err := json.Marshal(stateMap)
 	if err != nil {
-		logrus.Errorf("failed to save state on workload: %v", data["id"])
+		log.Error("Failed to save state on workload", "workload_id", data["id"])
 		return
 	}
 
@@ -380,7 +380,7 @@ func getDomain(image string) string {
 	var repo string
 	named, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
-		logrus.Debug(err)
+		log.Debug("Error parsing image reference", "error", err)
 		return repo
 	}
 	domain := reference.Domain(named)

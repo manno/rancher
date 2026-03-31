@@ -18,7 +18,7 @@ import (
 	"github.com/rancher/rancher/pkg/types/config"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	rbaccontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -113,7 +113,7 @@ func (i *impersonator) setup(userInfo user.Info) (*corev1.ServiceAccount, error)
 	}
 	name := ImpersonationPrefix + userInfo.GetUID()
 	rules := i.rulesForUser(userInfo)
-	logrus.Tracef("impersonation: checking role for user %s", userInfo.GetName())
+	log.Trace("Impersonation: checking role for user", "user", userInfo.GetName())
 	role, err := i.checkAndUpdateRole(name, rules)
 	if err != nil {
 		return nil, err
@@ -129,27 +129,27 @@ func (i *impersonator) setup(userInfo user.Info) (*corev1.ServiceAccount, error)
 			return sa, err
 		}
 	}
-	logrus.Tracef("impersonation: creating impersonation namespace")
+	log.Trace("Impersonation: creating impersonation namespace")
 	err = i.createNamespace()
 	if err != nil {
 		return nil, err
 	}
-	logrus.Tracef("impersonation: creating role for user %s", userInfo.GetName())
+	log.Trace("Impersonation: creating role for user", "user", userInfo.GetName())
 	role, err = i.createRole(name, rules)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Tracef("impersonation: creating service account for user %s", userInfo.GetName())
+	log.Trace("Impersonation: creating service account for user", "user", userInfo.GetName())
 	sa, err := i.createServiceAccount(name, role)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Tracef("impersonation: creating role binding for user %s", userInfo.GetName())
+	log.Trace("Impersonation: creating role binding for user", "user", userInfo.GetName())
 	err = i.createRoleBinding(name, role, sa)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Tracef("impersonation: waiting for service account to become active for user %s", userInfo.GetName())
+	log.Trace("Impersonation: waiting for service account to become active for user", "user", userInfo.GetName())
 	return i.waitForServiceAccount(sa)
 }
 
@@ -174,13 +174,13 @@ func (i *impersonator) GetToken(userInfo user.Info) (string, error) {
 func (i *impersonator) getServiceAccount(name string) (*corev1.ServiceAccount, error) {
 	sa, err := i.svcAccountCache.Get(ImpersonationNamespace, name)
 	if err != nil {
-		if logrus.GetLevel() >= logrus.TraceLevel {
-			logrus.Tracef("impersonation: error getting service account %s/%s: %v", ImpersonationNamespace, name, err)
+		if log.GetLevel() == "trace" {
+			log.Trace("Impersonation: error getting service account", "namespace", ImpersonationNamespace, "name", name, "error", err)
 			sas, debugErr := i.svcAccountCache.List(ImpersonationNamespace, labels.NewSelector())
 			if debugErr != nil {
-				logrus.Tracef("impersonation: encountered error listing cached service accounts: %v", debugErr)
+				log.Trace("Impersonation: encountered error listing cached service accounts", "error", debugErr)
 			} else {
-				logrus.Tracef("impersonation: cached service accounts: %+v", sas)
+				log.Trace("Impersonation: cached service accounts", "service_accounts", sas)
 			}
 		}
 		return nil, fmt.Errorf("failed to get service account: %s/%s, error: %w", ImpersonationNamespace, name, err)
@@ -194,7 +194,7 @@ func (i *impersonator) createServiceAccount(name string, role *rbacv1.ClusterRol
 		return nil, fmt.Errorf("impersonation: error getting service account [%s:%s]: %w", ImpersonationNamespace, name, err)
 	}
 	if apierrors.IsNotFound(err) {
-		logrus.Debugf("impersonation: creating service account %s", name)
+		log.Debug("Impersonation: creating service account", "name", name)
 		sa, err = i.svcAccountClient.Create(&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -230,7 +230,7 @@ func (i *impersonator) createServiceAccount(name string, role *rbacv1.ClusterRol
 func (i *impersonator) createNamespace() error {
 	_, err := i.namespaceCache.Get(ImpersonationNamespace)
 	if apierrors.IsNotFound(err) {
-		logrus.Debugf("impersonation: creating namespace %s", ImpersonationNamespace)
+		log.Debug("Impersonation: creating namespace", "namespace", ImpersonationNamespace)
 		_, err = i.namespaceClient.Create(&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: ImpersonationNamespace,
@@ -277,7 +277,7 @@ func (i *impersonator) checkAndUpdateRole(name string, rules []rbacv1.PolicyRule
 func (i *impersonator) createRole(name string, rules []rbacv1.PolicyRule) (*rbacv1.ClusterRole, error) {
 	role, err := i.clusterRoleCache.Get(name)
 	if apierrors.IsNotFound(err) {
-		logrus.Debugf("impersonation: creating role %s", name)
+		log.Debug("Impersonation: creating role", "name", name)
 		role, err = i.clusterRoleClient.Create(&rbacv1.ClusterRole{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -356,7 +356,7 @@ func (i *impersonator) getRoleBinding(name string) (*rbacv1.ClusterRoleBinding, 
 func (i *impersonator) createRoleBinding(name string, role *rbacv1.ClusterRole, sa *corev1.ServiceAccount) error {
 	_, err := i.clusterRoleBindingCache.Get(name)
 	if apierrors.IsNotFound(err) {
-		logrus.Debugf("impersonation: creating role binding %s", name)
+		log.Debug("Impersonation: creating role binding", "name", name)
 		_, err = i.clusterRoleBindingClient.Create(&rbacv1.ClusterRoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -393,7 +393,7 @@ func (i *impersonator) createRoleBinding(name string, role *rbacv1.ClusterRole, 
 }
 
 func (i *impersonator) waitForServiceAccount(sa *corev1.ServiceAccount) (*corev1.ServiceAccount, error) {
-	logrus.Debugf("impersonation: waiting for service account %s/%s to be ready", sa.Namespace, sa.Name)
+	log.Debug("Impersonation: waiting for service account to be ready", "namespace", sa.Namespace, "name", sa.Name)
 	backoff := wait.Backoff{
 		Duration: 200 * time.Millisecond,
 		Factor:   1,
@@ -423,13 +423,13 @@ func (i *impersonator) waitForServiceAccount(sa *corev1.ServiceAccount) (*corev1
 		return false, nil
 	})
 	if err != nil {
-		if logrus.GetLevel() >= logrus.TraceLevel {
-			logrus.Tracef("impersonation: error waiting for service account %s/%s: %v", sa.Namespace, sa.Name, err)
+		if log.GetLevel() == "trace" {
+			log.Trace("Impersonation: error waiting for service account", "namespace", sa.Namespace, "name", sa.Name, "error", err)
 			sas, debugErr := i.svcAccountCache.List(ImpersonationNamespace, labels.NewSelector())
 			if debugErr != nil {
-				logrus.Tracef("impersonation: encountered error listing cached service accounts: %v", debugErr)
+				log.Trace("Impersonation: encountered error listing cached service accounts", "error", debugErr)
 			} else {
-				logrus.Tracef("impersonation: cached service accounts: %+v", sas)
+				log.Trace("Impersonation: cached service accounts", "service_accounts", sas)
 			}
 		}
 		return nil, fmt.Errorf("failed to get secret for service account: %s/%s, error: %w", sa.Namespace, sa.Name, err)

@@ -21,9 +21,9 @@ import (
 	"github.com/rancher/rancher/pkg/catalogv2/roundtripper"
 	catalogcontrollers "github.com/rancher/rancher/pkg/generated/controllers/catalog.cattle.io/v1"
 	corev1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/apply"
 	corev1controllers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -117,7 +117,7 @@ func (o *OCIRepohandler) onClusterRepoChange(key string, clusterRepo *catalog.Cl
 	}
 	newStatus.ShouldNotSkip = false
 
-	logrus.Debugf("OCIRepoHandler triggered for clusterrepo %s", clusterRepo.Name)
+	log.Debug("OCIRepoHandler triggered for clusterrepo", "operation", "helm.onClusterRepoChange", "clusterRepo", clusterRepo.Name)
 	var index *repo.IndexFile
 
 	// If repo is disabled, then don't update the clusterrepo
@@ -127,7 +127,7 @@ func (o *OCIRepohandler) onClusterRepoChange(key string, clusterRepo *catalog.Cl
 
 	secret, err := catalogv2.GetSecret(o.secretCacheController, &clusterRepo.Spec, clusterRepo.Namespace)
 	if err != nil {
-		logrus.Errorf("Error while fetching secret for cluster repo %s: %v", clusterRepo.Name, err)
+		log.Error("Error while fetching secret for cluster repo", "operation", "helm.onClusterRepoChange", "clusterRepo", clusterRepo.Name, "error", err)
 		reason := apierrors.ReasonForError(err)
 		if reason != metav1.StatusReasonUnknown {
 			err = fmt.Errorf("failed to fetch secret: %s", reason)
@@ -149,7 +149,7 @@ func (o *OCIRepohandler) onClusterRepoChange(key string, clusterRepo *catalog.Cl
 	}
 	originalIndexBytes, err := json.Marshal(index)
 	if err != nil {
-		logrus.Errorf("Error while marshalling indexfile for cluster repo %s: %v", clusterRepo.Name, err)
+		log.Error("Error while marshalling indexfile for cluster repo", "operation", "helm.onClusterRepoChange", "clusterRepo", clusterRepo.Name, "error", err)
 		return setErrorCondition(clusterRepo, fmt.Errorf("error while reading indexfile"), newStatus, ociInterval, ociCondition, o.clusterRepoController)
 	}
 	// Create a new oci client
@@ -179,7 +179,7 @@ func (o *OCIRepohandler) onClusterRepoChange(key string, clusterRepo *catalog.Cl
 			index.SortEntries()
 			_, err := createOrUpdateMap(clusterRepo.Namespace, index, owner, o.apply)
 			if err != nil {
-				logrus.Debugf("failed to create/udpate the configmap incase of 4xx statuscode for %s", clusterRepo.Name)
+				log.Debug("Failed to create/update the configmap incase of 4xx statuscode", "operation", "helm.onClusterRepoChange", "clusterRepo", clusterRepo.Name)
 			}
 		}
 
@@ -217,7 +217,7 @@ func (o *OCIRepohandler) onClusterRepoChange(key string, clusterRepo *catalog.Cl
 
 	newIndexBytes, err := json.Marshal(index)
 	if err != nil {
-		logrus.Errorf("Error while marshalling indexfile for cluster repo %s: %v", clusterRepo.Name, err)
+		log.Error("Error while marshalling indexfile for cluster repo", "operation", "helm.onClusterRepoChange", "clusterRepo", clusterRepo.Name, "error", err)
 		return setErrorCondition(clusterRepo, fmt.Errorf("error while reading indexfile"), newStatus, ociInterval, ociCondition, o.clusterRepoController)
 	}
 	// Only update, if the index got updated
@@ -301,17 +301,17 @@ func getIndexfile(clusterRepoStatus catalog.RepoStatus,
 	}
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
 	if err != nil {
-		logrus.Errorf("failed to create reader for index file for URL %s: %v", clusterRepoSpec.URL, err)
+		log.Error("Failed to create reader for index file", "operation", "helm.getIndexfile", "url", clusterRepoSpec.URL, "error", err)
 		return indexFile, fmt.Errorf("failed to read indexfile for cluster repo")
 	}
 	defer gz.Close()
 	data, err = io.ReadAll(gz)
 	if err != nil {
-		logrus.Errorf("failed to read index file for URL %s: %v", clusterRepoSpec.URL, err)
+		log.Error("Failed to read index file", "operation", "helm.getIndexfile", "url", clusterRepoSpec.URL, "error", err)
 		return indexFile, fmt.Errorf("failed to read indexfile for cluster repo")
 	}
 	if err := json.Unmarshal(data, indexFile); err != nil {
-		logrus.Errorf("failed to unmarshal index file for URL %s: %v", clusterRepoSpec.URL, err)
+		log.Error("Failed to unmarshal index file", "operation", "helm.getIndexfile", "url", clusterRepoSpec.URL, "error", err)
 		return indexFile, fmt.Errorf("failed to unmarshal indexfile for cluster repo")
 	}
 

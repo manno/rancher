@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/rancher/rancher/pkg/catalogv2/roundtripper"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -42,7 +42,7 @@ func HelmClient(secret *corev1.Secret, caBundle []byte, insecureSkipTLSVerify bo
 		}
 		pool, err := x509.SystemCertPool()
 		if err != nil {
-			logrus.Debugf("getting system cert pool failed with %v", err)
+			log.Debug("Getting system cert pool failed", "operation", "new_http_client", "error", err)
 			pool = x509.NewCertPool()
 		}
 		pool.AddCert(cert)

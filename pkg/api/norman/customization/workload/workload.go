@@ -20,10 +20,10 @@ import (
 	appsv1 "github.com/rancher/rancher/pkg/generated/norman/apps/v1"
 	batchv1 "github.com/rancher/rancher/pkg/generated/norman/batch/v1"
 	corev1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/rbac"
 	projectschema "github.com/rancher/rancher/pkg/schemas/project.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sschema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -180,7 +180,7 @@ func (a *Config) rollbackDeployment(apiContext *types.APIContext, clusterContext
 		return httperror.NewAPIError(httperror.ServerError, fmt.Sprintf("Error parsing api version for deployment %v: %v", name, err))
 	}
 	if deploymentVersion == k8sappsv1.SchemeGroupVersion {
-		logrus.Debugf("Deployment apiversion is apps/v1")
+		log.Debug("Deployment apiversion is apps/v1", "operation", "rollback_deployment")
 		// DeploymentRollback & RollbackTo are deprecated in apps/v1
 		// only way to rollback is update deployment podSpec with replicaSet podSpec
 		split := strings.SplitN(rollbackInput.ReplicaSetID, ":", 3)
@@ -202,7 +202,7 @@ func (a *Config) rollbackDeployment(apiContext *types.APIContext, clusterContext
 	}
 
 	revision := fetchRevisionFor(apiContext, rollbackInput, namespace, name, currRevision)
-	logrus.Debugf("rollbackInput %v", revision)
+	log.Debug("Rollback input", "operation", "rollback_deployment", "revision", revision)
 	if revision == "" {
 		return httperror.NewAPIError(httperror.ServerError, fmt.Sprintf("ReplicaSet %s doesn't exist for deployment %s", rollbackInput.ReplicaSetID, deployment.ID))
 	}
@@ -324,7 +324,7 @@ func (a *Config) canUpdateWorkload(apiContext *types.APIContext, resource *types
 		apiGroup = batchv1.GroupName
 		pluralName = batchv1.CronJobResource.Name
 	default:
-		logrus.Debugf("Invalid workload type: %s", workloadType)
+		log.Debug("Invalid workload type", "operation", "can_update_workload", "workload_type", workloadType)
 		return errInvalidWorkloadType
 	}
 

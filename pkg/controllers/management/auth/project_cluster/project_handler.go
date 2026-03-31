@@ -8,11 +8,11 @@ import (
 
 	apisv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/systemaccount"
 	"github.com/rancher/rancher/pkg/types/config"
 	corev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	rbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -69,7 +69,7 @@ func (l *projectLifecycle) Sync(key string, orig *apisv3.Project) (runtime.Objec
 			projectID = splits[1]
 		}
 		// remove the system account created for this project
-		logrus.Debugf("Deleting system user for project %s", projectID)
+		log.Debug("Deleting system user for project", "operation", "sync_project", "project", projectID)
 		if err := l.systemAccountManager.RemoveSystemAccount(projectID); err != nil {
 			return nil, err
 		}
@@ -95,7 +95,7 @@ func (l *projectLifecycle) Sync(key string, orig *apisv3.Project) (runtime.Objec
 
 	// update if it has changed
 	if obj != nil && !reflect.DeepEqual(orig, obj) {
-		logrus.Infof("[%s] Updating project %s", ProjectCreateController, orig.Name)
+		log.Info("Updating project", "operation", "sync_project", "controller", ProjectCreateController, "project", orig.Name)
 		project := obj.(*apisv3.Project)
 		obj, err = l.projects.Update(project)
 		if err != nil {
@@ -151,14 +151,14 @@ func (l *projectLifecycle) reconcileProjectCreatorRTB(obj runtime.Object, nsName
 
 	// If we specify no creator owner RBAC, exit
 	if _, ok := project.Annotations[NoCreatorRBACAnnotation]; ok {
-		logrus.Infof("[%s] annotation %s found. Skipping adding creator as owner", ProjectCreateController, NoCreatorRBACAnnotation)
+		log.Info("Skipping adding creator as owner", "operation", "reconcile_project_creator_rtb", "controller", ProjectCreateController, "annotation", NoCreatorRBACAnnotation)
 		return project, nil
 	}
 
 	return apisv3.CreatorMadeOwner.DoUntilTrue(project, func() (runtime.Object, error) {
 		creatorID := project.Annotations[CreatorIDAnnotation]
 		if creatorID == "" {
-			logrus.Warnf("[%s] project %s has no creatorId annotation. Cannot add creator as owner", ProjectCreateController, project.Name)
+			log.Warn("Project has no creatorId annotation, cannot add creator as owner", "operation", "reconcile_project_creator_rtb", "controller", ProjectCreateController, "project", project.Name)
 			return project, nil
 		}
 
@@ -209,7 +209,7 @@ func (l *projectLifecycle) reconcileProjectCreatorRTB(obj runtime.Object, nsName
 				}
 			}
 
-			logrus.Infof("[%s] Creating creator projectRoleTemplateBinding for user %s for project %s", ProjectCreateController, creatorID, project.Name)
+			log.Info("Creating creator projectRoleTemplateBinding for user", "operation", "reconcile_project_creator_rtb", "controller", ProjectCreateController, "user", creatorID, "project", project.Name)
 			_, err := l.prtbClient.Create(prtb)
 			if err != nil && !apierrors.IsAlreadyExists(err) {
 				return project, err
@@ -230,7 +230,7 @@ func (l *projectLifecycle) reconcileProjectCreatorRTB(obj runtime.Object, nsName
 
 		if reflect.DeepEqual(roleMap["required"], createdRoles) {
 			apisv3.ProjectConditionInitialRolesPopulated.True(project)
-			logrus.Infof("[%s] Setting InitialRolesPopulated condition on project %s", ProjectCreateController, project.Name)
+			log.Info("Setting InitialRolesPopulated condition on project", "operation", "reconcile_project_creator_rtb", "controller", ProjectCreateController, "project", project.Name)
 		}
 
 		_, err = l.projects.Update(project)

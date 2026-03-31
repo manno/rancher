@@ -12,12 +12,12 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/managementuser/clusterauthtoken"
 	extstores "github.com/rancher/rancher/pkg/ext/stores"
 	"github.com/rancher/rancher/pkg/features"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/wrangler"
 	steveext "github.com/rancher/steve/pkg/ext"
 	steveserver "github.com/rancher/steve/pkg/server"
 	wranglerapiregistrationv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/apiregistration.k8s.io/v1"
 	wranglercorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -157,7 +157,7 @@ func NewExtensionAPIServer(ctx context.Context, wranglerContext *wrangler.Contex
 	var additionalSniProviders []dynamiccertificates.SNICertKeyContentProvider
 	var ln net.Listener
 
-	logrus.Info("creating imperative extension apiserver resources")
+	log.Info("Creating imperative extension apiserver resources", "operation", "start_extension_apiserver")
 
 	sniProvider, err := NewSNIProviderForCname(
 		"imperative-api-sni-provider",
@@ -174,7 +174,7 @@ func NewExtensionAPIServer(ctx context.Context, wranglerContext *wrangler.Contex
 		// sniProvider.Run uses a Watch that could be aborted due to external reasons, make sure we retry unless the context was already canceled
 		for {
 			if err := sniProvider.Run(ctx.Done()); err != nil {
-				logrus.Errorf("sni provider failed: %s", err)
+				log.Error("Sni provider failed", "operation", "start_extension_apiserver", "error", err)
 				if ctx.Err() != nil {
 					return
 				}
@@ -261,10 +261,10 @@ func NewExtensionAPIServer(ctx context.Context, wranglerContext *wrangler.Contex
 	}
 
 	// deferred ext controller setup ...
-	logrus.Debug("[deferred-ext/run] DEFER - cluster auth token - register ext token indexers")
+	log.Debug("Deferred ext controller setup, registering ext token indexers", "operation", "start_extension_apiserver")
 	wranglerContext.DeferredEXTAPIRegistration.DeferFunc(func(extContext *wrangler.EXTAPIContext) {
 		if err := clusterauthtoken.RegisterExtIndexers(extContext.Client); err != nil {
-			logrus.Fatalf("Unexpected error while adding ext indexers: %v", err)
+			log.Fatal("Unexpected error while adding ext indexers", "operation", "deferred_ext_registration", "error", err)
 		}
 	})
 
@@ -284,7 +284,7 @@ func AggregationPreCheck(client wranglerapiregistrationv1.APIServiceClient) bool
 func SetAggregationCheck(client wranglerapiregistrationv1.APIServiceClient, value bool) error {
 	return retry.OnError(retry.DefaultBackoff, func(err error) bool {
 		if err != nil {
-			logrus.Warnf("failed to update APIService annotation: %s", err)
+			log.Warn("Failed to update APIService annotation", "operation", "set_aggregation_check", "error", err)
 			return true
 		}
 

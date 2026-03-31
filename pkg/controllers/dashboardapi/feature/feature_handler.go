@@ -9,7 +9,7 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/features"
 	managementv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 func Register(ctx context.Context, features managementv3.FeatureController) {
@@ -24,7 +24,7 @@ func sync(_ string, obj *v3.Feature) (*v3.Feature, error) {
 	newVal, needsRestart := ReconcileFeatures(obj)
 	if needsRestart {
 		time.Sleep(3 * time.Second)
-		logrus.Infof("feature flag [%s] value has changed (new value=%v), rancher must be restarted", obj.Name, ptrBoolToString(newVal))
+		log.Info("Feature flag value changed, rancher must be restarted", "operation", "sync_feature", "feature", obj.Name, "new_value", ptrBoolToString(newVal))
 		os.Exit(0)
 	}
 

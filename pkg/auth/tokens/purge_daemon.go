@@ -6,9 +6,9 @@ import (
 
 	"github.com/rancher/norman/clientbase"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -36,7 +36,7 @@ type purger struct {
 func (p *purger) purge() {
 	allTokens, err := p.tokenLister.List("", labels.Everything())
 	if err != nil {
-		logrus.Errorf("Error listing tokens during purge: %v", err)
+		log.Error("Error listing tokens during purge", "operation", "purge", "error", err)
 	}
 
 	var count int
@@ -44,14 +44,14 @@ func (p *purger) purge() {
 		if IsExpired(token) {
 			err = p.tokens.Delete(token.ObjectMeta.Name, &metav1.DeleteOptions{})
 			if err != nil && !clientbase.IsNotFound(err) {
-				logrus.Errorf("Error: while deleting expired token %v: %v", err, token.ObjectMeta.Name)
+				log.Error("Error while deleting expired token", "operation", "purge", "token_name", token.ObjectMeta.Name, "error", err)
 				continue
 			}
 			count++
 		}
 	}
 	if count > 0 {
-		logrus.Infof("Purged %v expired tokens", count)
+		log.Info("Purged expired tokens", "operation", "purge", "count", count)
 	}
 
 	// saml tokens store encrypted token for login request from rancher cli
@@ -66,13 +66,13 @@ func (p *purger) purge() {
 		if token.CreationTimestamp.Add(15 * time.Minute).Before(time.Now()) {
 			err = p.samlTokens.Delete(token.ObjectMeta.Name, &metav1.DeleteOptions{})
 			if err != nil && !clientbase.IsNotFound(err) {
-				logrus.Errorf("Error: while deleting expired token %v: %v", err, token.Name)
+				log.Error("Error while deleting expired token", "operation", "purge", "token_name", token.Name, "error", err)
 				continue
 			}
 			count++
 		}
 	}
 	if count > 0 {
-		logrus.Infof("Purged %v saml tokens", count)
+		log.Info("Purged saml tokens", "operation", "purge", "count", count)
 	}
 }

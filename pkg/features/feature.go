@@ -8,7 +8,7 @@ import (
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	managementv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -246,7 +246,7 @@ type Feature struct {
 func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs string) {
 	// applies any default values assigned in --features flag to feature map
 	if err := applyArgumentDefaults(featureArgs); err != nil {
-		logrus.Errorf("failed to apply feature args: %v", err)
+		log.Error("Failed to apply feature args", "error", err)
 	}
 
 	if featuresClient == nil {
@@ -256,7 +256,7 @@ func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs s
 	// external-rules feature flag was removed in 2.9. We need to delete it for users upgrading from 2.8.
 	err := featuresClient.Delete("external-rules", &metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
-		logrus.Errorf("unable to delete external-rules feature: %v", err)
+		log.Error("Unable to delete external-rules feature", "error", err)
 	}
 
 	// creates any features in map that do not exist, updates features with new default value
@@ -264,7 +264,7 @@ func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs s
 		featureState, err := featuresClient.Get(key, metav1.GetOptions{})
 		if err != nil {
 			if !errors.IsNotFound(err) {
-				logrus.Errorf("unable to retrieve feature %s in initialize features: %v", f.name, err)
+				log.Error("Unable to retrieve feature in initialize features", "feature", f.name, "error", err)
 			}
 
 			if f.install {
@@ -288,7 +288,7 @@ func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs s
 				}
 
 				if _, err := featuresClient.Create(newFeature); err != nil {
-					logrus.Errorf("unable to create feature %s in initialize features: %v", f.name, err)
+					log.Error("Unable to create feature in initialize features", "feature", f.name, "error", err)
 				}
 			}
 		} else {
@@ -320,7 +320,7 @@ func InitializeFeatures(featuresClient managementv3.FeatureClient, featureArgs s
 
 			newFeatureState, err = featuresClient.Update(newFeatureState)
 			if err != nil {
-				logrus.Errorf("unable to update feature %s in initialize features: %v", f.name, err)
+				log.Error("Unable to update feature in initialize features", "feature", f.name, "error", err)
 				continue
 			}
 

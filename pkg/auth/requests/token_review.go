@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/rancher/rancher/pkg/auth/tokens"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -45,7 +45,7 @@ func (t *TokenReviewAuth) Authenticate(req *http.Request) (user.Info, bool, erro
 
 	tokenReview, err := t.AuthClient.TokenReviews().Create(req.Context(), tokenReview, metav1.CreateOptions{})
 	if err != nil {
-		logrus.Debugf("tokenReview failed: %v", err)
+		log.Debug("TokenReview failed", "operation", "authenticate", "error", err)
 		return info, false, nil
 	}
 

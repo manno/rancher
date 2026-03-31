@@ -23,7 +23,7 @@ import (
 	v1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/v3/pkg/ratelimit"
 	"github.com/rancher/wrangler/v3/pkg/start"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,13 +50,13 @@ func OrphanBindings(clientConfig *rest.Config) error {
 		return err
 	}
 
-	logrus.Infof("[%v] cleaning up orphaned bindings", orphanBindingsOperation)
+	log.Info("Cleaning up orphaned bindings", "operation", orphanBindingsOperation)
 	return bc.cleanOrphans(dryRun)
 }
 
 func newOrphanBindingsCleanup(restConfig *rest.Config) (*orphanBindingsCleanup, error) {
 	if os.Getenv("DRY_RUN") == "true" {
-		logrus.Infof("[%v] DRY_RUN is true, no objects will be deleted/modified", orphanBindingsOperation)
+		log.Info("DRY_RUN is true, no objects will be deleted/modified", "operation", orphanBindingsOperation)
 		dryRun = true
 	}
 
@@ -67,7 +67,7 @@ func newOrphanBindingsCleanup(restConfig *rest.Config) (*orphanBindingsCleanup, 
 	} else {
 		config, err = clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 		if err != nil {
-			logrus.Errorf("[%v] Error in building the cluster config %v", orphanBindingsOperation, err)
+			log.Error("Error in building the cluster config", "operation", orphanBindingsOperation, "error", err)
 			return nil, err
 		}
 	}
@@ -122,7 +122,7 @@ func (bc *orphanBindingsCleanup) cleanOrphans(dryRun bool) error {
 		}
 	}
 
-	logrus.Infof("[%v] checking for orphaned rolebindings", orphanBindingsOperation)
+	log.Info("Checking for orphaned rolebindings", "operation", orphanBindingsOperation)
 
 	// check all rolebindings against orphan criteria
 	rbs, err := bc.roleBindings.List("", metav1.ListOptions{})
@@ -133,12 +133,12 @@ func (bc *orphanBindingsCleanup) cleanOrphans(dryRun bool) error {
 	var returnErr error
 	for _, rb := range rbs.Items {
 		if bc.isOrphanBinding(&rb) {
-			logrus.Infof("[%v] found orphaned binding: %s/%s", orphanBindingsOperation, rb.Namespace, rb.Name)
+			log.Info("Found orphaned binding", "operation", orphanBindingsOperation, "namespace", rb.Namespace, "binding", rb.Name)
 			if dryRun {
-				logrus.Infof("[%v] dryRun is enabled, skipping deletion for orphaned binding: %s/%s", orphanBindingsOperation, rb.Namespace, rb.Name)
+				log.Info("DryRun is enabled, skipping deletion for orphaned binding", "operation", orphanBindingsOperation, "namespace", rb.Namespace, "binding", rb.Name)
 				continue
 			}
-			logrus.Infof("[%v] deleting orphaned binding: %s/%s", orphanBindingsOperation, rb.Namespace, rb.Name)
+			log.Info("Deleting orphaned binding", "operation", orphanBindingsOperation, "namespace", rb.Namespace, "binding", rb.Name)
 			err := bc.roleBindings.Delete(rb.Namespace, rb.Name, &metav1.DeleteOptions{})
 			if err != nil && !k8serrors.IsNotFound(err) {
 				returnErr = errors.Join(returnErr, err)

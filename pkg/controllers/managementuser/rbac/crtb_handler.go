@@ -11,9 +11,9 @@ import (
 
 	controllersv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	pkgrbac "github.com/rancher/rancher/pkg/rbac"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -99,7 +99,7 @@ func (c *crtbLifecycle) syncCRTB(binding *v3.ClusterRoleTemplateBinding, remoteC
 	condition := metav1.Condition{Type: clusterRolesExists}
 
 	if binding.RoleTemplateName == "" {
-		logrus.Warnf("ClusterRoleTemplateBinding %v has no role template set. Skipping.", binding.Name)
+		log.Warn("Clusterroletemplatebinding has no role template set, skipping", "operation", "sync_crtb", "binding", binding.Name)
 		c.s.AddCondition(remoteConditions, condition, roleTemplateDoesNotExist, nil)
 		return nil
 	}
@@ -114,11 +114,7 @@ func (c *crtbLifecycle) syncCRTB(binding *v3.ClusterRoleTemplateBinding, remoteC
 		err = fmt.Errorf("couldn't get role template %v: %w", binding.RoleTemplateName, err)
 		c.s.AddCondition(remoteConditions, condition, failedToGetRoleTemplate, err)
 		if apierrors.IsNotFound(err) {
-			logrus.Warnf(
-				"RoleTemplate %s not found for ClusterRoleTemplateBinding %s. Skipping.",
-				binding.RoleTemplateName,
-				binding.Name,
-			)
+			log.Warn("Roletemplate not found for clusterroletemplatebinding, skipping", "operation", "sync_crtb", "role_template", binding.RoleTemplateName, "binding", binding.Name)
 			return nil
 		}
 		return err

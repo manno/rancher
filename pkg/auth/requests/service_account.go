@@ -13,9 +13,9 @@ import (
 	controllers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	corev1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/steve/pkg/auth"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -72,20 +72,20 @@ func (t *ServiceAccountAuth) Authenticate(req *http.Request) (user.Info, bool, e
 	// Check the cluster setting value to determine whether we will continue the auth process
 	settings, err := t.clusterProxyConfigsGetter.List(clusterID, labels.NewSelector())
 	if err != nil {
-		logrus.Debugf("rejecting downstream proxy request for %s, unable to fetch ClusterProxySettings object for cluster. %v", req.URL.Path, err)
+		log.Debug("Rejecting downstream proxy request, unable to fetch ClusterProxySettings object for cluster", "operation", "authenticate", "path", req.URL.Path, "cluster_id", clusterID, "error", err)
 		return info, false, nil
 	}
 	if settings == nil {
-		logrus.Debugf("rejecting downstream proxy request for %s, no ClusterProxySettings object exists for cluster", req.URL.Path)
+		log.Debug("Rejecting downstream proxy request, no ClusterProxySettings object exists for cluster", "operation", "authenticate", "path", req.URL.Path, "cluster_id", clusterID)
 		return info, false, nil
 	}
 	if len(settings) > 1 {
-		logrus.Errorf("multiple clusterproxyconfigs found for cluster, which is a misconfiguration, feature is disabled")
+		log.Error("Multiple clusterproxyconfigs found for cluster, which is a misconfiguration, feature is disabled", "operation", "authenticate", "cluster_id", clusterID)
 		return info, false, nil
 	}
 
 	if !settings[0].Enabled {
-		logrus.Debugf("rejecting downstream proxy request for %s, current setting is enabled: %v", req.URL.Path, settings[0].Enabled)
+		log.Debug("Rejecting downstream proxy request, current setting is enabled", "operation", "authenticate", "path", req.URL.Path, "cluster_id", clusterID, "enabled", settings[0].Enabled)
 		return info, false, nil
 	}
 
@@ -98,24 +98,24 @@ func (t *ServiceAccountAuth) Authenticate(req *http.Request) (user.Info, bool, e
 	// Later on, we do a real TokenReview against the downstream cluster to actually verify the JWT.
 	_, _, err = jwtParser.ParseUnverified(rawToken, &claims)
 	if err != nil {
-		logrus.Debug("saauth: error parsing JWT")
+		log.Debug("Saauth: error parsing JWT", "operation", "authenticate", "error", err)
 		return info, false, err
 	}
 
 	if !strings.HasPrefix(claims.Subject, serviceaccount.ServiceAccountUsernamePrefix) {
-		logrus.Debugf("saauth: JWT sub is not a service account: %v", err)
+		log.Debug("Saauth: JWT sub is not a service account", "operation", "authenticate", "subject", claims.Subject)
 		return info, false, nil
 	}
 
 	if isTokenExpired(claims) {
-		logrus.Debugf("saauth: Service Account JWT is expired. Expiration time was: %v", claims.ExpiresAt)
+		log.Debug("Saauth: service account JWT is expired", "operation", "authenticate", "expires_at", claims.ExpiresAt)
 		return info, false, nil
 	}
 
 	// Get a client for the downstream cluster.
 	downstreamAuthClient, err := t.authClientCreator(clusterID)
 	if err != nil {
-		logrus.Errorf("saauth: failed to fetch downstream kubeconfig: %v", err)
+		log.Error("Saauth: failed to fetch downstream kubeconfig", "operation", "authenticate", "cluster_id", clusterID, "error", err)
 		return info, false, nil
 	}
 
@@ -128,7 +128,7 @@ func (t *ServiceAccountAuth) Authenticate(req *http.Request) (user.Info, bool, e
 	// Make the token review request to the downstream cluster.
 	tokenReview, err = downstreamAuthClient.AuthenticationV1().TokenReviews().Create(req.Context(), tokenReview, metav1.CreateOptions{})
 	if err != nil {
-		logrus.Debugf("saauth: error creating a tokenreview request: %v", err)
+		log.Debug("Saauth: error creating a tokenreview request", "operation", "authenticate", "cluster_id", clusterID, "error", err)
 		return info, false, nil
 	}
 

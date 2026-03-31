@@ -12,7 +12,7 @@ import (
 	v1 "github.com/rancher/rancher/pkg/apis/provisioning.cattle.io/v1"
 
 	apimgmtv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -99,9 +99,9 @@ func (m *Migrator) createOrUpdateSecret(secretName, secretNamespace string, data
 func (m *Migrator) createOrUpdateSecretForCredential(secretName, secretNamespace, secretValue string, annotations map[string]string, owner runtime.Object, kind, field string) (*corev1.Secret, error) {
 	if secretValue == "" {
 		if secretName == "" {
-			logrus.Debugf("Secret name is empty")
+			log.Debug("Secret name is empty", "operation", "create_or_update_secret_for_credential")
 		}
-		logrus.Debugf("Refusing to create empty secret [%s]/[%s]", secretNamespace, secretName)
+		log.Debug("Refusing to create empty secret", "operation", "create_or_update_secret_for_credential", "namespace", secretNamespace, "secret", secretName)
 		return nil, nil
 	}
 	data := map[string]string{
@@ -145,7 +145,7 @@ func (m *Migrator) CleanupKnownSecrets(secrets []*corev1.Secret) {
 	for _, secret := range secrets {
 		cleanUpErr := m.secrets.DeleteNamespaced(secret.Namespace, secret.Name, &metav1.DeleteOptions{})
 		if cleanUpErr != nil {
-			logrus.Warnf("[secretmigrator] error encountered while handling secrets cleanup for migration error; secret %s:%s may not have been cleaned up: %s", secret.Namespace, secret.Name, cleanUpErr)
+			log.Warn("Error during secrets cleanup, secret may not have been cleaned up", "operation", "cleanup_known_secrets", "namespace", secret.Namespace, "secret", secret.Name, "error", cleanUpErr)
 		}
 	}
 }
@@ -183,22 +183,22 @@ func (h *handler) migrateServiceAccountSecrets(cluster *apimgmtv3.Cluster) (*api
 	obj, doErr := apimgmtv3.ClusterConditionServiceAccountSecretsMigrated.DoUntilTrue(clusterCopy, func() (runtime.Object, error) {
 		// serviceAccountToken
 		if clusterCopy.Status.ServiceAccountTokenSecret == "" {
-			logrus.Tracef("[secretmigrator] migrating service account token secret for cluster %s", clusterCopy.Name)
+			log.Trace("Migrating service account token secret for cluster", "operation", "migrate_service_account_secrets", "cluster", clusterCopy.Name)
 			saSecret, err := h.migrator.CreateOrUpdateServiceAccountTokenSecret(clusterCopy.Status.ServiceAccountTokenSecret, clusterCopy.Status.ServiceAccountToken, clusterCopy)
 			if err != nil {
-				logrus.Errorf("[secretmigrator] failed to migrate service account token secret for cluster %s, will retry: %v", clusterCopy.Name, err)
+				log.Error("Failed to migrate service account token secret, will retry", "operation", "migrate_service_account_secrets", "cluster", clusterCopy.Name, "error", err)
 				return cluster, err
 			}
 			if saSecret != nil {
-				logrus.Tracef("[secretmigrator] service account token secret found for cluster %s", clusterCopy.Name)
+				log.Trace("Service account token secret found for cluster", "operation", "migrate_service_account_secrets", "cluster", clusterCopy.Name)
 				clusterCopy.Status.ServiceAccountTokenSecret = saSecret.Name
 				clusterCopy.Status.ServiceAccountToken = ""
 				clusterCopy, err = h.clusters.Update(clusterCopy)
 				if err != nil {
-					logrus.Errorf("[secretmigrator] failed to migrate service account token secret for cluster %s, will retry: %v", cluster.Name, err)
+					log.Error("Failed to migrate service account token secret, will retry", "operation", "migrate_service_account_secrets", "cluster", cluster.Name, "error", err)
 					deleteErr := h.migrator.secrets.DeleteNamespaced(SecretNamespace, saSecret.Name, &metav1.DeleteOptions{})
 					if deleteErr != nil {
-						logrus.Errorf("[secretmigrator] encountered error while handling migration error: %v", deleteErr)
+						log.Error("Encountered error while handling migration error", "operation", "migrate_service_account_secrets", "error", deleteErr)
 					}
 					return cluster, err
 				}
@@ -207,7 +207,7 @@ func (h *handler) migrateServiceAccountSecrets(cluster *apimgmtv3.Cluster) (*api
 		}
 		return clusterCopy, nil
 	})
-	logrus.Tracef("[secretmigrator] setting cluster condition [%s] and updating cluster [%s]", apimgmtv3.ClusterConditionServiceAccountSecretsMigrated, clusterCopy.Name)
+	log.Trace("Setting cluster condition and updating cluster", "operation", "migrate_service_account_secrets", "condition", apimgmtv3.ClusterConditionServiceAccountSecretsMigrated, "cluster", clusterCopy.Name)
 	// this is done for safety, but obj should never be nil as long as the object passed into DoUntilTrue() is not nil
 	clusterCopy, _ = obj.(*apimgmtv3.Cluster)
 	var err error

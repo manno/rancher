@@ -13,9 +13,9 @@ import (
 	"github.com/rancher/rancher/pkg/capr/planner"
 	capicontrollers "github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io/v1beta2"
 	rkev1controllers "github.com/rancher/rancher/pkg/generated/controllers/rke.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -48,7 +48,7 @@ func (h *handler) OnChange(_ string, secret *corev1.Secret) (*corev1.Secret, err
 	}
 	var err error
 
-	logrus.Debugf("[plansecret] reconciling secret %s/%s", secret.Namespace, secret.Name)
+	log.Debug("Reconciling secret", "namespace", secret.Namespace, "name", secret.Name)
 
 	appliedChecksum := string(secret.Data["applied-checksum"])
 	failedChecksum := string(secret.Data["failed-checksum"])
@@ -116,7 +116,7 @@ func (h *handler) OnChange(_ string, secret *corev1.Secret) (*corev1.Secret, err
 	}
 
 	if failedChecksum == planner.PlanHash(plan) {
-		logrus.Debugf("[plansecret] %s/%s: rv: %s: Detected failed plan application, reconciling machine PlanApplied condition to error", secret.Namespace, secret.Name, secret.ResourceVersion)
+		log.Debug("Detected failed plan application, reconciling machine PlanApplied condition to error", "namespace", secret.Namespace, "name", secret.Name, "resource_version", secret.ResourceVersion)
 		// plans which temporarily fail will continue to set the failedChecksum as expected, however this should not be considered a
 		// true failure unless we have required that the plan not fail at any point, or we have reached the maximum of attempts configured.
 		// After a successful application, the checksum is cleared by the system-agent.
@@ -124,7 +124,7 @@ func (h *handler) OnChange(_ string, secret *corev1.Secret) (*corev1.Secret, err
 			var andRuntimeUnit string
 			if clusterName, ok := secret.Labels[capr.ClusterNameLabel]; ok && len(clusterName) > 0 {
 				if controlPlane, err := h.rkeControlPlaneCache.Get(secret.Namespace, clusterName); err != nil {
-					logrus.Errorf("unable to get RKEControlPlane (%s/%s) for plan secret (%s/%s): %v", secret.Namespace, clusterName, secret.Namespace, secret.Name, err)
+					log.Error("Unable to get RKEControlPlane for plan secret", "controlplane_namespace", secret.Namespace, "controlplane_name", clusterName, "secret_namespace", secret.Namespace, "secret_name", secret.Name, "error", err)
 				} else {
 					var runtimeUnit string
 					if secret.Labels[capr.ControlPlaneRoleLabel] == "true" || secret.Labels[capr.EtcdRoleLabel] == "true" {
@@ -142,7 +142,7 @@ func (h *handler) OnChange(_ string, secret *corev1.Secret) (*corev1.Secret, err
 		return secret, err
 	}
 
-	logrus.Debugf("[plansecret] %s/%s: rv: %s: Reconciling machine PlanApplied condition to nil", secret.Namespace, secret.Name, secret.ResourceVersion)
+	log.Debug("Reconciling machine PlanApplied condition to nil", "namespace", secret.Namespace, "name", secret.Name, "resource_version", secret.ResourceVersion)
 	err = h.reconcileMachinePlanAppliedCondition(secret, nil)
 	return secret, err
 }
@@ -176,7 +176,7 @@ func purgePeriodicInstructionOutput(node *plan.Node) bool {
 
 func (h *handler) reconcileMachinePlanAppliedCondition(secret *corev1.Secret, planAppliedErr error) error {
 	if secret == nil {
-		logrus.Debug("[plansecret] secret was nil when reconciling machine status")
+		log.Debug("Secret was nil when reconciling machine status")
 		return nil
 	}
 
@@ -199,7 +199,7 @@ func (h *handler) reconcileMachinePlanAppliedCondition(secret *corev1.Secret, pl
 		(conditions.GetMessage(machine, condition) != planAppliedErr.Error() ||
 			!conditions.IsFalse(machine, condition) ||
 			conditions.GetReason(machine, condition) != "Error") {
-		logrus.Debugf("[plansecret] machine %s/%s: marking PlanApplied as false", machine.Namespace, machine.Name)
+		log.Debug("Machine marking PlanApplied as false", "namespace", machine.Namespace, "name", machine.Name)
 		capr.SetCAPIResourceCondition(machine, metav1.Condition{
 			Type:    condition,
 			Status:  metav1.ConditionFalse,
@@ -208,7 +208,7 @@ func (h *handler) reconcileMachinePlanAppliedCondition(secret *corev1.Secret, pl
 		})
 		needsUpdate = true
 	} else if planAppliedErr == nil && !conditions.IsTrue(machine, condition) {
-		logrus.Debugf("[plansecret] machine %s/%s: marking PlanApplied as true", machine.Namespace, machine.Name)
+		log.Debug("Machine marking PlanApplied as true", "namespace", machine.Namespace, "name", machine.Name)
 		capr.SetCAPIResourceCondition(machine, metav1.Condition{
 			Type:   condition,
 			Status: metav1.ConditionTrue,
@@ -218,7 +218,7 @@ func (h *handler) reconcileMachinePlanAppliedCondition(secret *corev1.Secret, pl
 	}
 
 	if needsUpdate {
-		logrus.Debugf("[plansecret] machine %s/%s: updating status of machine to reconcile for condition with error: %+v", machine.Namespace, machine.Name, planAppliedErr)
+		log.Debug("Machine updating status to reconcile for condition", "namespace", machine.Namespace, "name", machine.Name, "error", planAppliedErr)
 		_, err = h.machinesClient.UpdateStatus(machine)
 	}
 

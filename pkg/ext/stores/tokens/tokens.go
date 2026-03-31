@@ -24,12 +24,12 @@ import (
 	"github.com/rancher/rancher/pkg/auth/tokens/hashers"
 	extcommon "github.com/rancher/rancher/pkg/ext/common"
 	v3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/wrangler"
 	extcore "github.com/rancher/steve/pkg/ext"
 	v1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
@@ -1101,7 +1101,7 @@ func (t *Store) watch(ctx context.Context, options *metav1.ListOptions) (watch.I
 
 	producer, err := t.secretClient.Watch(TokenNamespace, localOptions)
 	if err != nil {
-		logrus.Errorf("tokens: watch: error starting watch: %s", err)
+		log.Error("Tokens watch error starting watch", "operation", "watch_tokens", "error", err)
 		return nil, apierrors.NewInternalError(fmt.Errorf("tokens: watch: error starting watch: %w", err))
 	}
 
@@ -1134,7 +1134,7 @@ func (t *Store) watch(ctx context.Context, options *metav1.ListOptions) (watch.I
 				case watch.Bookmark:
 					secret, ok := event.Object.(*corev1.Secret)
 					if !ok {
-						logrus.Warnf("tokens: watch: expected secret got %T", event.Object)
+						log.Warn("Tokens watch expected secret", "operation", "watch_tokens", "object_type", "unknown")
 						continue
 					}
 
@@ -1147,13 +1147,13 @@ func (t *Store) watch(ctx context.Context, options *metav1.ListOptions) (watch.I
 				case watch.Added, watch.Modified, watch.Deleted:
 					secret, ok := event.Object.(*corev1.Secret)
 					if !ok {
-						logrus.Warnf("tokens: watch: expected secret got %T", event.Object)
+						log.Warn("Tokens watch expected secret", "operation", "watch_tokens", "object_type", "unknown")
 						continue
 					}
 
 					token, err := fromSecret(secret)
 					if err != nil {
-						logrus.Errorf("tokens: watch: error converting secret '%s' to token: %s", secret.Name, err)
+						log.Error("Tokens watch error converting secret to token", "operation", "watch_tokens", "secret", secret.Name, "error", err)
 						continue
 					}
 
@@ -1363,7 +1363,7 @@ func (tp *tokenHasher) MakeAndHashSecret() (string, string, error) {
 func (tp *tokenAuth) UserName(ctx context.Context, store *SystemStore, verb string) (user.Info, bool, bool, error) {
 	userInfo, ok := request.UserFrom(ctx)
 	if !ok {
-		logrus.Errorf("ext token store (%s request) no user information in request context", verb)
+		log.Error("Ext token store no user information in request context", "operation", "access_token", "request_type", verb)
 		return nil, false, false, apierrors.NewInternalError(fmt.Errorf("context has no user info"))
 	}
 
@@ -1374,7 +1374,7 @@ func (tp *tokenAuth) UserName(ctx context.Context, store *SystemStore, verb stri
 		ResourceRequest: true,
 	})
 	if err != nil {
-		logrus.Errorf("ext token store (%s request) by user %q: auth error: %v", verb, userInfo.GetName(), err)
+		log.Error("Ext token store auth error", "operation", "access_token", "request_type", verb, "user", userInfo.GetName(), "error", err)
 		return nil, false, false, err
 	}
 
@@ -1391,13 +1391,13 @@ func (tp *tokenAuth) UserName(ctx context.Context, store *SystemStore, verb stri
 			isRancherUser = true
 		} else if !apierrors.IsNotFound(err) {
 			// some general error
-			logrus.Errorf("ext token store (%s request) by user %q: general error: %v", verb, userName, err)
+			log.Error("Ext token store general error", "operation", "access_token", "request_type", verb, "user", userName, "error", err)
 			return nil, false, false,
 				apierrors.NewInternalError(fmt.Errorf("error getting user %s: %w", userName, err))
 		} // else: not a rancher user, may still be an admin
 	} // else: some system user, not a rancher user, may still be an admin
 
-	logrus.Debugf("ext token store (%s request) by user %q (full-access=%v, rancher-user=%v)", verb, userName, fullAccess, isRancherUser)
+	log.Debug("Ext token store access", "operation", "access_token", "request_type", verb, "user", userName, "full_access", fullAccess, "rancher_user", isRancherUser)
 	return userInfo, fullAccess, isRancherUser, nil
 }
 
@@ -1431,7 +1431,7 @@ func SessionID(ctx context.Context) (string, error) {
 	tokenIDs := extras[common.ExtraRequestTokenID]
 	if len(tokenIDs) != 1 {
 		// log only because we get internal requests (watch setup) without token id
-		logrus.Debugf("context principal extras has no unique request token id: %d", len(tokenIDs))
+		log.Debug("Context principal extras has no unique request token id", "operation", "get_token_id", "token_id_count", len(tokenIDs))
 		return "", nil
 	}
 

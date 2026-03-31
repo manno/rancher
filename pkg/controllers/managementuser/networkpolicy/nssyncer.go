@@ -5,8 +5,8 @@ import (
 
 	"github.com/rancher/rancher/pkg/controllers/managementagent/nslabels"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	wcore "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -35,12 +35,12 @@ func (nss *nsSyncer) Sync(_ string, ns *corev1.Namespace) (*corev1.Namespace, er
 		return nil, nil
 	}
 
-	logrus.Debugf("nsSyncer: Sync: %v, %+v", ns.Name, *ns)
+	log.Debug("Nssyncer: sync", "operation", "sync", "namespace", ns.Name)
 
 	projectID := ns.Labels[nslabels.ProjectIDFieldLabel]
 	movedToNone := projectID == ""
 	if !movedToNone {
-		logrus.Debugf("nsSyncer: Sync: ns=%v projectID=%v", ns.Name, projectID)
+		log.Debug("Nssyncer: sync: programming network policy", "operation", "sync", "namespace", ns.Name, "project_id", projectID)
 		// program project isolation network policy
 		if err := nss.npmgr.programNetworkPolicy(projectID, nss.clusterNamespace); err != nil {
 			return nil, fmt.Errorf("nsSyncer: Sync: error programming network policy: %v (ns=%v, projectID=%v), ", err, ns.Name, projectID)

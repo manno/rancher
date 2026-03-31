@@ -2,6 +2,7 @@ package publicapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -29,9 +30,9 @@ import (
 	"github.com/rancher/rancher/pkg/auth/tokens"
 	"github.com/rancher/rancher/pkg/auth/util"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3public"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -75,7 +76,7 @@ type v1LoginHandler struct {
 func (h *v1LoginHandler) login(w http.ResponseWriter, r *http.Request) {
 	bytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		logrus.Errorf("login: Error reading request body: %s", err)
+		log.Error("Error reading request body", "operation", "login", "error", err)
 		util.ReturnAPIError(w, apierror.NewAPIError(validation.InvalidBodyContent, ""))
 		return
 	}
@@ -83,7 +84,7 @@ func (h *v1LoginHandler) login(w http.ResponseWriter, r *http.Request) {
 	generic := &apiv3.GenericLogin{}
 	err = json.Unmarshal(bytes, generic)
 	if err != nil {
-		logrus.Errorf("login: Error unmarshalling generic login request: %s", err)
+		log.Error("Error unmarshalling generic login request", "operation", "login", "error", err)
 		util.ReturnAPIError(w, apierror.NewAPIError(validation.InvalidBodyContent, ""))
 		return
 	}
@@ -91,7 +92,7 @@ func (h *v1LoginHandler) login(w http.ResponseWriter, r *http.Request) {
 	input := providerInputForType(generic.Type)
 	err = json.Unmarshal(bytes, input)
 	if err != nil {
-		logrus.Errorf("login: Error unmarshalling provider specific login request %T: %s", input, err)
+		log.Error("Error unmarshalling provider specific login request", "operation", "login", "input_type", fmt.Sprintf("%T", input), "error", err)
 		util.ReturnAPIError(w, apierror.NewAPIError(validation.InvalidBodyContent, ""))
 		return
 	}
@@ -116,21 +117,21 @@ func (h *v3LoginHandler) login(actionName string, action *types.Action, request 
 
 	bytes, err := io.ReadAll(request.Request.Body)
 	if err != nil {
-		logrus.Errorf("login: Error reading request body: %s", err)
+		log.Error("Error reading request body", "operation", "login", "error", err)
 		return httperror.NewAPIError(httperror.InvalidBodyContent, "")
 	}
 
 	generic := &apiv3.GenericLogin{}
 	err = json.Unmarshal(bytes, generic)
 	if err != nil {
-		logrus.Errorf("login: Error unmarshalling generic login request: %s", err)
+		log.Error("Error unmarshalling generic login request", "operation", "login", "error", err)
 		return httperror.NewAPIError(httperror.InvalidBodyContent, "")
 	}
 
 	input := providerInputForType(request.Type)
 	err = json.Unmarshal(bytes, input)
 	if err != nil {
-		logrus.Errorf("login: Error unmarshalling provider specific login request %T: %s", input, err)
+		log.Error("Error unmarshalling provider specific login request", "operation", "login", "input_type", fmt.Sprintf("%T", input), "error", err)
 		return httperror.NewAPIError(httperror.InvalidBodyContent, "")
 	}
 
@@ -233,7 +234,7 @@ func providerInputForType(providerType string) loginAccessor {
 
 func (h *loginHandler) login(w http.ResponseWriter, r *http.Request, input loginAccessor) {
 	if input == nil {
-		logrus.Errorf("login: missing auth provider input")
+		log.Error("Missing auth provider input", "operation", "login")
 		util.ReturnAPIError(w, apierror.NewAPIError(validation.InvalidBodyContent, ""))
 		return
 	}
@@ -244,7 +245,7 @@ func (h *loginHandler) login(w http.ResponseWriter, r *http.Request, input login
 		err := saml.PerformSamlLogin(r, w, input.GetName(), input)
 		if err != nil {
 			if !util.IsAPIError(err) {
-				logrus.Errorf("login: Error performing SAML login: %s", err)
+				log.Error("Error performing SAML login", "operation", "login", "provider", input.GetName(), "error", err)
 			}
 			util.ReturnAPIError(w, err)
 		}
@@ -254,7 +255,7 @@ func (h *loginHandler) login(w http.ResponseWriter, r *http.Request, input login
 	userPrincipal, groupPrincipals, providerToken, err := providers.AuthenticateUser(w, r, input, input.GetName())
 	if err != nil {
 		if !util.IsAPIError(err) {
-			logrus.Errorf("login: Error authenticating user: %s", err)
+			log.Error("Error authenticating user", "operation", "login", "provider", input.GetName(), "error", err)
 		}
 		util.ReturnAPIError(w, err)
 		return
@@ -280,7 +281,7 @@ func (h *loginHandler) login(w http.ResponseWriter, r *http.Request, input login
 
 		user, err = h.ensureUser(userPrincipal.Name, displayName)
 		if err != nil {
-			logrus.Warnf("login: Error creating or updating user for %s, retrying: %s", userPrincipal.Name, err)
+			log.Warn("Error creating or updating user, retrying", "operation", "login", "principal_name", userPrincipal.Name, "error", err)
 			return false, nil
 		}
 
@@ -292,14 +293,14 @@ func (h *loginHandler) login(w http.ResponseWriter, r *http.Request, input login
 		userExtraInfo := providers.GetUserExtraAttributes(input.GetName(), userPrincipal)
 		err = h.ensureUserAttribute(user.Name, userPrincipal.Provider, groupPrincipals, userExtraInfo, loginTime)
 		if err != nil {
-			logrus.Warnf("login: Error creating or updating userAttribute for %s, retrying: %s", userPrincipal.Name, err)
+			log.Warn("Error creating or updating user attribute, retrying", "operation", "login", "principal_name", userPrincipal.Name, "error", err)
 			return false, nil
 		}
 
 		return true, nil
 	})
 	if err != nil {
-		logrus.Errorf("login: Error creating or updating user and/or userAttribute for %s: %s", userPrincipal.Name, err)
+		log.Error("Error creating or updating user and/or user attribute", "operation", "login", "principal_name", userPrincipal.Name, "error", err)
 		util.ReturnAPIError(w, apierror.NewAPIError(validation.ServerError, ""))
 		return
 
@@ -326,14 +327,14 @@ func (h *loginHandler) login(w http.ResponseWriter, r *http.Request, input login
 	if strings.HasPrefix(responseType, tokens.KubeconfigResponseType) {
 		token, tokenKey, err = tokens.GetKubeConfigToken(user.Name, responseType, h.kubeconfigTokenGetter, userPrincipal)
 		if err != nil {
-			logrus.Errorf("login: Error generating kubeconfig token: %s", err)
+			log.Error("Error generating kubeconfig token", "operation", "login", "user_name", user.Name, "error", err)
 			util.ReturnAPIError(w, apierror.NewAPIError(validation.ServerError, ""))
 			return
 		}
 	} else {
 		token, tokenKey, err = h.newLoginToken(user.Name, userPrincipal, groupPrincipals, providerToken, ttl, description)
 		if err != nil {
-			logrus.Errorf("login: Error creating login token for user %s: %v", user.Name, err)
+			log.Error("Error creating login token", "operation", "login", "user_name", user.Name, "error", err)
 			util.ReturnAPIError(w, apierror.NewAPIError(validation.ServerError, ""))
 			return
 		}
@@ -372,7 +373,7 @@ func (h *loginHandler) login(w http.ResponseWriter, r *http.Request, input login
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(tokenData)
 	if err != nil {
-		logrus.Errorf("login: Error writing response: %v", err)
+		log.Error("Error writing response", "operation", "login", "error", err)
 		return
 	}
 }

@@ -14,9 +14,9 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/managementuser/resourcequota"
 	fleetconst "github.com/rancher/rancher/pkg/fleet"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	namespaceutil "github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/project"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -238,7 +238,7 @@ func (n *nsLifecycle) ensurePRTBAddToNamespace(ns *v1.Namespace) (bool, error) {
 	// Get project that contain this namespace
 	projectID := ns.Annotations[projectIDAnnotation]
 	if len(projectID) == 0 {
-		logrus.Debugf("Namespace %s does not belong to a project - deleting rolebindings", ns.Name)
+		log.Debug("Namespace does not belong to a project, deleting rolebindings", "operation", "sync_namespace", "namespace", ns.Name)
 		// if namespace does not belong to a project, delete all rolebindings from that namespace that were created for a PRTB
 		// such rolebindings will have the label "authz.cluster.cattle.io/rtb-owner" prior to 2.5 and
 		// "authz.cluster.cattle.io/rtb-owner-updated" 2.5 onwards
@@ -253,7 +253,7 @@ func (n *nsLifecycle) ensurePRTBAddToNamespace(ns *v1.Namespace) (bool, error) {
 				rtbOwnerLabel,
 			} {
 				if uid := convert.ToString(rb.Labels[ownerLabel]); uid != "" {
-					logrus.Infof("Deleting role binding %s in %s", rb.Name, ns.Name)
+					log.Info("Deleting role binding", "operation", "sync_namespace", "rolebinding", rb.Name, "namespace", ns.Name)
 					if err := client.Delete(ns.Name, rb.Name, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 						return false, errors.Wrapf(err, "couldn't delete role binding %s", rb.Name)
 					}
@@ -280,14 +280,14 @@ func (n *nsLifecycle) ensurePRTBAddToNamespace(ns *v1.Namespace) (bool, error) {
 		}
 
 		if prtb.RoleTemplateName == "" {
-			logrus.Warnf("ProjectRoleTemplateBinding %v has no role template set. Skipping.", prtb.Name)
+			log.Warn("Projectroletemplatebinding has no role template set, skipping", "operation", "sync_namespace", "prtb", prtb.Name)
 			continue
 		}
 
 		rt, err := n.m.rtLister.Get(prtb.RoleTemplateName)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logrus.Warnf("ProjectRoleTemplateBinding %q sets a non-existing role template %q. Skipping.", prtb.Name, prtb.RoleTemplateName)
+				log.Warn("Projectroletemplatebinding sets a non-existing role template, skipping", "operation", "sync_namespace", "prtb", prtb.Name, "role_template", prtb.RoleTemplateName)
 				continue
 			}
 			return false, err
@@ -312,7 +312,7 @@ func (n *nsLifecycle) ensurePRTBAddToNamespace(ns *v1.Namespace) (bool, error) {
 		project, err := n.rq.ProjectCache.Get(parts[0], parts[1])
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logrus.Warnf("Namespace %s references project %s in namespace %s which does not exist", ns.Name, parts[1], parts[0])
+				log.Warn("Namespace references project which does not exist", "operation", "sync_namespace", "namespace", ns.Name, "project", parts[1], "project_namespace", parts[0])
 				return hasPRTBs, nil
 			}
 			return hasPRTBs, err
@@ -341,7 +341,7 @@ func (n *nsLifecycle) ensurePRTBAddToNamespace(ns *v1.Namespace) (bool, error) {
 			for _, prtb := range prtbs {
 				if prtb, ok := prtb.(*v3.ProjectRoleTemplateBinding); ok {
 					if prtb.Namespace != namespace {
-						logrus.Infof("Deleting role binding %s in %s", rb.Name, ns.Name)
+						log.Info("Deleting role binding", "operation", "sync_namespace", "rolebinding", rb.Name, "namespace", ns.Name)
 						if err := client.Delete(ns.Name, rb.Name, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 							return false, errors.Wrapf(err, "couldn't delete role binding %s", rb.Name)
 						}
@@ -362,7 +362,7 @@ func (n *nsLifecycle) ensurePRTBAddToNamespace(ns *v1.Namespace) (bool, error) {
 			for _, prtb := range prtbs {
 				if prtb, ok := prtb.(*v3.ProjectRoleTemplateBinding); ok {
 					if prtb.Namespace != namespace {
-						logrus.Infof("Deleting role binding %s in %s", rb.Name, ns.Name)
+						log.Info("Deleting role binding", "operation", "sync_namespace", "rolebinding", rb.Name, "namespace", ns.Name)
 						if err := client.Delete(ns.Name, rb.Name, &metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 							return false, errors.Wrapf(err, "couldn't delete role binding %s", rb.Name)
 						}
@@ -431,7 +431,7 @@ func (n *nsLifecycle) reconcileNamespaceProjectClusterRole(ns *v1.Namespace) err
 				}
 			}
 			if toDeleteRules == len(undesiredRole.Rules) {
-				logrus.Infof("Deleting ClusterRole %s", undesiredRole.Name)
+				log.Info("Deleting clusterrole", "operation", "sync_namespace", "cluster_role", undesiredRole.Name)
 				if err = roleCli.Delete(undesiredRole.Name, &metav1.DeleteOptions{}); err != nil {
 					return err
 				}
@@ -589,7 +589,7 @@ func updateStatusAnnotation(hasPRTBs bool, namespace *v1.Namespace, mgr *manager
 			time.Sleep(time.Millisecond * 500)
 			clusterRoles, err := mgr.crIndexer.ByIndex(crByNSIndex, namespace.Name)
 			if err != nil {
-				logrus.Warnf("error getting cluster roles for ns %v for status update: %v", namespace.Name, err)
+				log.Warn("Error getting cluster roles for namespace status update", "operation", "set_namespace_condition", "namespace", namespace.Name, "error", err)
 				continue
 			}
 			if len(clusterRoles) < 2 {
@@ -616,7 +616,7 @@ func updateStatusAnnotation(hasPRTBs bool, namespace *v1.Namespace, mgr *manager
 			if hasPRTBs {
 				bindings, err := mgr.rbLister.List(namespace.Name, labels.Everything())
 				if err != nil {
-					logrus.Warnf("error getting bindings for ns %v for status update: %v", namespace.Name, err)
+					log.Warn("Error getting bindings for namespace status update", "operation", "set_namespace_condition", "namespace", namespace.Name, "error", err)
 					continue
 				}
 				if len(bindings) > 0 {
@@ -629,11 +629,11 @@ func updateStatusAnnotation(hasPRTBs bool, namespace *v1.Namespace, mgr *manager
 	for i := 0; i < 10; i++ {
 		ns, err := mgr.namespaces.Get(namespace.Name, metav1.GetOptions{})
 		if err != nil {
-			logrus.Errorf("error getting ns %v for status update: %v", namespace.Name, err)
+			log.Error("Error getting namespace for status update", "operation", "set_namespace_condition", "namespace", namespace.Name, "error", err)
 			return
 		}
 		if err := namespaceutil.SetNamespaceCondition(ns, time.Second*1, initialRoleCondition, true, ""); err != nil {
-			logrus.Warnf("fail to set %v condition on ns %v: %v", initialRoleCondition, namespace.Name, err)
+			log.Warn("Fail to set condition on namespace", "operation", "set_namespace_condition", "condition", initialRoleCondition, "namespace", namespace.Name, "error", err)
 			continue
 		}
 		_, err = mgr.namespaces.Update(ns)
@@ -641,7 +641,7 @@ func updateStatusAnnotation(hasPRTBs bool, namespace *v1.Namespace, mgr *manager
 			break
 		}
 		if !apierrors.IsConflict(err) {
-			logrus.Warnf("error updating ns %v status: %v", ns.Name, err)
+			log.Warn("Error updating namespace status", "operation", "set_namespace_condition", "namespace", ns.Name, "error", err)
 		}
 	}
 
@@ -665,21 +665,21 @@ func (n *nsLifecycle) asyncCleanupRBAC(namespaceName string) {
 					// Namespace is fully deleted, clean up RBAC
 					err := n.reconcileNamespaceProjectClusterRole(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespaceName}})
 					if err != nil {
-						logrus.Errorf("error cleaning up RBAC for namespace %s: %v", namespaceName, err)
+						log.Error("Error cleaning up rbac for namespace", "operation", "async_cleanup_namespace", "namespace", namespaceName, "error", err)
 						return true, err
 					}
-					logrus.Debugf("successfully cleaned up RBAC for namespace %s", namespaceName)
+					log.Debug("Successfully cleaned up rbac for namespace", "operation", "async_cleanup_namespace", "namespace", namespaceName)
 					return true, nil
 				}
 				return false, err
 			}
 
-			logrus.Debugf("namespace %s is still present. Will recheck.", namespaceName)
+			log.Debug("Namespace is still present, will recheck", "operation", "async_cleanup_namespace", "namespace", namespaceName)
 			return false, nil
 		})
 
 		if err != nil {
-			logrus.Errorf("async cleanup of RBAC for namespace %s failed: %v", namespaceName, err)
+			log.Error("Async cleanup of rbac for namespace failed", "operation", "async_cleanup_namespace", "namespace", namespaceName, "error", err)
 		}
 	}()
 }

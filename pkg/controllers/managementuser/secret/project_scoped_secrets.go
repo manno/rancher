@@ -11,11 +11,11 @@ import (
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/rbac"
 	"github.com/rancher/rancher/pkg/types/config"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -179,7 +179,7 @@ func (n *namespaceHandler) removeUndesiredProjectScopedSecrets(namespace *corev1
 	var errs error
 	for _, secret := range secretsToDelete.UnsortedList() {
 		// secret in namespace does not belong here
-		logrus.Infof("Cleaning project scoped secret %s from namespace %s", secret.Name, secret.Namespace)
+		log.Info("Cleaning project scoped secret from namespace", "operation", "cleanSecrets", "secret_name", secret.Name, "namespace", secret.Namespace)
 		errs = errors.Join(errs, n.secretClient.Delete(namespace.Name, secret.Name, &metav1.DeleteOptions{}))
 	}
 	return errs
@@ -195,13 +195,13 @@ func (n *namespaceHandler) getProjectFromNamespace(namespace *corev1.Namespace) 
 	}
 	clusterName, projectName, found := strings.Cut(projectID, ":")
 	if !found {
-		logrus.Debugf("Namespace %s projectId annotation %s is malformed, should be <cluster name>:<project name>", namespace.Name, namespace.Annotations[projectIDLabel])
+		log.Debug("Namespace projectId annotation is malformed, should be <cluster name>:<project name>", "operation", "getProjectFromNamespace", "namespace", namespace.Name, "project_id", namespace.Annotations[projectIDLabel])
 		return nil, nil
 	}
 
 	project, err := n.projectCache.Get(clusterName, projectName)
 	if apierrors.IsNotFound(err) {
-		logrus.Warnf("Namespace %s references project %s:%s which does not exist. Not re-enqueueing", namespace.Name, clusterName, projectName)
+		log.Warn("Namespace references project which does not exist, not re-enqueueing", "operation", "getProjectFromNamespace", "namespace", namespace.Name, "cluster_name", clusterName, "project_name", projectName)
 		return nil, nil
 	}
 	return project, err
@@ -214,7 +214,7 @@ func (n *namespaceHandler) secretEnqueueNamespace(_, _ string, obj runtime.Objec
 	}
 	secret, ok := obj.(*corev1.Secret)
 	if !ok {
-		logrus.Errorf("unable to convert object: %[1]v, type: %[1]T to a secret", obj)
+		log.Error("Unable to convert object to a secret", "operation", "secretEnqueueNamespace", "object", obj)
 		return nil, nil
 	}
 
@@ -249,7 +249,7 @@ func (n *namespaceHandler) getNamespacesFromSecret(secret *corev1.Secret) ([]*co
 		return nil, err
 	}
 	if project.GetProjectBackingNamespace() != secret.Namespace {
-		logrus.Tracef("Secret [%s] not in the project namespace, not copying", secret.Name)
+		log.Trace("Secret not in the project namespace, not copying", "operation", "secretEnqueueNamespace", "secret_name", secret.Name)
 		return nil, nil
 	}
 

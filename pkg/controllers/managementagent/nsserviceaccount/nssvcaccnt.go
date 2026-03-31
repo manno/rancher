@@ -4,8 +4,8 @@ import (
 	"context"
 
 	rv1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -23,7 +23,7 @@ type defaultSvcAccountHandler struct {
 }
 
 func Register(ctx context.Context, cluster *config.UserOnlyContext) {
-	logrus.Debugf("Registering defaultSvcAccountHandler for checking default service account of system namespaces")
+	log.Debug("Registering defaultSvcAccountHandler for checking default service account of system namespaces", "operation", "register_default_sa_handler")
 	nsh := &defaultSvcAccountHandler{
 		serviceAccounts:       cluster.Core.ServiceAccounts(""),
 		serviceAccountsLister: cluster.Core.ServiceAccounts("").Controller().Lister(),
@@ -35,10 +35,10 @@ func (nsh *defaultSvcAccountHandler) Sync(key string, ns *corev1.Namespace) (run
 	if ns == nil || ns.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	logrus.Debugf("defaultSvcAccountHandler: Sync service account: key=%v", key)
+	log.Debug("Syncing default service account", "operation", "sync_default_sa", "key", key, "namespace", ns.Name)
 	//handle default svcAccount of system namespaces only
 	if err := nsh.handleIfSystemNSDefaultSA(ns); err != nil {
-		logrus.Errorf("defaultSvcAccountHandler: Sync: error handling default ServiceAccount of namespace key=%v, err=%v", key, err)
+		log.Error("Error handling default ServiceAccount", "operation", "sync_default_sa", "key", key, "error", err)
 	}
 	return nil, nil
 }
@@ -60,10 +60,10 @@ func (nsh *defaultSvcAccountHandler) handleIfSystemNSDefaultSA(ns *corev1.Namesp
 	}
 	automountServiceAccountToken := false
 	defSvcAccnt.AutomountServiceAccountToken = &automountServiceAccountToken
-	logrus.Debugf("defaultSvcAccountHandler: updating default service account key=%v", defSvcAccnt)
+	log.Debug("Updating default service account", "operation", "update_default_sa", "namespace", ns.Name)
 	_, err = nsh.serviceAccounts.Update(defSvcAccnt)
 	if err != nil {
-		logrus.Errorf("defaultSvcAccountHandler: error updating default service account flag for namespace: %v, err=%+v", ns.Name, err)
+		log.Error("Error updating default service account flag", "operation", "update_default_sa", "namespace", ns.Name, "error", err)
 		return err
 	}
 	return nil

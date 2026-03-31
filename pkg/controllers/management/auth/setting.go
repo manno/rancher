@@ -8,9 +8,9 @@ import (
 	"github.com/rancher/rancher/pkg/auth/userretention"
 	"github.com/rancher/rancher/pkg/crondaemon"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -47,13 +47,13 @@ func (c *SettingController) sync(key string, obj *v3.Setting) (runtime.Object, e
 		azure.UpdateGroupCacheSize(obj.Value)
 	case settings.UserRetentionCron.Name:
 		if err := c.scheduleUserRetention(obj.Value); err != nil {
-			logrus.Errorf("error scheduling user retention daemon: %v", err)
+			log.Error("Error scheduling user retention daemon", "operation", "schedule_user_retention", "error", err)
 		}
 	case settings.DisableInactiveUserAfter.Name,
 		settings.DeleteInactiveUserAfter.Name,
 		settings.UserLastLoginDefault.Name:
 		if err := c.ensureUserRetentionLabels(); err != nil {
-			logrus.Errorf("error updating retention labels for users: %v", err)
+			log.Error("Error updating retention labels for users", "operation", "update_user_retention", "error", err)
 		}
 	}
 	return nil, nil

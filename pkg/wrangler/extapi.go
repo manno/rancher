@@ -7,9 +7,9 @@ import (
 
 	ext "github.com/rancher/rancher/pkg/generated/controllers/ext.cattle.io"
 	extv1 "github.com/rancher/rancher/pkg/generated/controllers/ext.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	wapiregv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/apiregistration.k8s.io/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apiregv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 )
@@ -44,7 +44,7 @@ func (d *DeferredEXTAPIInitializer) WaitForClient(ctx context.Context) (*EXTAPIC
 	var done atomic.Bool
 	ready := make(chan struct{})
 
-	logrus.Info("[deferred-ext] WaitForClient starting waiter for EXT api-service availability")
+	log.Info("Starting waiter for EXT api-service availability", "operation", "deferred_extapi_wait_for_client")
 
 	d.context.API.APIService().OnChange(ctx, "extapi-deferred-registration", func(key string, api *apiregv1.APIService) (*apiregv1.APIService, error) {
 		if done.Load() {
@@ -69,7 +69,7 @@ func (d *DeferredEXTAPIInitializer) WaitForClient(ctx context.Context) (*EXTAPIC
 		return nil, ctx.Err()
 	}
 
-	logrus.Debug("[deferred-ext] WaitForClient ext factory creation")
+	log.Debug("Creating ext factory", "operation", "deferred_extapi_wait_for_client")
 
 	ext, err := ext.NewFactoryFromConfigWithOptions(d.context.RESTConfig, &generic.FactoryOptions{
 		SharedControllerFactory: d.context.ControllerFactory,
@@ -91,18 +91,16 @@ func extReady(apiServiceCache wapiregv1.APIServiceCache) bool {
 		"v1.ext.cattle.io",
 	}
 
-	logrus.Debug("[deferred-ext] checking EXT api-service availability and establishment status")
+	log.Debug("Checking EXT api-service availability and establishment status", "operation", "ext_ready")
 
 	for _, apiServiceName := range requiredAPIServices {
 		apiService, err := apiServiceCache.Get(apiServiceName)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				logrus.Debugf("[deferred-ext] api-service %q not found, continuing to wait",
-					apiServiceName)
+				log.Debug("Api-service not found, continuing to wait", "operation", "ext_ready", "api_service", apiServiceName)
 				return false
 			}
-			logrus.Debugf("[deferred-ext] api-service %q: error during check: %v",
-				apiServiceName, err)
+			log.Debug("Api-service error during check", "operation", "ext_ready", "api_service", apiServiceName, "error", err)
 			return false
 		}
 
@@ -115,12 +113,11 @@ func extReady(apiServiceCache wapiregv1.APIServiceCache) bool {
 		}
 
 		if !established {
-			logrus.Debugf("[deferred-ext] api-service %q: exists, not yet established, continuing to wait",
-				apiServiceName)
+			log.Debug("Api-service exists but not yet established, continuing to wait", "operation", "ext_ready", "api_service", apiServiceName)
 			return false
 		}
 
-		logrus.Debugf("[deferred-ext] api-service %q is available and established", apiServiceName)
+		log.Debug("Api-service is available and established", "operation", "ext_ready", "api_service", apiServiceName)
 	}
 
 	return true

@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
 )
 
 const BaseJailPath = "/opt/jail"
@@ -36,24 +36,24 @@ func CreateJail(name string) error {
 		return os.MkdirAll(path.Join(BaseJailPath, name), 0700)
 	}
 
-	logrus.Debugf("CreateJail: called for [%s]", name)
+	log.Debug("Createjail called", "operation", "create_jail", "name", name)
 	lock.Lock()
 	defer lock.Unlock()
 
 	jailPath := path.Join(BaseJailPath, name)
 
-	logrus.Debugf("CreateJail: jailPath is [%s]", jailPath)
+	log.Debug("Createjail jailpath determined", "operation", "create_jail", "jail_path", jailPath)
 	// Check for the done file, if that exists the jail is ready to be used
 	_, err := os.Stat(path.Join(jailPath, "done"))
 	if err == nil {
-		logrus.Debugf("CreateJail: done file found at [%s], jail is ready", path.Join(jailPath, "done"))
+		log.Debug("Createjail done file found, jail is ready", "operation", "create_jail", "done_file_path", path.Join(jailPath, "done"))
 		return nil
 	}
 
 	// If the base dir exists without the done file rebuild the directory
 	_, err = os.Stat(jailPath)
 	if err == nil {
-		logrus.Debugf("CreateJail: basedir for jail exists but no done file found, removing jailPath [%s]", jailPath)
+		log.Debug("Createjail basedir for jail exists but no done file found, removing jailpath", "operation", "create_jail", "jail_path", jailPath)
 		if err := os.RemoveAll(jailPath); err != nil {
 			return err
 		}
@@ -64,10 +64,10 @@ func CreateJail(name string) error {
 	timeout, err := strconv.Atoi(t)
 	if err != nil {
 		timeout = 60
-		logrus.Warnf("error converting jailer-timeout setting to int, using default of 60 seconds - error: [%v]", err)
+		log.Warn("Error converting jailer-timeout setting to int, using default of 60 seconds", "operation", "create_jail", "error", err)
 	}
 
-	logrus.Debugf("CreateJail: Running script to create jail for [%s]", name)
+	log.Debug("Createjail running script to create jail", "operation", "create_jail", "name", name)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
@@ -75,9 +75,9 @@ func CreateJail(name string) error {
 	cmd := exec.CommandContext(ctx, "/usr/bin/jailer.sh", name)
 	out, err := cmd.CombinedOutput()
 	if len(out) > 0 {
-		logrus.Tracef("CreateJail: output from jail script for [%s]: [%v]", name, string(out))
+		log.Trace("Createjail output from jail script", "operation", "create_jail", "name", name, "output", string(out))
 	} else {
-		logrus.Tracef("CreateJail: no output from jail script for [%s]", name)
+		log.Trace("Createjail no output from jail script", "operation", "create_jail", "name", name)
 	}
 	if err != nil {
 		if strings.HasSuffix(err.Error(), "signal: killed") {

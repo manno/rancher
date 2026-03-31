@@ -12,10 +12,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pkg/errors"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
 
 	v1 "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
 	plugincontroller "github.com/rancher/rancher/pkg/generated/controllers/catalog.cattle.io/v1"
@@ -72,7 +72,7 @@ func (h *handler) OnPluginChange(key string, plugin *v1.UIPlugin) (*v1.UIPlugin,
 	pattern := FSCacheRootDir + "/*/*"
 	fsCacheFiles, err := fsCacheFilepathGlob(pattern)
 	if err != nil {
-		logrus.Errorf("failed to get files from filesystem cache: %v", err)
+		log.Error("Failed to get files from filesystem cache", "operation", "plugin.OnPluginChange", "error", err)
 		return plugin, err
 	}
 	FsCache.SyncWithIndex(&Index, fsCacheFiles)
@@ -99,7 +99,7 @@ func (h *handler) OnPluginChange(key string, plugin *v1.UIPlugin) (*v1.UIPlugin,
 
 	maxFileSize, err := strconv.ParseInt(settings.MaxUIPluginFileByteSize.Get(), 10, 64)
 	if err != nil {
-		logrus.Errorf("failed to convert setting MaxUIPluginFileByteSize to int64, using fallback. err: %s", err.Error())
+		log.Error("Failed to convert setting MaxUIPluginFileByteSize to int64, using fallback", "operation", "plugin.OnPluginChange", "error", err.Error())
 		maxFileSize = settings.DefaultMaxUIPluginFileSizeInBytes
 	}
 
@@ -112,13 +112,13 @@ func (h *handler) OnPluginChange(key string, plugin *v1.UIPlugin) (*v1.UIPlugin,
 
 	err = FsCache.SyncWithControllersCache(plugin, forceUpdate)
 	if errors.Is(err, errMaxFileSizeError) {
-		logrus.Errorf("one of the files is more than the defaultUIPluginFileByteSize limit %s", strconv.FormatInt(maxFileSize, 10))
+		log.Error("One of the files is more than the defaultUIPluginFileByteSize limit", "operation", "plugin.OnPluginChange", "limit", strconv.FormatInt(maxFileSize, 10))
 		// update CRD to remove cache
 		plugin.Spec.Plugin.NoCache = true
 		_, err2 := h.plugin.Update(plugin)
 		if err2 != nil {
 			plugin.Spec.Plugin.NoCache = false
-			logrus.Errorf("failed to update plugin [%s] noCache flag: %s", plugin.Spec.Plugin.Name, err2.Error())
+			log.Error("Failed to update plugin noCache flag", "operation", "plugin.OnPluginChange", "plugin", plugin.Spec.Plugin.Name, "error", err2.Error())
 			plugin.Status.Ready = false
 			plugin.Status.Error = "Failed to cache plugin due to max file size limit"
 			return h.retry(plugin, err2)
@@ -127,7 +127,7 @@ func (h *handler) OnPluginChange(key string, plugin *v1.UIPlugin) (*v1.UIPlugin,
 		err2 = FsCache.Delete(plugin.Spec.Plugin.Name, plugin.Spec.Plugin.Version)
 		if err2 != nil {
 			plugin.Spec.Plugin.NoCache = false
-			logrus.Error(err2)
+			log.Error("Failed to delete plugin cache files", "operation", "plugin.OnPluginChange", "error", err2)
 			return h.retry(plugin, err2)
 		}
 		plugin.Status.CacheState = Disabled
@@ -153,7 +153,7 @@ func (h *handler) OnPluginChange(key string, plugin *v1.UIPlugin) (*v1.UIPlugin,
 }
 
 func (h *handler) retry(plugin *v1.UIPlugin, err error) (*v1.UIPlugin, error) {
-	logrus.Errorf("failed to sync filesystem cache with controller cache: %v", err)
+	log.Error("Failed to sync filesystem cache with controller cache", "operation", "plugin.retry", "error", err)
 	backoff := calculateBackoff(plugin.Status.RetryNumber).Round(time.Second)
 	plugin.Status.RetryNumber++
 	plugin.Status.RetryAt = metav1.Time{Time: timeNow().UTC().Add(backoff)}

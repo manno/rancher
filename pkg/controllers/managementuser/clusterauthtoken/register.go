@@ -14,10 +14,10 @@ import (
 	extstore "github.com/rancher/rancher/pkg/ext/stores/tokens"
 	ext "github.com/rancher/rancher/pkg/generated/controllers/ext.cattle.io/v1"
 	managementv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,7 +40,7 @@ const (
 // RegisterExtIndexers adds indexing of ext tokens by user and cluster to their
 // controller.
 func RegisterExtIndexers(extAPI ext.Interface) error {
-	logrus.Debugf("[%s] register ext indexer", clusterAuthTokenController)
+	log.Debug("Register ext indexer", "operation", "register_indexer", "controller", clusterAuthTokenController)
 	return extAPI.Token().Informer().
 		AddIndexers(map[string]cache.IndexFunc{
 			tokenByUserAndClusterIndex: extTokenByUserAndCluster,
@@ -50,7 +50,7 @@ func RegisterExtIndexers(extAPI ext.Interface) error {
 // RegisterIndexers adds indexing of v3 tokens by user and cluster to their
 // controller.
 func RegisterIndexers(scaledContext *config.ScaledContext) error {
-	logrus.Debugf("[%s] register v3 indexer", clusterAuthTokenController)
+	log.Debug("Register v3 indexer", "operation", "register_indexer", "controller", clusterAuthTokenController)
 	return scaledContext.Management.Tokens("").Controller().Informer().
 		AddIndexers(map[string]cache.IndexFunc{
 			tokenByUserAndClusterIndex: tokenByUserAndCluster,
@@ -64,7 +64,7 @@ func Register(ctx context.Context, cluster *config.UserContext) {
 	cluster.Management.Wrangler.DeferredEXTAPIRegistration.DeferFunc(func(w *wrangler.EXTAPIContext) {
 		starter := cluster.DeferredStart(ctx, func(ctx context.Context) error {
 			if err := registerDeferred(ctx, cluster, w); err != nil {
-				logrus.Errorf("[%s] Failed to register controller: %v", clusterAuthTokenController, err)
+				log.Error("Failed to register controller", "operation", "register_controller", "controller", clusterAuthTokenController, "error", err)
 				return err
 			}
 			return nil
@@ -215,7 +215,7 @@ func extTokenUserClusterKey(token *extv1.Token) string {
 // cluster. The handlers sync changes in these tokens to the remote cluster, as
 // cluster auth tokens.
 func extTokenLifecycle(ctx context.Context, tok ext.TokenController, controller, clusterName string, h *tokenHandler) {
-	logrus.Debugf("[%s] WATCH CLUSTER %q", clusterAuthTokenController, clusterName)
+	log.Debug("Watch cluster", "operation", "watch_cluster", "controller", clusterAuthTokenController, "cluster", clusterName)
 
 	tok.OnChange(ctx,
 		controller+"-change-"+clusterName,
@@ -228,7 +228,7 @@ func extTokenLifecycle(ctx context.Context, tok ext.TokenController, controller,
 			if clusterName != obj.Spec.ClusterName {
 				return obj, nil
 			}
-			logrus.Debugf("[%s] CLUSTER %q, TOKEN %q, SYNC DOWN", clusterAuthTokenController, obj.Name, clusterName)
+			log.Debug("Cluster token sync down", "operation", "sync_cluster_token", "controller", clusterAuthTokenController, "cluster", obj.Name, "token", clusterName)
 			return h.ExtUpdated(obj)
 		})
 
@@ -239,7 +239,7 @@ func extTokenLifecycle(ctx context.Context, tok ext.TokenController, controller,
 			if clusterName != obj.Spec.ClusterName {
 				return obj, nil
 			}
-			logrus.Debugf("[%s] CLUSTER %q, TOKEN %q, REMOVE DOWN", clusterAuthTokenController, obj.Name, clusterName)
+			log.Debug("Cluster token remove down", "operation", "remove_cluster_token", "controller", clusterAuthTokenController, "cluster", obj.Name, "token", clusterName)
 			return h.ExtRemove(obj)
 		})
 }

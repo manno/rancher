@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
 	v1 "k8s.io/api/core/v1"
@@ -37,7 +37,7 @@ func GetBootstrapPassword(ctx context.Context, secrets corev1.SecretInterface) (
 		if hasPasswordKey {
 			return string(bootstrapPasswordBytes), generated, nil
 		}
-		logrus.Warn("A bootstrap password secret was found, but did not match the expected structure.")
+		log.Warn("A bootstrap password secret was found, but did not match the expected structure")
 	} else {
 		s = &v1.Secret{
 			Type: v1.SecretTypeOpaque,

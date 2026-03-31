@@ -11,10 +11,10 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/management/auth/project_cluster"
 	exttokenstore "github.com/rancher/rancher/pkg/ext/stores/tokens"
 	wranglerv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
 	wcorev1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	v12 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -191,16 +191,14 @@ func (l *userLifecycle) Updated(user *v3.User) (runtime.Object, error) {
 		for _, token := range extTokens {
 			if token.GetIsDerived() {
 				// Non-login tokens are disabled
-				logrus.Infof("[%v] Disabling ext token %v for user %v",
-					userController, token.GetName(), token.GetUserID())
+				log.Info("Disabling ext token for user", "operation", "delete_user", "controller", userController, "token", token.GetName(), "user", token.GetUserID())
 				err := l.extTokenStore.Disable(token.GetName())
 				if err != nil {
 					return nil, fmt.Errorf("error updating ext token: %v", err)
 				}
 			} else {
 				// Login tokens are deleted.
-				logrus.Infof("[%v] Deleting token %v for user %v",
-					userController, token.GetName(), token.GetUserID())
+				log.Info("Deleting token for user", "operation", "delete_user", "controller", userController, "token", token.GetName(), "user", token.GetUserID())
 				err := l.extTokenStore.Delete(token.GetName(), &metav1.DeleteOptions{})
 				if err != nil {
 					return nil, fmt.Errorf("error deleting ext token: %v", err)
@@ -378,7 +376,7 @@ func (l *userLifecycle) getExtTokensByUserName(userName string) ([]*ext.Token, e
 func (l *userLifecycle) deleteAllCRTB(crtbs []*v3.ClusterRoleTemplateBinding) error {
 	for _, crtb := range crtbs {
 		var err error
-		logrus.Infof("[%v] Deleting clusterRoleTemplateBinding %v for user %v", userController, crtb.Name, crtb.UserName)
+		log.Info("Deleting clusterRoleTemplateBinding for user", "operation", "delete_user", "controller", userController, "crtb", crtb.Name, "user", crtb.UserName)
 		err = l.crtb.Delete(crtb.Namespace, crtb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting cluster role: %v", err)
@@ -391,7 +389,7 @@ func (l *userLifecycle) deleteAllCRTB(crtbs []*v3.ClusterRoleTemplateBinding) er
 func (l *userLifecycle) deleteAllPRTB(prtbs []*v3.ProjectRoleTemplateBinding) error {
 	for _, prtb := range prtbs {
 		var err error
-		logrus.Infof("[%v] Deleting projectRoleTemplateBinding %v for user %v", userController, prtb.Name, prtb.UserName)
+		log.Info("Deleting projectRoleTemplateBinding for user", "operation", "delete_user", "controller", userController, "prtb", prtb.Name, "user", prtb.UserName)
 		err = l.prtb.Delete(prtb.Namespace, prtb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting projet role: %v", err)
@@ -409,7 +407,7 @@ func (l *userLifecycle) deleteAllGRB(grbs []*v3.GlobalRoleBinding) error {
 		return fmt.Errorf("error when impersonating webhook to delete globalRoleBindings: %w", err)
 	}
 	for _, grb := range grbs {
-		logrus.Infof("[%v] Deleting globalRoleBinding %v for user %v", userController, grb.Name, grb.UserName)
+		log.Info("Deleting globalRoleBinding for user", "operation", "delete_user", "controller", userController, "grb", grb.Name, "user", grb.UserName)
 		err = grbClient.Delete(grb.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting globalRoleBinding %v: %v", grb.Name, err)
@@ -452,7 +450,7 @@ func (l *userLifecycle) deleteClusterUserAttributes(username string, tokens []*v
 
 func (l *userLifecycle) deleteAllTokens(tokens []*v3.Token) error {
 	for _, token := range tokens {
-		logrus.Infof("[%v] Deleting token %v for user %v", userController, token.Name, token.UserID)
+		log.Info("Deleting token for user", "operation", "delete_user", "controller", userController, "token", token.Name, "user", token.UserID)
 		err := l.tokens.Delete(token.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting token: %v", err)
@@ -464,8 +462,7 @@ func (l *userLifecycle) deleteAllTokens(tokens []*v3.Token) error {
 
 func (l *userLifecycle) deleteAllExtTokens(tokens []*ext.Token) error {
 	for _, token := range tokens {
-		logrus.Infof("[%v] Deleting token %v for user %v",
-			userController, token.GetName(), token.GetUserID())
+		log.Info("Deleting token for user", "operation", "delete_user", "controller", userController, "token", token.GetName(), "user", token.GetUserID())
 		err := l.extTokenStore.Delete(token.GetName(), &metav1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting ext token: %v", err)
@@ -489,7 +486,7 @@ func (l *userLifecycle) deleteUserNamespace(username string) error {
 		return nil // nothing to do namespace is already deleting
 	}
 
-	logrus.Infof("[%v] Deleting namespace backing user %v", userController, username)
+	log.Info("Deleting namespace backing user", "operation", "delete_user", "controller", userController, "user", username)
 	err = l.namespaces.Delete(username, &metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error deleting user namespace: %v", err)
@@ -507,7 +504,7 @@ func (l *userLifecycle) deleteUserSecret(username string) error {
 		return fmt.Errorf("error getting user secret: %v", err)
 	}
 
-	logrus.Infof("[%v] Deleting secret backing user %v", userController, username)
+	log.Info("Deleting secret backing user", "operation", "delete_user", "controller", userController, "user", username)
 	return l.secrets.Delete("cattle-system", username+"-secret", &metav1.DeleteOptions{})
 }
 

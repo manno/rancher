@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 const (
@@ -44,7 +44,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		if v := resp.Header.Get(RateLimitRemainingHeader); v != "" {
 			timeWindow, err := decodeTimeFromHeaderValue(v)
 			if err != nil {
-				logrus.Error("error:", err)
+				log.Error("Error decoding time from header", "operation", "round_trip", "error", err)
 				return resp, respErr
 			}
 			t.BackOffDuration = timeWindow
@@ -52,7 +52,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		} else if v := resp.Header.Get(RetryAfterHeader); v != "" {
 			retryAfter, err := strconv.ParseInt(v, 10, 64)
 			if err != nil {
-				logrus.Error("error:", err)
+				log.Error("Error parsing retry after header", "operation", "round_trip", "error", err)
 				return resp, respErr
 			}
 			t.BackOffDuration = float64(retryAfter)
@@ -61,13 +61,13 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 			URL := fmt.Sprintf("%s://%s%s", req.URL.Scheme, req.Host, req.URL.Path)
 			headRequest, err := http.NewRequest(http.MethodHead, URL, nil)
 			if err != nil {
-				logrus.Errorf("oci: failed to create a head request to %s:%v", URL, err)
+				log.Error("Oci: failed to create head request", "operation", "round_trip", "url", URL, "error", err)
 				return resp, respErr
 			}
 			headRequest.Header.Add("Authorization", req.Header.Get("Authorization"))
 			headResponse, err := t.Base.RoundTrip(headRequest)
 			if err != nil {
-				logrus.Errorf("oci: failed to make a head request to %s:%v", URL, err)
+				log.Error("Oci: failed to make head request", "operation", "round_trip", "url", URL, "error", err)
 				return resp, respErr
 			}
 
@@ -76,7 +76,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 			if headerValue != "" {
 				timeWindow, err := decodeTimeFromHeaderValue(headerValue)
 				if err != nil {
-					logrus.Error("error:", err)
+					log.Error("Error decoding time from header", "operation", "round_trip", "error", err)
 					return resp, respErr
 				}
 				t.BackOffDuration = timeWindow

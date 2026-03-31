@@ -15,8 +15,8 @@ import (
 	apiv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/providers/common"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
+	"github.com/rancher/rancher/pkg/log"
 	managementschema "github.com/rancher/rancher/pkg/schemas/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
@@ -59,7 +59,7 @@ func (o *OpenIDCProvider) ConfigureTest(request *types.APIContext) error {
 
 	pkceMethod := input[client.GenericOIDCConfigFieldPKCEMethod]
 	if pkceMethod != "" {
-		logrus.Debugf("OpenIDCProvider: PKCE enabled: %v", pkceMethod)
+		log.Debug("PKCE enabled", "method", pkceMethod)
 	}
 
 	var pkceVerifier string

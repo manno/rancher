@@ -5,7 +5,7 @@ import (
 
 	apimgmtv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/clusterprovisioninglogger"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -73,7 +73,7 @@ func (p *Provisioner) driverRemove(cluster *apimgmtv3.Cluster, forceRemove bool)
 		kontainerDriver, err := p.getKontainerDriver(cluster.Spec)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logrus.Warnf("Could not find kontainer driver for cluster removal [%v]", err)
+				log.Warn("Could not find kontainer driver for cluster removal", "error", err)
 				return nil, nil
 			}
 			return nil, err

@@ -11,8 +11,8 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers"
 	"github.com/rancher/rancher/pkg/auth/requests"
 	client "github.com/rancher/rancher/pkg/client/generated/management/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -27,7 +27,7 @@ func SetRTBStore(ctx context.Context, schema *types.Schema, mgmt *config.ScaledC
 				u, err := userLister.Get("", id)
 				if err != nil {
 					if !errors.IsNotFound(err) {
-						logrus.Errorf("problem retrieving user for CRTB %v from cache during CRTB transformation: %v", data, err)
+						log.Error("Problem retrieving user for CRTB from cache during CRTB transformation", "operation", "set_rtb_store_transformer", "user_id", id, "error", err)
 					}
 					return data, nil
 				}

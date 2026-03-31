@@ -12,11 +12,11 @@ import (
 	v3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	corev1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/systemaccount"
 	typesDialer "github.com/rancher/rancher/pkg/types/config/dialer"
 	wranglerv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -104,7 +104,7 @@ func (e *OperatorController) RecordCAAndAPIEndpoint(cluster *mgmtv3.Cluster) (*m
 			if !errors.IsNotFound(err) {
 				return false, err
 			}
-			logrus.Infof("waiting for cluster [%s] data needed to generate service account token", cluster.Name)
+			log.Info("Waiting for cluster data needed to generate service account token", "operation", "sync_ca_secret", "cluster", cluster.Name)
 			return false, nil
 		}
 		return true, nil

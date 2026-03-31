@@ -20,9 +20,9 @@ import (
 	"github.com/rancher/rancher/pkg/features"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	"github.com/rancher/rancher/pkg/image"
+	log "github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
@@ -331,7 +331,7 @@ func CAChecksum() string {
 }
 
 func GetDesiredAgentImage(cluster *apimgmtv3.Cluster) string {
-	logrus.Tracef("clusterDeploy: deployAgent called for [%s]", cluster.Name)
+	log.Trace("Clusterdeploy: deployagent called", "operation", "get_desired_agent_image", "cluster_name", cluster.Name)
 	desiredAgent := cluster.Spec.DesiredAgentImage
 	if cluster.Spec.AgentImageOverride != "" {
 		desiredAgent = cluster.Spec.AgentImageOverride
@@ -339,7 +339,7 @@ func GetDesiredAgentImage(cluster *apimgmtv3.Cluster) string {
 	if desiredAgent == "" || desiredAgent == "fixed" {
 		desiredAgent = image.ResolveWithCluster(settings.AgentImage.Get(), cluster)
 	}
-	logrus.Tracef("clusterDeploy: deployAgent: desiredAgent is [%s] for cluster [%s]", desiredAgent, cluster.Name)
+	log.Trace("Clusterdeploy: deployagent: desired agent determined", "operation", "get_desired_agent_image", "desired_agent", desiredAgent, "cluster_name", cluster.Name)
 	return desiredAgent
 }
 
@@ -351,7 +351,7 @@ func GetDesiredAuthImage(cluster *apimgmtv3.Cluster) string {
 			desiredAuth = image.ResolveWithCluster(settings.AuthImage.Get(), cluster)
 		}
 	}
-	logrus.Tracef("clusterDeploy: deployAgent: desiredAuth is [%s] for cluster [%s]", desiredAuth, cluster.Name)
+	log.Trace("Clusterdeploy: deployagent: desired auth determined", "operation", "get_desired_auth_image", "desired_auth", desiredAuth, "cluster_name", cluster.Name)
 	return desiredAuth
 }
 
@@ -359,13 +359,13 @@ func toYAML(v interface{}) string {
 	data, err := json.Marshal(v)
 	if err != nil {
 		// Swallow errors inside of a template so it doesn't affect remaining template lines
-		logrus.Errorf("[ToYAML] Error marshaling %v: %v", v, err)
+		log.Error("Toyaml: error marshaling data", "operation", "to_yaml", "error", err)
 		return ""
 	}
 	yamlData, err := yaml.JSONToYAML(data)
 	if err != nil {
 		// Swallow errors inside of a template so it doesn't affect remaining template lines
-		logrus.Errorf("[ToYAML] Error converting json to yaml for %v: %v ", string(data), err)
+		log.Error("Toyaml: error converting json to yaml", "operation", "to_yaml", "data", string(data), "error", err)
 		return ""
 	}
 	return strings.TrimSuffix(string(yamlData), "\n")

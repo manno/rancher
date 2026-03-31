@@ -8,10 +8,10 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/providers/local/pbkdf2"
 	"github.com/rancher/rancher/pkg/features"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -441,7 +441,7 @@ func BootstrapAdmin(management *wrangler.Context) (string, error) {
 
 	if _, err := management.K8s.CoreV1().ConfigMaps(cattleNamespace).Get(context.TODO(), bootstrapAdminConfig, v1.GetOptions{}); err != nil {
 		if !apierrors.IsNotFound(err) {
-			logrus.Warnf("Unable to determine if admin user already created: %v", err)
+			log.Warn("Unable to determine if admin user already created", "error", err)
 			return "", nil
 		}
 	} else {
@@ -493,27 +493,27 @@ func BootstrapAdmin(management *wrangler.Context) (string, error) {
 				serverURL = "https://" + "localhost"
 			}
 
-			logrus.Infof("")
-			logrus.Infof("-----------------------------------------")
-			logrus.Infof("Welcome to Rancher")
+			log.Info("")
+			log.Info("-----------------------------------------")
+			log.Info("Welcome to Rancher")
 			if bootstrapPasswordIsGenerated {
-				logrus.Infof("A bootstrap password has been generated for your admin user.")
-				logrus.Infof("")
-				logrus.Infof("Bootstrap Password: %s", bootstrapPassword)
-				logrus.Infof("")
-				logrus.Infof("Use %s/dashboard/?setup=%s to complete setup in the UI", serverURL, bootstrapPassword)
+				log.Info("A bootstrap password has been generated for your admin user")
+				log.Info("")
+				log.Info("Bootstrap Password", "password", bootstrapPassword)
+				log.Info("")
+				log.Info("Use UI to complete setup", "serverURL", serverURL, "bootstrapPassword", bootstrapPassword)
 			} else {
-				logrus.Infof("")
-				logrus.Infof("Use %s/dashboard/ to complete setup in the UI", serverURL)
+				log.Info("")
+				log.Info("Use UI to complete setup", "serverURL", serverURL, "path", "dashboard/")
 			}
-			logrus.Infof("-----------------------------------------")
-			logrus.Infof("")
+			log.Info("-----------------------------------------")
+			log.Info("")
 		}
 		adminName = admin.Name
 
 		bindings, err := management.Mgmt.GlobalRoleBinding().List(v1.ListOptions{LabelSelector: set.String()})
 		if err != nil {
-			logrus.Warnf("Failed to create default admin global role binding: %v", err)
+			log.Warn("Failed to create default admin global role binding", "error", err)
 			bindings = &v3.GlobalRoleBindingList{}
 		}
 		if len(bindings.Items) == 0 {
@@ -545,12 +545,12 @@ func BootstrapAdmin(management *wrangler.Context) (string, error) {
 					},
 				})
 				if crbErr != nil {
-					logrus.Warnf("Failed to create default admin global role binding: %v", err)
+					log.Warn("Failed to create default admin global role binding", "error", err)
 				}
 			} else if err != nil {
-				logrus.Warnf("Failed to create default admin global role binding: %v", err)
+				log.Warn("Failed to create default admin global role binding", "error", err)
 			} else {
-				logrus.Info("Created default admin user and binding")
+				log.Info("Created default admin user and binding", "operation", "add_roles")
 			}
 		}
 	}
@@ -563,9 +563,13 @@ func BootstrapAdmin(management *wrangler.Context) (string, error) {
 	}
 
 	_, err = management.K8s.CoreV1().ConfigMaps(cattleNamespace).Create(context.TODO(), &adminConfigMap, v1.CreateOptions{})
+
 	if err != nil {
+
 		if !apierrors.IsAlreadyExists(err) {
-			logrus.Warnf("Error creating admin config map: %v", err)
+
+			log.Warn("Error creating admin config map", "error", err)
+
 		}
 
 	}

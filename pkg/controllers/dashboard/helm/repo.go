@@ -17,12 +17,12 @@ import (
 	"github.com/rancher/rancher/pkg/catalogv2/git"
 	helmhttp "github.com/rancher/rancher/pkg/catalogv2/http"
 	catalogcontrollers "github.com/rancher/rancher/pkg/generated/controllers/catalog.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	namespaces "github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/wrangler/v3/pkg/apply"
 	"github.com/rancher/wrangler/v3/pkg/condition"
 	corev1controllers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	name2 "github.com/rancher/wrangler/v3/pkg/name"
-	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
@@ -103,7 +103,7 @@ func (r *repoHandler) ClusterRepoOnChange(key string, repo *catalog.ClusterRepo)
 		path := git.ParentRepoDir("", key)
 		err := os.RemoveAll(path)
 		if err != nil {
-			logrus.Errorf("error while removing git repo %s: %v", path, err)
+			log.Error("Error while removing git repo", "operation", "on_cluster_repo_change", "path", path, "error", err)
 			return nil, err
 		}
 		return nil, nil
@@ -138,7 +138,7 @@ func (r *repoHandler) ClusterRepoOnChange(key string, repo *catalog.ClusterRepo)
 
 	// If repo is disabled, then don't update the clusterrepo
 	if repo.Spec.Enabled != nil && !*repo.Spec.Enabled {
-		logrus.Infof("skipping repo %s because it is disabled", repo.Name)
+		log.Info("Skipping repo because it is disabled", "operation", "on_cluster_repo_change", "repo", repo.Name)
 		return setErrorCondition(repo, err, newStatus, interval, ociCondition, r.clusterRepos)
 	}
 
@@ -171,11 +171,11 @@ func createOrUpdateMap(namespace string, index *repo.IndexFile, owner metav1.Own
 	buf := &bytes.Buffer{}
 	gz := gzip.NewWriter(buf)
 	if err := json.NewEncoder(gz).Encode(index); err != nil {
-		logrus.Errorf("error while encoding index: %v", err)
+		log.Error("Error while encoding index", "operation", "save_index", "error", err)
 		return nil, err
 	}
 	if err := gz.Close(); err != nil {
-		logrus.Errorf("error while closing reader: %v", err)
+		log.Error("Error while closing reader", "operation", "save_index", "error", err)
 		return nil, err
 	}
 
@@ -227,7 +227,7 @@ func createOrUpdateMap(namespace string, index *repo.IndexFile, owner metav1.Own
 	}
 	err := apply.WithOwner(ownerObject).ApplyObjects(objs...)
 	if err != nil {
-		logrus.Errorf("error while applying configmap %s: %v", GenerateConfigMapName(owner.Name, i, owner.UID), err)
+		log.Error("Error while applying configmap", "operation", "save_index", "configmap", GenerateConfigMapName(owner.Name, i, owner.UID), "error", err)
 	}
 	return objs[0].(*corev1.ConfigMap), err
 }
@@ -341,7 +341,7 @@ func ensureIndexConfigMap(status *catalog.RepoStatus, configMap corev1controller
 				status.ShouldNotSkip = true
 				return nil
 			}
-			logrus.Errorf("Error while fetching index config map %s : %v", status.IndexConfigMapName, err)
+			log.Error("Error while fetching index config map", "operation", "helm.ensureIndexConfigMap", "configMap", status.IndexConfigMapName, "error", err)
 			reason := apierrors.ReasonForError(err)
 			if reason == metav1.StatusReasonUnknown {
 				return err
@@ -419,7 +419,7 @@ func shouldSkip(clusterRepo *catalog.ClusterRepo,
 	// this is to prevent the handler from making calls when the crd is outdated.
 	updatedRepo, err := controller.Get(clusterRepo.Name, metav1.GetOptions{})
 	if err == nil && updatedRepo.ResourceVersion != clusterRepo.ResourceVersion {
-		logrus.Infof("Skipping handler for clusterrepo %s because the resource version has changed from %s to %s", clusterRepo.Name, clusterRepo.ResourceVersion, updatedRepo.ResourceVersion)
+		log.Info("Skipping handler for clusterrepo because resource version has changed", "operation", "should_skip", "repo", clusterRepo.Name, "old_version", clusterRepo.ResourceVersion, "new_version", updatedRepo.ResourceVersion)
 		return true
 	}
 
@@ -432,7 +432,7 @@ func shouldSkip(clusterRepo *catalog.ClusterRepo,
 	// The handler is triggered immediately after any changes, including when updating the number of retries done.
 	// This check is to prevent the handler from executing before the backoff time has passed
 	if !newStatus.NextRetryAt.IsZero() && newStatus.NextRetryAt.Time.After(now) {
-		logrus.Infof("Skipping handler for clusterrepo %s because the next retry time is %s and now is %s", clusterRepo.Name, newStatus.NextRetryAt.Time, now)
+		log.Info("Skipping handler for clusterrepo because next retry time has not passed", "operation", "should_skip", "repo", clusterRepo.Name, "next_retry", newStatus.NextRetryAt.Time, "now", now)
 		return true
 	}
 
@@ -446,7 +446,7 @@ func shouldSkip(clusterRepo *catalog.ClusterRepo,
 	if (newStatus.NumberOfRetries > policy.MaxRetry || newStatus.NumberOfRetries == 0) && // checks if it's not retrying
 		clusterRepo.Generation == newStatus.ObservedGeneration && // checks if the generation has not changed
 		downloadedUpdateTime.Add(interval).After(now) { // checks if the interval has not passed
-		logrus.Infof("Skipping handler for clusterrepo %s. NumberOfRetries is %d, MaxRetry is %d, ClusterRepo Generation is %d, ObservedGeneration is %d, LastUpdated plus interval is %s, now is %s", clusterRepo.Name, newStatus.NumberOfRetries, policy.MaxRetry, clusterRepo.Generation, newStatus.ObservedGeneration, downloadedUpdateTime.Add(interval), now)
+		log.Info("Skipping handler for clusterrepo, interval has not passed", "operation", "should_skip", "repo", clusterRepo.Name, "retries", newStatus.NumberOfRetries, "max_retry", policy.MaxRetry, "generation", clusterRepo.Generation, "observed_generation", newStatus.ObservedGeneration, "next_update", downloadedUpdateTime.Add(interval), "now", now)
 		controller.EnqueueAfter(clusterRepo.Name, interval)
 		return true
 	}

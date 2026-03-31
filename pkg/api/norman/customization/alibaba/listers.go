@@ -12,11 +12,11 @@ import (
 	ecs "github.com/rancher/muchang/ecs/client"
 	resourcemanager "github.com/rancher/muchang/resourcemanager/client"
 	vpc "github.com/rancher/muchang/vpc/client"
-	"github.com/sirupsen/logrus"
 
 	"github.com/rancher/muchang/utils/tea"
 	"github.com/rancher/muchang/utils/tea/dara"
 	"github.com/rancher/norman/httperror"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 const (
@@ -433,7 +433,7 @@ func describeKubernetesMetadata(capabilities *Capabilities, req *http.Request) (
 
 	bytes, err := json.Marshal(resp.Body)
 	if err != nil {
-		logrus.Debugf("[alibaba-handler] error parsing describeKubernetesVersionMetadata: %v", err)
+		log.Debug("Alibaba-handler: error parsing describe kubernetes version metadata", "operation", "describe_kubernetes_metadata", "error", err)
 		return nil, httperror.ServerError.Status, errors.New("error parsing response")
 	}
 

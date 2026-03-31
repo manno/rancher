@@ -16,10 +16,10 @@ import (
 	"github.com/rancher/rancher/pkg/auth/providers/common"
 	"github.com/rancher/rancher/pkg/auth/providers/local/pbkdf2"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
@@ -136,12 +136,12 @@ func (l *Provider) AuthenticateUser(_ http.ResponseWriter, _ *http.Request, inpu
 		// If the user don't exist the password is evaluated
 		// to avoid user enumeration via timing attack (time based side-channel).
 		bcrypt.CompareHashAndPassword(invalidHash, []byte(pwd))
-		logrus.Debugf("Get User [%s] failed during Authentication: %v", username, err)
+		log.Debug("Get user failed during authentication", "provider", "local", "operation", "authenticate_user", "username", username, "error", err)
 		return apiv3.Principal{}, nil, "", authFailedError
 	}
 
 	if err := l.pwdVerifier.VerifyPassword(user, pwd); err != nil {
-		logrus.Debugf("Authentication failed for User [%s]: %v", username, err)
+		log.Debug("Authentication failed for user", "provider", "local", "operation", "authenticate_user", "username", username, "error", err)
 		return apiv3.Principal{}, nil, "", authFailedError
 	}
 
@@ -189,7 +189,7 @@ func (l *Provider) getGroupPrincipals(user *apiv3.User) ([]apiv3.Principal, erro
 			// find group for this member mapping
 			localGroup, err := l.groupLister.Get("", gm.GroupName)
 			if err != nil {
-				logrus.Errorf("Failed to get Group resource %v: %v", gm.GroupName, err)
+				log.Error("Failed to get group resource", "provider", "local", "operation", "get_group_principals", "group_name", gm.GroupName, "error", err)
 				continue
 			}
 
@@ -236,7 +236,7 @@ func (l *Provider) SearchPrincipalsDedupe(searchKey, principalType string, token
 	}
 
 	if err != nil {
-		logrus.Infof("Failed to search User/Group resources for %v: %v", searchKey, err)
+		log.Info("Failed to search user/group resources", "provider", "local", "operation", "search_principals", "search_key", searchKey, "error", err)
 		return principals, err
 	}
 
@@ -318,7 +318,7 @@ func (l *Provider) listAllUsersAndGroups(searchKey string) ([]*apiv3.User, []*ap
 
 	allUsers, err := l.userLister.List("", labels.NewSelector())
 	if err != nil {
-		logrus.Infof("Failed to search User resources for %v: %v", searchKey, err)
+		log.Info("Failed to search user resources", "provider", "local", "operation", "list_all_users_and_groups", "search_key", searchKey, "error", err)
 		return localUsers, localGroups, err
 	}
 	for _, user := range allUsers {
@@ -330,7 +330,7 @@ func (l *Provider) listAllUsersAndGroups(searchKey string) ([]*apiv3.User, []*ap
 
 	allGroups, err := l.groupLister.List("", labels.NewSelector())
 	if err != nil {
-		logrus.Infof("Failed to search group resources for %v: %v", searchKey, err)
+		log.Info("Failed to search group resources", "provider", "local", "operation", "list_all_users_and_groups", "search_key", searchKey, "error", err)
 		return localUsers, localGroups, err
 	}
 	for _, group := range allGroups {
@@ -349,14 +349,14 @@ func (l *Provider) listUsersAndGroupsByIndex(searchKey string) ([]*apiv3.User, [
 
 	objs, err := l.userIndexer.ByIndex(userSearchIndex, searchKey)
 	if err != nil {
-		logrus.Infof("Failed to search User resources for %v: %v", searchKey, err)
+		log.Info("Failed to search user resources", "provider", "local", "operation", "list_users_and_groups_by_index", "search_key", searchKey, "error", err)
 		return localUsers, localGroups, err
 	}
 
 	for _, obj := range objs {
 		user, ok := obj.(*apiv3.User)
 		if !ok {
-			logrus.Errorf("User isnt a user %v", obj)
+			log.Error("User isnt a user", "provider", "local", "operation", "list_users_and_groups_by_index", "object", obj)
 			return localUsers, localGroups, err
 		}
 		localUsers = append(localUsers, user)
@@ -364,14 +364,14 @@ func (l *Provider) listUsersAndGroupsByIndex(searchKey string) ([]*apiv3.User, [
 
 	groupObjs, err := l.groupIndexer.ByIndex(groupSearchIndex, searchKey)
 	if err != nil {
-		logrus.Infof("Failed to search Group resources for %v: %v", searchKey, err)
+		log.Info("Failed to search group resources", "provider", "local", "operation", "list_users_and_groups_by_index", "search_key", searchKey, "error", err)
 		return localUsers, localGroups, err
 	}
 
 	for _, obj := range groupObjs {
 		group, ok := obj.(*apiv3.Group)
 		if !ok {
-			logrus.Errorf("Object isnt a group %v", obj)
+			log.Error("Object isnt a group", "provider", "local", "operation", "list_users_and_groups_by_index", "object", obj)
 			return localUsers, localGroups, err
 		}
 		localGroups = append(localGroups, group)
@@ -518,7 +518,7 @@ func simplifyString(s string) string {
 	// This shouldn't really happen, as the rune transformer is very forgiving
 	// and bad things get changed to �
 	if err != nil {
-		logrus.Errorf("failed to simplify string %q: %s", s, err)
+		log.Error("Failed to simplify string", "provider", "local", "operation", "simplify_string", "string", s, "error", err)
 		return s
 	}
 

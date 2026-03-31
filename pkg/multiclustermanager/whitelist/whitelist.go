@@ -8,8 +8,8 @@ import (
 
 	apimgmtv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	controllersv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -62,7 +62,7 @@ func (p *ProxyAcceptList) onChangeEndpoint(_ string, pe *apimgmtv3.ProxyEndpoint
 	for _, route := range pe.Spec.Routes {
 		err := p.Add(route.Domain, string(pe.UID))
 		if err != nil {
-			logrus.Debugf("failed to add domain %s to whitelist proxy accept list: %v", route.Domain, err)
+			log.Debug("failed to add domain to whitelist proxy accept list", "domain", route.Domain, "error", err)
 		}
 	}
 	return pe, nil
@@ -116,7 +116,7 @@ func (p *ProxyAcceptList) Rm(key, source string) {
 
 	sources, ok := p.accept[key]
 	if !ok {
-		logrus.Debugf("domain not found in proxy accept list: %s", key)
+		log.Debug("domain not found in proxy accept list", "domain", key)
 		return
 	}
 

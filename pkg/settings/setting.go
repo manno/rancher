@@ -14,7 +14,7 @@ import (
 	authsettings "github.com/rancher/rancher/pkg/auth/settings"
 	"github.com/rancher/rancher/pkg/buildconfig"
 	fleetconst "github.com/rancher/rancher/pkg/fleet"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -538,7 +538,7 @@ func (s Setting) GetDuration() time.Duration {
 	if err == nil {
 		return dur
 	}
-	logrus.Errorf("failed to parse setting %s=%s as time.Duration: %v", s.Name, v, err)
+	log.Error("Failed to parse setting as time.duration", "operation", "get_duration", "setting", s.Name, "value", v, "error", err)
 	dur, err = time.ParseDuration(s.Default)
 	if err != nil {
 		return 0
@@ -555,7 +555,7 @@ func (s Setting) GetInt() int {
 	if err == nil {
 		return i
 	}
-	logrus.Errorf("failed to parse setting %s=%s as int: %v", s.Name, v, err)
+	log.Error("Failed to parse setting as int", "operation", "get_int", "setting", s.Name, "value", v, "error", err)
 	i, err = strconv.Atoi(s.Default)
 	if err != nil {
 		return 0
@@ -624,7 +624,7 @@ func getMetadataConfig() string {
 	}
 	ans, err := json.Marshal(data)
 	if err != nil {
-		logrus.Errorf("error getting metadata config %v", err)
+		log.Error("Error getting metadata config", "operation", "get_metadata_config", "error", err)
 		return ""
 	}
 	return string(ans)
@@ -718,7 +718,7 @@ func GetMachineProvisionImagePullPolicy() v1.PullPolicy {
 	case v1.PullNever:
 		return v1.PullNever
 	default:
-		logrus.Warnf("failed to parse setting machine-provision-image-pull-policy value: %s defaulting to: %s", machineProvisionImagePullPolicy, v1.PullAlways)
+		log.Warn("Failed to parse setting machine-provision-image-pull-policy, using default", "operation", "get_machine_provision_image_pull_policy", "value", machineProvisionImagePullPolicy, "default", v1.PullAlways)
 		return v1.PullAlways
 	}
 }

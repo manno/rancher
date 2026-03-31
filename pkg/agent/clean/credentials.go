@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -18,7 +18,7 @@ func UnusedCattleCredentials() {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 		err := removeUnusedCattleCredentials(ctx)
 		if err != nil {
-			logrus.Errorf("Error removing unused cattle credentials: %v", err)
+			log.Error("Error removing unused cattle credentials", "error", err)
 		}
 		cancel()
 	}
@@ -56,7 +56,7 @@ func removeUnusedCattleCredentials(ctx context.Context) error {
 			continue
 		}
 
-		logrus.Infof("Deleting unused cattle-credentials secret: %s", sec.Name)
+		log.Info("Deleting unused cattle-credentials secret", "secret_name", sec.Name)
 		err = s.Delete(ctx, sec.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return err

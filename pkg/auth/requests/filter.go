@@ -8,6 +8,7 @@ import (
 	authcontext "github.com/rancher/rancher/pkg/auth/context"
 	"github.com/rancher/rancher/pkg/auth/providers"
 	"github.com/rancher/rancher/pkg/auth/util"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apiserver/pkg/endpoints/request"
 )
 
@@ -56,6 +57,8 @@ func (h authHeaderHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) 
 			}
 		}
 	}
+
+	log.Trace("Rancher auth filter headers", "operation", "serve_http", "headers", req.Header)
 
 	auditUser, ok := audit.FromContext(req.Context())
 	if ok {

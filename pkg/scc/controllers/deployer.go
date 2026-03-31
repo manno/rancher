@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/scc/deployer/params"
@@ -35,7 +36,7 @@ func RegisterDeployer(
 ) {
 	controller := &deployersHandler{
 		ctx:         ctx,
-		log:         logger.WithField("controller", "scc-deployers"),
+		log:         logger.With(slog.String("controller", "scc-deployers")),
 		sccDeployer: sccDeployer,
 		deployments: deployments,
 	}
@@ -84,12 +85,11 @@ func (h *deployersHandler) OnChanged(name string, incoming *appsv1.Deployment) (
 		return incoming, nil
 	}
 
-	h.log.Debugf("Received deployment update for %s", name)
-	h.log.Debug(incoming)
+	h.log.Debug("Received deployment update", "deployment", name)
 
 	desiredSCCParams, paramsErr := params.ExtractSccOperatorParams()
 	if paramsErr != nil {
-		h.log.Errorf("Failed to extract SCC operator params: %v", paramsErr)
+		h.log.Error("Failed to extract SCC operator params", "error", paramsErr)
 		return nil, paramsErr
 	}
 
@@ -98,14 +98,12 @@ func (h *deployersHandler) OnChanged(name string, incoming *appsv1.Deployment) (
 		return nil, err
 	}
 
-	currentDeployment, err := h.sccDeployer.ReconcileDeployment(h.ctx, desiredSCCParams, incoming)
+	_, err := h.sccDeployer.ReconcileDeployment(h.ctx, desiredSCCParams, incoming)
 	if err != nil {
 		return nil, err
 	}
 
-	h.log.Debugf("Finished reconciling deployment for %s", name)
-	h.log.Debug(desiredSCCParams)
-	h.log.Debug(currentDeployment)
+	h.log.Debug("Finished reconciling deployment", "deployment", name)
 
 	return incoming, nil
 }
@@ -113,7 +111,7 @@ func (h *deployersHandler) OnChanged(name string, incoming *appsv1.Deployment) (
 func (h *deployersHandler) ensureDependencies(desiredSCCParams *params.SCCOperatorParams) error {
 	hasDeps, depsErr := h.sccDeployer.HasAllDependencies()
 	if depsErr != nil {
-		h.log.Errorf("error checking dependencies: %v", depsErr)
+		h.log.Error("Error checking dependencies", "error", depsErr)
 	}
 	if !hasDeps {
 		if err := h.sccDeployer.EnsureDependenciesConfigured(h.ctx, desiredSCCParams); err != nil {
@@ -129,7 +127,7 @@ func (h *deployersHandler) OnRemoved(name string, incoming *appsv1.Deployment) (
 		return incoming, nil
 	}
 
-	h.log.Debugf("Checking if %s is ready to be removed", incoming.Name)
+	h.log.Debug("Checking if deployment is ready to be removed", "name", incoming.Name)
 
 	// TODO: we should wait to remove finalizer until after SCC CRs are cleaned up
 

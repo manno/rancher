@@ -3,7 +3,7 @@ package endpoints
 import (
 	workloadutil "github.com/rancher/rancher/pkg/controllers/managementagent/workload"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -59,7 +59,7 @@ func (s *ServicesController) reconcileEndpointsForService(svc *corev1.Service) (
 		return false, err
 	}
 
-	logrus.Infof("Updating service [%s] with public endpoints [%v]", svc.Name, epsToUpdate)
+	log.Info("Updating service with public endpoints", "operation", "reconcile_endpoints_for_service", "service", svc.Name, "endpoints", epsToUpdate)
 	if toUpdate.Annotations == nil {
 		toUpdate.Annotations = map[string]string{}
 	}

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	apiv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	admin "google.golang.org/api/admin/directory/v1"
@@ -30,7 +30,7 @@ func (g *googleOauthProvider) getUserInfoAndGroups(adminSvc *admin.Service, gOAu
 	}
 	userPrincipal = g.toPrincipal(userType, *user, nil)
 	userPrincipal.Me = true
-	logrus.Debugf("[Google OAuth] loginuser: Obtained userinfo using oauth access token")
+	log.Debug("Obtained userinfo using oauth access token", "provider", "google_oauth", "operation", "loginuser")
 
 	groupPrincipals, err = g.getGroupsUserBelongsTo(adminSvc, user.SubjectUniqueID, user.HostedDomain, config)
 	if err != nil {
@@ -54,7 +54,7 @@ func (g *googleOauthProvider) getUserInfoAndGroups(adminSvc *admin.Service, gOAu
 		}
 	}
 
-	logrus.Debugf("[Google OAuth] loginuser: Retrieved user's groups using admin directory")
+	log.Debug("Retrieved user groups using admin directory", "provider", "google_oauth", "operation", "loginuser")
 	return userPrincipal, groupPrincipals, nil
 }
 

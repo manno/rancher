@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/rancher/pkg/systemaccount"
 	"github.com/rancher/rancher/pkg/types/config"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -35,7 +35,7 @@ func CleanupOrphanedSystemUsers(ctx context.Context, management *config.Manageme
 	cleanupCtx, cleanupCancel := context.WithCancel(ctx)
 	go func(context.Context, context.CancelFunc) {
 		wait.PollImmediate(time.Hour*24, 0, func() (bool, error) {
-			logrus.Debugf("Starting orphaned system users cleanup with exponentialBackoff")
+			log.Debug("Starting orphaned system users cleanup with exponentialbackoff", "operation", "cleanup_orphaned_system_users")
 			steps := 5
 			backOffDuration := time.Minute * 10
 			factor := 2
@@ -52,7 +52,7 @@ func CleanupOrphanedSystemUsers(ctx context.Context, management *config.Manageme
 			}
 			if err != nil {
 				// returning false & nil because PollImmediate terminates on error
-				logrus.Error(err)
+				log.Error("Failed to cleanup orphaned system users", "operation", "cleanup_orphaned_system_users", "error", err)
 				return false, nil
 			}
 			// no error returned, user cleanup done, calling the child context's cancelfunc to terminate child context
@@ -137,6 +137,6 @@ func (u *userCleanup) deleteSystemUser(userName string) error {
 	if err != nil && !errors.IsNotFound(err) && !errors.IsGone(err) {
 		return err
 	}
-	logrus.Debugf("Deleted system user %v since its associated cluster/project no longer exists", userName)
+	log.Debug("Deleted system user since its associated cluster/project no longer exists", "user", userName)
 	return nil
 }

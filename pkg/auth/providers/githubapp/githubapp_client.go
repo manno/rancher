@@ -14,7 +14,7 @@ import (
 	"github.com/google/go-github/v73/github"
 	apiv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/providers/common"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/tomnomnom/linkheader"
 	"k8s.io/utils/ptr"
 )
@@ -69,13 +69,13 @@ func (g *githubAppClient) getUser(ctx context.Context, githubAccessToken string,
 	url := getAPIURL("USER_INFO", config)
 	b, _, err := g.getFromGithub(ctx, githubAccessToken, url)
 	if err != nil {
-		logrus.Errorf("Github getGithubUser: GET url %v received error from github, err: %v", url, err)
+		log.Error("GET url received error from github", "provider", "githubapp", "operation", "get_user", "url", url, "error", err)
 		return common.GitHubAccount{}, err
 	}
 	var githubAcct common.GitHubAccount
 
 	if err := json.Unmarshal(b, &githubAcct); err != nil {
-		logrus.Errorf("Github getGithubUser: error unmarshalling response, err: %v", err)
+		log.Error("Error unmarshalling response", "provider", "githubapp", "operation", "get_user", "error", err)
 		return common.GitHubAccount{}, err
 	}
 
@@ -182,7 +182,7 @@ func (g *githubAppClient) postToGithub(ctx context.Context, url string, form url
 	req.Header.Add("Accept", "application/json")
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Received error from github: %v", err)
+		log.Error("Received error from github", "provider", "githubapp", "operation", "post_to_github", "error", err)
 		return nil, err
 	}
 
@@ -214,7 +214,7 @@ func (g *githubAppClient) getFromGithub(ctx context.Context, githubAccessToken s
 	req.Header.Add("User-agent", "rancher/github-app-client")
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		logrus.Errorf("Received error from github: %v", err)
+		log.Error("Received error from github", "provider", "githubapp", "operation", "get_from_github", "error", err)
 		return nil, "", err
 	}
 	defer resp.Body.Close()

@@ -10,7 +10,7 @@ import (
 	"github.com/coreos/go-semver/semver"
 	"github.com/rancher/rancher/pkg/controllers/managementuser/nodesyncer"
 	"github.com/rancher/rancher/pkg/image"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 type Source string
@@ -25,7 +25,7 @@ func GetExternalImages(rancherVersion string, externalData map[string]interface{
 		return nil, fmt.Errorf("invalid source provided: %s", source)
 	}
 
-	logrus.Infof("generating %s image list...", source)
+	log.Info("Generating image list", "source", source)
 	externalImagesMap := make(map[string]bool)
 	releases, _ := externalData["releases"].([]interface{})
 
@@ -80,12 +80,12 @@ func GetExternalImages(rancherVersion string, externalData map[string]interface{
 			}
 		}
 
-		logrus.Debugf("[%s] adding compatible release: %s", source, version)
+		log.Debug("Adding compatible release", "source", source, "version", version)
 		compatibleReleases = append(compatibleReleases, version)
 	}
 
 	if len(compatibleReleases) < 1 {
-		logrus.Infof("skipping image generation since no compatible releases were found for version: %s", rancherVersion)
+		log.Info("Skipping image generation since no compatible releases were found", "rancher_version", rancherVersion)
 		return nil, nil
 	}
 
@@ -98,7 +98,7 @@ func GetExternalImages(rancherVersion string, externalData map[string]interface{
 
 		images, err := downloadExternalSupportingImages(release, source, osType)
 		if err != nil {
-			logrus.Infof("could not find supporting images for %s release [%s]: %v", source, release, err)
+			log.Info("Could not find supporting images for release", "source", source, "release", release, "error", err)
 			continue
 		}
 
@@ -115,12 +115,12 @@ func GetExternalImages(rancherVersion string, externalData map[string]interface{
 
 	var externalImages []string
 	for imageName := range externalImagesMap {
-		logrus.Debugf("[%s] adding image: %s", source, imageName)
+		log.Debug("Adding image", "source", source, "image", imageName)
 		externalImages = append(externalImages, imageName)
 	}
 
 	sort.Strings(externalImages)
-	logrus.Infof("finished generating %s image list...", source)
+	log.Info("Finished generating image list", "source", source)
 	return externalImages, nil
 }
 

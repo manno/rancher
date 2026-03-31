@@ -9,7 +9,7 @@ import (
 	"github.com/rancher/norman/types"
 	apiv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth/providers/common"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 func (s *Provider) formatter(apiContext *types.APIContext, resource *types.RawResource) {
@@ -46,7 +46,7 @@ func (s *Provider) testAndEnable(request *types.APIContext) error {
 		return err
 	}
 
-	logrus.Debug("SAML [testAndEnable]: Initializing SAML service provider")
+	log.Debug("Initializing SAML service provider", "provider", s.name, "operation", "test_and_enable")
 	err = InitializeSamlServiceProvider(samlConfig, s.name)
 	if err != nil {
 		return err
@@ -57,10 +57,10 @@ func (s *Provider) testAndEnable(request *types.APIContext) error {
 		return fmt.Errorf("SAML [testAndEnable]: Provider %v not configured", s.name)
 	}
 
-	logrus.Debugf("SAML [testAndEnable]: Setting clientState for SAML service provider %v", s.name)
+	log.Debug("Setting clientState for SAML service provider", "provider", s.name, "operation", "test_and_enable")
 
 	finalRedirectURL := samlLogin.FinalRedirectURL
-	logrus.Debugf("SAML [testAndEnable]: Final redirect will be (%v)", finalRedirectURL)
+	log.Debug("Final redirect will be set", "provider", s.name, "operation", "test_and_enable", "redirect_url", finalRedirectURL)
 
 	provider.clientState.SetPath(provider.serviceProvider.AcsURL.Path)
 	provider.clientState.SetState(request.Response, request.Request, "Rancher_FinalRedirectURL", finalRedirectURL)
@@ -70,7 +70,7 @@ func (s *Provider) testAndEnable(request *types.APIContext) error {
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("SAML [testAndEnable]: Redirecting to the identity provider login page at %v", idpRedirectURL)
+	log.Debug("Redirecting to identity provider login page", "provider", s.name, "operation", "test_and_enable", "idp_redirect_url", idpRedirectURL)
 	data := map[string]any{
 		"idpRedirectUrl": idpRedirectURL,
 		"type":           "samlConfigTestOutput",

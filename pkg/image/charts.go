@@ -11,7 +11,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/repo"
 )
@@ -82,7 +82,7 @@ func (c Charts) FetchImages(imagesSet map[string]map[string]struct{}) error {
 		tgzPath := filepath.Join(c.Config.ChartsPath, version.URLs[0])
 		versionValues, err := decodeValuesFilesInTgz(tgzPath)
 		if err != nil {
-			logrus.Info(err)
+			log.Info("Error decoding values files in tgz", "operation", "fetch_images", "tgz_path", tgzPath, "error", err)
 			continue
 		}
 		tag := chartsToIgnoreTags[version.Name]

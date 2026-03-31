@@ -7,7 +7,7 @@ import (
 
 	typescorev1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,7 +24,7 @@ type namespaceHandler struct {
 }
 
 func Register(ctx context.Context, cluster *config.UserOnlyContext) {
-	logrus.Infof("Registering namespaceHandler for adding labels ")
+	log.Info("Registering namespaceHandler for adding labels")
 	nsh := &namespaceHandler{
 		secrets:  cluster.Core.Secrets(""),
 		nsClient: cluster.Core.Namespaces(""),
@@ -36,7 +36,7 @@ func (nsh *namespaceHandler) Sync(key string, ns *corev1.Namespace) (runtime.Obj
 	if ns == nil {
 		return nil, nil
 	}
-	logrus.Debugf("namespaceHandler: Sync: key=%v, ns=%+v", key, *ns)
+	log.Debug("NamespaceHandler: Sync", "key", key, "namespace", *ns)
 
 	field, ok := ns.Annotations[ProjectIDFieldLabel]
 	if !ok {
@@ -54,10 +54,10 @@ func (nsh *namespaceHandler) Sync(key string, ns *corev1.Namespace) (runtime.Obj
 		clusterID = splits[0]
 	}
 
-	logrus.Debugf("namespaceHandler: Sync: projectID=%v", projectID)
+	log.Debug("NamespaceHandler: Sync: projectID", "project_id", projectID)
 
 	if err := nsh.addProjectIDLabelToNamespace(ns, projectID, clusterID); err != nil {
-		logrus.Errorf("namespaceHandler: Sync: error adding project id label to namespace err=%v", err)
+		log.Error("NamespaceHandler: Sync: error adding project id label to namespace", "error", err)
 		return nil, nil
 	}
 
@@ -70,9 +70,9 @@ func (nsh *namespaceHandler) addProjectIDLabelToNamespace(ns *corev1.Namespace, 
 	}
 	if ns.Labels[ProjectIDFieldLabel] != projectID {
 		if err := nsh.updateProjectIDLabelForSecrets(projectID, ns.Name, clusterID); err != nil {
-			logrus.Trace(err)
+			log.Trace("Error", "error", err)
 		}
-		logrus.Infof("namespaceHandler: addProjectIDLabelToNamespace: adding label %v=%v to namespace=%v", ProjectIDFieldLabel, projectID, ns.Name)
+		log.Info("NamespaceHandler: adding label to namespace", "label", ProjectIDFieldLabel, "project_id", projectID, "namespace", ns.Name)
 		nscopy := ns.DeepCopy()
 		if nscopy.Labels == nil {
 			nscopy.Labels = map[string]string{}

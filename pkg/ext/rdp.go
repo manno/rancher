@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/rancher/rancher/pkg/features"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/wrangler"
 	"github.com/rancher/remotedialer-proxy/forward"
 	"github.com/rancher/remotedialer-proxy/proxyclient"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -58,7 +58,7 @@ func RDPStart(ctx context.Context, restConfig *rest.Config, wranglerContext *wra
 	// Retry to get or create the connect secret for approx 15 minutes
 	retry.OnError(rdpSecretBackoff, func(err error) bool {
 		retryCount++
-		logrus.Errorf("RDPClient: error getting connect secret (retry #%d), will retry: %s", retryCount, err.Error())
+		log.Error("Error getting connect secret, will retry", "retry", retryCount, "error", err.Error())
 		return true
 	}, func() error {
 		connectSecret, retryErr = GetOrCreateRDPConnectSecret(wranglerContext.Core.Secret())
@@ -98,11 +98,11 @@ func GetOrCreateRDPConnectSecret(secretController corecontrollers.SecretControll
 	}
 
 	if secret == nil {
-		logrus.Warnf("RDPClient: couldn't read connect secret, will attempt to create new one...")
+		log.Warn("Couldn't read connect secret, will attempt to create new one")
 	}
 
 	if err != nil {
-		logrus.Errorf("RDPClient: error reading connect secret: %s, will attempt to create new one...", err.Error())
+		log.Error("Error reading connect secret, will attempt to create new one", "error", err.Error())
 	}
 
 	secretValue, err := randomtoken.Generate()
@@ -120,7 +120,7 @@ func GetOrCreateRDPConnectSecret(secretController corecontrollers.SecretControll
 			"data": secretValue,
 		},
 	}); err != nil {
-		logrus.Errorf("RDPClient: error creating connect secret: %s", err.Error())
+		log.Error("Error creating connect secret", "error", err.Error())
 		return "", err
 	}
 

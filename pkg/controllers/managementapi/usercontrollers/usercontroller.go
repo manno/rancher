@@ -12,7 +12,7 @@ import (
 	"github.com/rancher/rancher/pkg/features"
 	controllers "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
+	log "github.com/rancher/rancher/pkg/log"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,7 +35,7 @@ func Register(ctx context.Context, scaledContext *config.ScaledContext, clusterM
 			return nil, nil
 		}
 		if value := features.IsEnabled(obj); initialValue != value {
-			logrus.Warnf("Feature flag %q was flipped, new value is %v, disabling userscontrollers in preparation for restart", featureName, value)
+			log.Warn("Feature flag was flipped, disabling userscontrollers in preparation for restart", "flag", featureName, "value", value)
 			cancel()
 		}
 		return nil, nil
@@ -66,12 +66,12 @@ func Register(ctx context.Context, scaledContext *config.ScaledContext, clusterM
 			}
 			if err := wait.ExponentialBackoffWithContext(ctx, backoff, func(ctx context.Context) (bool, error) {
 				if err := u.reconcileClusterOwnership(); err != nil {
-					logrus.Warnf("Failed to reconcile cluster ownership: %v, retrying...", err)
+					log.Warn("Failed to reconcile cluster ownership, retrying", "error", err)
 					return false, nil
 				}
 				return true, nil
 			}); err != nil {
-				logrus.Errorf("Giving up reconciling cluster ownership after %d attempts", backoff.Steps)
+				log.Error("Giving up reconciling cluster ownership", "attempts", backoff.Steps)
 			}
 		}
 	}()
@@ -137,7 +137,7 @@ func (u *userControllersController) checkClusterControllerVersion(cluster *v3.Cl
 	clusterVersion := cluster.Status.Version.String()
 	clusterSemver, err := version.ParseSemantic(clusterVersion)
 	if err != nil {
-		logrus.Errorf("failed to parse the K8s version of the upgraded cluster %s, will not restart cluster controllers: %v", clusterName, err)
+		log.Error("failed to parse the K8s version of the upgraded cluster, will not restart cluster controllers", "cluster", clusterName, "error", err)
 		return "", false, nil
 	}
 

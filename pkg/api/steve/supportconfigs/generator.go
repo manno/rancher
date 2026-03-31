@@ -12,9 +12,9 @@ import (
 
 	"github.com/rancher/rancher/pkg/auth/util"
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/managedcharts/cspadapter"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/release"
 	authzv1 "k8s.io/api/authorization/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -66,7 +66,7 @@ func (h *Handler) checkAuthorization(cspNamespace string, cspConfigmap string, w
 	authorized, err := h.authorize(cspNamespace, cspConfigmap, request)
 	if err != nil {
 		util.ReturnHTTPError(writer, request, http.StatusForbidden, http.StatusText(http.StatusForbidden))
-		logrus.Errorf("[%s] Failed to authorize user with error: %s", logPrefix, err.Error())
+		log.Error("Failed to authorize user", "prefix", logPrefix, "error", err)
 		return false
 	}
 	if !authorized {
@@ -106,19 +106,19 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 			util.ReturnHTTPError(writer, request, http.StatusNotImplemented, cspChartName+" must be installed to generate supportconfigs")
 			return
 		}
-		logrus.Errorf("[%s] Error when attempting to determine if adapter is installed, %s", logPrefix, err)
+		log.Error("Error when attempting to determine if adapter is installed", "prefix", logPrefix, "error", err)
 		util.ReturnHTTPError(writer, request, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-	logrus.Infof("[%s] Generating supportconfig", logPrefix)
+	log.Info("Generating supportconfig", "prefix", logPrefix)
 	archive, err := h.generateSupportConfig(cspChartNamespace)
-	logrus.Infof("[%s] Done Generating supportconfig", logPrefix)
+	log.Info("Done generating supportconfig", "prefix", logPrefix)
 	if err != nil {
 		if errors.Is(err, errNotFound) {
 			util.ReturnHTTPError(writer, request, http.StatusServiceUnavailable, "supportconfig not yet generated, try again later")
 			return
 		}
-		logrus.Errorf("[%s] Error when generating supportconfig %v", logPrefix, err)
+		log.Error("Error when generating supportconfig", "prefix", logPrefix, "error", err)
 		util.ReturnHTTPError(writer, request, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
@@ -126,11 +126,11 @@ func (h *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Disposition", "attachment; filename=\"supportconfig_rancher.tar\"")
 	n, err := io.Copy(writer, archive)
 	if err != nil {
-		logrus.Warnf("set archive on http response writer: %v", err)
+		log.Warn("Set archive on http response writer", "error", err)
 		util.ReturnHTTPError(writer, request, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
-	logrus.Debugf("[%s] wrote %v bytes in archive response", logPrefix, n)
+	log.Debug("Wrote bytes in archive response", "prefix", logPrefix, "bytes", n)
 }
 
 // authorize checks to see if the user can get the given csp adapter configmap. Returns a bool (if the user is authorized)

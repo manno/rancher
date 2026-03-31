@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 type BaseDriver struct {
@@ -87,7 +87,7 @@ func (d *BaseDriver) getError() error {
 	errFile := d.cacheFile() + ".error"
 
 	if content, err := os.ReadFile(errFile); err == nil {
-		logrus.Errorf("Returning previous error: %s", content)
+		log.Error("Returning previous error", "operation", "get_error", "error", string(content))
 		d.ClearError()
 		return errors.New(string(content))
 	}
@@ -272,7 +272,7 @@ func (d *BaseDriver) copyBinary(cacheFile, input string) (string, error) {
 		return "", err
 	}
 
-	logrus.Infof("Found driver %s", driverName)
+	log.Info("Found driver", "operation", "install", "driver", driverName)
 	return driverName, os.WriteFile(cacheFile, []byte(driverName), 0644)
 }
 
@@ -312,7 +312,7 @@ func (d *BaseDriver) getHasher() (hash.Hash, error) {
 	case 0:
 		return nil, nil
 	case 32:
-		logrus.Warnf("[%s] md5 is unsupported and will be removed in a future version of Rancher", d.Name())
+		log.Warn("Md5 is unsupported and will be removed in a future version", "operation", "get_hasher", "driver", d.Name())
 		return md5.New(), nil
 	case 40:
 		return sha1.New(), nil
@@ -326,7 +326,7 @@ func (d *BaseDriver) getHasher() (hash.Hash, error) {
 }
 
 func (d *BaseDriver) download(dest io.Writer) error {
-	logrus.Infof("Download %s", d.URL)
+	log.Info("Downloading driver", "operation", "download", "url", d.URL)
 	resp, err := http.Get(d.URL)
 	if err != nil {
 		return err

@@ -10,9 +10,9 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/managementagent/nslabels"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/image"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	batchV1 "k8s.io/api/batch/v1"
 	coreV1 "k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
@@ -98,11 +98,11 @@ func (c *ClusterLifecycleCleanup) Remove(obj *v3.Cluster) (runtime.Object, error
 			err = c.cleanupImportedCluster(obj)
 		}
 		if err != nil {
-			logrus.Infof("[cluster-cleanup] error cleaning up cluster [%s]: %v", obj.Name, err)
+			log.Info("Error cleaning up cluster", "cluster", obj.Name, "error", err)
 		}
 		return err == nil, nil
 	}); err != nil {
-		logrus.Warnf("[cluster-cleanup] could not clean imported cluster [%s], moving on with removing cluster: %v", obj.Name, err)
+		log.Warn("Could not clean imported cluster, moving on with removing cluster", "cluster", obj.Name, "error", err)
 	}
 
 	c.Manager.Stop(obj)
@@ -115,7 +115,7 @@ func (c *ClusterLifecycleCleanup) cleanupLocalCluster(obj *v3.Cluster) error {
 		return err
 	}
 	if userContext == nil {
-		logrus.Debugf("could not get context for local cluster, skipping cleanup")
+		log.Debug("Could not get context for local cluster, skipping cleanup")
 		return nil
 	}
 
@@ -147,7 +147,7 @@ func (c *ClusterLifecycleCleanup) cleanupImportedCluster(cluster *v3.Cluster) er
 		return err
 	}
 	if userContext == nil {
-		logrus.Debugf("could not get context for imported cluster, skipping cleanup")
+		log.Debug("Could not get context for imported cluster, skipping cleanup")
 		return nil
 	}
 
@@ -386,7 +386,7 @@ func (c *ClusterLifecycleCleanup) updateClusterRoleBindingOwner(
 }
 
 func cleanupNamespaces(client kubernetes.Interface) error {
-	logrus.Debug("Starting cleanup of local cluster namespaces")
+	log.Debug("Starting cleanup of local cluster namespaces")
 	namespaces, err := client.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -435,7 +435,7 @@ func cleanupNamespaces(client kubernetes.Interface) error {
 			}
 
 			if updated {
-				logrus.Debugf("Updating local namespace: %v", nameSpace.Name)
+				log.Debug("Updating local namespace", "namespace", nameSpace.Name)
 				_, err = client.CoreV1().Namespaces().Update(context.TODO(), nameSpace, metav1.UpdateOptions{})
 				if err != nil {
 					return err

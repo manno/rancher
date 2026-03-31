@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	v1 "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 var (
@@ -25,13 +25,13 @@ type SafeIndex struct {
 
 // Generate generates a new index from a UIPluginCache object
 func (s *SafeIndex) Generate(cachedPlugins []*v1.UIPlugin) error {
-	logrus.Debug("generating index from plugin controller's cache")
+	log.Debug("Generating index from plugin controller's cache", "operation", "generate_index")
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Entries = make(map[string]*UIPlugin, len(cachedPlugins))
 	for _, plugin := range cachedPlugins {
 		entry := plugin.Spec.Plugin
-		logrus.Debugf("adding plugin to index: %+v", entry)
+		log.Debug("Adding plugin to index", "operation", "generate_index", "plugin_name", entry.Name, "plugin_version", entry.Version)
 		s.Entries[entry.Name] = &UIPlugin{
 			UIPluginEntry: entry,
 			CacheState:    plugin.Status.CacheState,

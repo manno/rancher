@@ -15,10 +15,10 @@ import (
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	managementv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/ingresswrapper"
+	"github.com/rancher/rancher/pkg/log"
 	nodehelper "github.com/rancher/rancher/pkg/node"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/types/config"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -93,7 +93,7 @@ func getPublicEndpointsFromAnnotations(annotations map[string]string) []v32.Publ
 	if val, ok := annotations[endpointsAnnotation]; ok {
 		err := json.Unmarshal([]byte(val), &eps)
 		if err != nil {
-			logrus.Errorf("Failed to read public endpoints from annotation %v", err)
+			log.Error("Failed to read public endpoints from annotation", "operation", "get_public_endpoints", "error", err)
 			return eps
 		}
 	}

@@ -26,12 +26,12 @@ import (
 	"github.com/rancher/rancher/pkg/dialer"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/kontainer-engine/drivers/util"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/rancher/pkg/systemaccount"
 	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/wrangler"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
-	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -141,7 +141,7 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 
 	// check for changes between EKS spec on cluster and the EKS spec on the EKSClusterConfig object
 	if !reflect.DeepEqual(eksClusterConfigMap, eksClusterConfigDynamic.Object["spec"]) {
-		logrus.Infof("change detected for cluster [%s], updating EKSClusterConfig", cluster.Name)
+		log.Info("Change detected for cluster, updating EKSClusterConfig", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		return e.updateEKSClusterConfig(cluster, eksClusterConfigDynamic, eksClusterConfigMap)
 	}
 
@@ -166,10 +166,10 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			logrus.Infof("waiting for cluster EKS [%s] to finish creating", cluster.Name)
+			log.Info("Waiting for cluster to finish creating", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		logrus.Infof("waiting for cluster EKS [%s] create failure to be resolved", cluster.Name)
+		log.Info("Waiting for cluster create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "creating")
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	case "active":
 
@@ -269,7 +269,7 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 						return cluster, err
 					}
 					if secret == nil {
-						logrus.Debugf("Empty service account token secret returned for cluster [%s]", cluster.Name)
+						log.Debug("Empty service account token secret returned for cluster", "operation", "onClusterChange", "cluster_name", cluster.Name)
 						return cluster, fmt.Errorf("failed to create or update service account token secret, secret can't be empty")
 					}
 					cluster.Status.ServiceAccountTokenSecret = secret.Name
@@ -351,10 +351,10 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
 		if failureMessage == "" {
-			logrus.Infof("waiting for cluster EKS [%s] to update", cluster.Name)
+			log.Info("Waiting for cluster to update", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionUpdated, "")
 		}
-		logrus.Infof("waiting for cluster EKS [%s] update failure to be resolved", cluster.Name)
+		log.Info("Waiting for cluster update failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name, "phase", "updating")
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionUpdated, failureMessage)
 	default:
 		if cluster.Spec.EKSConfig.Imported {
@@ -362,9 +362,9 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 			if err != nil {
 				return cluster, err
 			}
-			logrus.Infof("waiting for cluster import [%s] to start", cluster.Name)
+			log.Info("Waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		} else {
-			logrus.Infof("waiting for cluster create [%s] to start", cluster.Name)
+			log.Info("Waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		}
 
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
@@ -374,23 +374,23 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 				if err != nil {
 					return cluster, err
 				}
-				logrus.Infof("waiting for cluster import [%s] to start", cluster.Name)
+				log.Info("Waiting for cluster import to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 			} else {
-				logrus.Infof("waiting for cluster create [%s] to start", cluster.Name)
+				log.Info("Waiting for cluster create to start", "operation", "onClusterChange", "cluster_name", cluster.Name)
 			}
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
 		}
-		logrus.Infof("waiting for cluster EKS [%s] pre-create failure to be resolved", cluster.Name)
+		log.Info("Waiting for cluster pre-create failure to be resolved", "operation", "onClusterChange", "cluster_name", cluster.Name)
 		return e.SetFalse(cluster, apimgmtv3.ClusterConditionProvisioned, failureMessage)
 	}
 }
 
 func (e *eksOperatorController) setInitialUpstreamSpec(cluster *mgmtv3.Cluster) (*mgmtv3.Cluster, error) {
-	logrus.Infof("setting initial upstreamSpec on cluster [%s]", cluster.Name)
+	log.Info("Setting initial upstreamSpec on cluster", "operation", "setInitialUpstreamSpec", "cluster_name", cluster.Name)
 	cluster = cluster.DeepCopy()
 	upstreamSpec, err := clusterupstreamrefresher.BuildEKSUpstreamSpec(e.secretClient, cluster)
 	if err != nil {
-		logrus.Warnf("failed to set initial upstreamSpec on cluster [%s]: %v", cluster.Name, err)
+		log.Warn("Failed to set initial upstreamSpec on cluster", "operation", "setInitialUpstreamSpec", "cluster_name", cluster.Name, "error", err)
 		return cluster, err
 	}
 	cluster.Status.EKSStatus.UpstreamSpec = upstreamSpec

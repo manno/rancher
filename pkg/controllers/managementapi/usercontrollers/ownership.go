@@ -11,7 +11,7 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/metrics"
 	"github.com/rancher/rancher/pkg/peermanager"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 type ownerStrategy interface {
@@ -113,8 +113,7 @@ func isOwnerLegacy(cluster *v3.Cluster, peers peermanager.Peers) (owner bool) {
 	// This math needs 64-bit size to be safe, as "ck" is uint32 and will be multiplied by the number of peers
 	// int is equivalent to int64 in 64-bit systems, but better be explicit
 	scaled := uint64(ck) * uint64(len(peers.IDs)) / math.MaxUint32
-	logrus.Debugf("%s(%v): (%v * %v) / %v = %v[%v] = %v, self = %v\n", cluster.Name, cluster.UID, ck,
-		uint32(len(peers.IDs)), math.MaxUint32, peers.IDs, scaled, peers.IDs[scaled], peers.SelfID)
+	log.Debug("Cluster ownership calculation", "cluster_name", cluster.Name, "cluster_uid", cluster.UID, "scaled", scaled, "self_id", peers.SelfID, "is_owner", peers.IDs[scaled] == peers.SelfID)
 	return peers.IDs[scaled] == peers.SelfID
 }
 

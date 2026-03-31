@@ -17,9 +17,9 @@ import (
 	rkev1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
 	"github.com/rancher/rancher/pkg/capr"
 	"github.com/rancher/rancher/pkg/controllers/managementuser/snapshotbackpopulate"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/tests/v2prov/clients"
 	"github.com/rancher/rancher/tests/v2prov/cluster"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,7 +33,7 @@ func RunSnapshotCreateTest(t *testing.T, clients *clients.Clients, c *v1.Cluster
 		if t.Failed() {
 			data, newErr := cluster.GatherDebugData(clients, c)
 			if newErr != nil {
-				logrus.Error(newErr)
+				log.Error("Error gathering debug data", "error", newErr)
 			}
 			fmt.Printf("cluster %s etcd snapshot creation operation failed\ncluster %s test data bundle: \n%s\n", c.Name, c.Name, data)
 		}
@@ -243,7 +243,7 @@ func RunSnapshotRestoreTest(t *testing.T, clients *clients.Clients, c *v1.Cluste
 		if t.Failed() {
 			data, newErr := cluster.GatherDebugData(clients, c)
 			if newErr != nil {
-				logrus.Error(newErr)
+				log.Error("Error gathering debug data", "error", newErr)
 			}
 			fmt.Printf("cluster %s etcd snapshot restore operation failed\ncluster %s test data bundle: \n%s\n", c.Name, c.Name, data)
 		}

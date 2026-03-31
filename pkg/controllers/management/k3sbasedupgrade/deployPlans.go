@@ -12,9 +12,9 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/management/importedclusterversionmanagement"
 	"github.com/rancher/rancher/pkg/controllers/managementuser/nodesyncer"
 	planClientset "github.com/rancher/rancher/pkg/generated/clientset/versioned/typed/upgrade.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/settings"
 	planv1 "github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -103,7 +103,7 @@ func (h *handler) deployPlans(cluster *mgmtv3.Cluster) error {
 				strategy.DrainServerNodes, masterPlanName)
 
 			if !cmp(*masterPlan, newMaster) {
-				logrus.Infof("[k3s-based-upgrader] updating plan [%s] in cluster [%s]", newMaster.Name, cluster.Name)
+				log.Info("Updating plan", "operation", "k3s-based-upgrader", "plan", newMaster.Name, "cluster", cluster.Name)
 				planClient = planConfig.Plans(systemUpgradeNS)
 				masterPlan, err = planClient.Update(context.TODO(), &newMaster, metav1.UpdateOptions{})
 				if err != nil {
@@ -118,7 +118,7 @@ func (h *handler) deployPlans(cluster *mgmtv3.Cluster) error {
 				strategy.DrainWorkerNodes, upgradeImage, workerPlanName, masterPlanName)
 
 			if !cmp(*workerPlan, newWorker) {
-				logrus.Infof("[k3s-based-upgrader] updating plan [%s] in cluster [%s]", newWorker.Name, cluster.Name)
+				log.Info("Updating plan", "operation", "k3s-based-upgrader", "plan", newWorker.Name, "cluster", cluster.Name)
 				planClient = planConfig.Plans(systemUpgradeNS)
 				workerPlan, err = planClient.Update(context.TODO(), &newWorker, metav1.UpdateOptions{})
 				if err != nil {
@@ -128,7 +128,7 @@ func (h *handler) deployPlans(cluster *mgmtv3.Cluster) error {
 		}
 
 	} else { // create the plans
-		logrus.Infof("[k3s-based-upgrader] creating plans in cluster [%s]", cluster.Name)
+		log.Info("Creating plans", "operation", "k3s-based-upgrader", "cluster", cluster.Name)
 		planClient = planConfig.Plans(systemUpgradeNS)
 		genMasterPlan := generateMasterPlan(Version,
 			strategy.ServerConcurrency,
@@ -146,7 +146,7 @@ func (h *handler) deployPlans(cluster *mgmtv3.Cluster) error {
 		if err != nil {
 			return err
 		}
-		logrus.Infof("[k3s-based-upgrader] plans are successfully deployed into cluster [%s]", cluster.Name)
+		log.Info("Plans successfully deployed", "operation", "k3s-based-upgrader", "cluster", cluster.Name)
 	}
 
 	//lint:ignore SA4006 //

@@ -22,6 +22,7 @@ import (
 	capicontrollers "github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io/v1beta2"
 	provcontrollers "github.com/rancher/rancher/pkg/generated/controllers/provisioning.cattle.io/v1"
 	rkecontroller "github.com/rancher/rancher/pkg/generated/controllers/rke.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/serviceaccounttoken"
 	"github.com/rancher/wrangler/v3/pkg/condition"
 	"github.com/rancher/wrangler/v3/pkg/data"
@@ -30,7 +31,6 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/generic"
 	"github.com/rancher/wrangler/v3/pkg/name"
 	"github.com/rancher/wrangler/v3/pkg/summary"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -648,7 +648,7 @@ func SafeConcatName(maxLength int, name ...string) string {
 func PreBootstrap(mgmtCluster *v3.Cluster) bool {
 	// if the upstream rancher _does not_ have pre-bootstrapping enabled just always return false.
 	if !features.ProvisioningPreBootstrap.Enabled() {
-		logrus.Debug("[pre-bootstrap] feature-flag disabled, skipping pre-bootstrap flow")
+		log.Debug("Feature-flag disabled, skipping pre-bootstrap flow", "operation", "pre_bootstrap")
 		return false
 	}
 

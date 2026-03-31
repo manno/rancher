@@ -9,9 +9,9 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/values"
 	"github.com/rancher/rancher/pkg/controllers/managementagent/workload"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/ref"
 	schema "github.com/rancher/rancher/pkg/schemas/project.cattle.io/v3"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -36,7 +36,7 @@ func getOwnerWithKind(apiContext *types.APIContext, namespace, ownerKind, name s
 		subContext = apiContext.SubContext["/v3/schemas/cluster"]
 	}
 	if subContext == "" {
-		logrus.Warnf("failed to find subcontext to lookup replicaSet owner")
+		log.Warn("Failed to find subcontext to lookup replicaset owner", "operation", "get_owner_with_kind")
 		return "", "", nil
 	}
 

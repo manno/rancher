@@ -29,7 +29,7 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/name"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
 	"github.com/rancher/wrangler/v3/pkg/summary"
-	"github.com/sirupsen/logrus"
+	log "github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -231,10 +231,10 @@ func (p *Planner) setMachineConditionStatus(clusterPlan *plan.Plan, machineNames
 }
 
 func (p *Planner) Process(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlaneStatus) (rkev1.RKEControlPlaneStatus, error) {
-	logrus.Debugf("[planner] rkecluster %s/%s: attempting to lock %s for processing", cp.Namespace, cp.Name, string(cp.UID))
+	log.Debug("[planner] rkecluster: attempting to lock for processing", "namespace", cp.Namespace, "name", cp.Name, "uid", string(cp.UID))
 	p.locker.Lock(string(cp.UID))
 	defer func(namespace, name, uid string) {
-		logrus.Debugf("[planner] rkecluster %s/%s: unlocking %s", namespace, name, uid)
+		log.Debug("[planner] rkecluster: unlocking", "namespace", namespace, "name", name, "uid", uid)
 		_ = p.locker.Unlock(uid)
 	}(cp.Namespace, cp.Name, string(cp.UID))
 
@@ -266,10 +266,10 @@ func (p *Planner) Process(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlan
 		if capiannotations.IsPaused(capiCluster, cp) {
 			err = p.pauseCAPICluster(cp, false)
 			if err != nil {
-				logrus.Errorf("error unpausing CAPI cluster during deletion: %s", err)
+				log.Error("error unpausing CAPI cluster during deletion", "error", err)
 			}
 		}
-		logrus.Infof("[planner] %s/%s: reconciliation stopped: CAPI cluster is deleting", cp.Namespace, cp.Name)
+		log.Info("[planner]: reconciliation stopped: CAPI cluster is deleting", "namespace", cp.Namespace, "name", cp.Name)
 		return status, nil
 	}
 
@@ -294,7 +294,7 @@ func (p *Planner) Process(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlan
 		// using fallback logic from the status field.
 		if ptr.Deref(status.Initialization.ControlPlaneInitialized, false) {
 			status.Initialization.ControlPlaneInitialized = ptr.To(false)
-			logrus.Debugf("[planner] rkecluster %s/%s: setting controlplane controlPlaneInitialized to false as cluster was not sane", cp.Namespace, cp.Name)
+			log.Debug("[planner] rkecluster: setting controlplane controlPlaneInitialized to false as cluster was not sane", "namespace", cp.Namespace, "name", cp.Name)
 			return status, errWaitingf("uninitializing rkecontrolplane %s/%s", cp.Namespace, cp.Name)
 		}
 
@@ -449,7 +449,7 @@ func getLowestMachineKubeletVersion(plan *plan.Plan) *semver.Version {
 		if machine.Status.NodeInfo != nil {
 			ver, err := semver.NewVersion(machine.Status.NodeInfo.KubeletVersion)
 			if err != nil {
-				logrus.Errorf("error while parsing node kubelet version (%s): %v", machine.Status.NodeInfo.KubeletVersion, err)
+				log.Error("error while parsing node kubelet version", "version", machine.Status.NodeInfo.KubeletVersion, "error", err)
 				continue
 			}
 			if lowestVersion == nil {
@@ -490,7 +490,7 @@ func calculateJoinURL(cp *rkev1.RKEControlPlane, entry *planEntry, plan *plan.Pl
 	}
 
 	scaled := int(ck) * len(entries) / math.MaxUint32
-	logrus.Debugf("[planner] %s/%s: For machine %s/%s, determined join URL: %s (calculation of index: (%v * %v) / %v = [%v])", cp.Namespace, cp.Name, entry.Machine.Namespace, entry.Machine.Name, entries[scaled].Metadata.Annotations[capr.JoinURLAnnotation], ck, uint32(len(entries)), math.MaxUint32, scaled)
+	log.Debug("[planner]: determined join URL for machine", "namespace", cp.Namespace, "name", cp.Name, "machine_namespace", entry.Machine.Namespace, "machine", entry.Machine.Name, "join_url", entries[scaled].Metadata.Annotations[capr.JoinURLAnnotation], "ck", ck, "entryCount", uint32(len(entries)), "maxUint32", math.MaxUint32, "scaled", scaled)
 	return entries[scaled].Metadata.Annotations[capr.JoinURLAnnotation]
 }
 
@@ -518,7 +518,7 @@ func determineJoinURL(cp *rkev1.RKEControlPlane, entry *planEntry, plan *plan.Pl
 			if entry.Plan != nil {
 				joinedTo = entry.Plan.JoinedTo
 			}
-			logrus.Infof("[planner] rkecluster %s/%s - machine %s/%s - previous join server (%s) was not valid, using new join server (%s)", cp.Namespace, cp.Name, entry.Machine.Namespace, entry.Machine.Name, joinedTo, joinURL)
+			log.Info("[planner] rkecluster: machine previous join server was not valid, using new join server", "namespace", cp.Namespace, "name", cp.Name, "machine_namespace", entry.Machine.Namespace, "machine", entry.Machine.Name, "previous_join_server", joinedTo, "new_join_server", joinURL)
 			if joinURL == "" {
 				return "", fmt.Errorf("no suitable join URL found to join machine %s/%s in rkecluster %s/%s to", entry.Machine.Namespace, entry.Machine.Name, cp.Namespace, cp.Name)
 			}
@@ -669,13 +669,13 @@ func splitArgKeyVal(val string, delim string) (string, string) {
 // getArgValue will search the passed in interface (arg) for a key that matches the searchArg. If a match is found, it
 // returns the value of the argument, otherwise it returns an empty string.
 func getArgValue(arg interface{}, searchArg string, delim string) string {
-	logrus.Tracef("getArgValue (searchArg: %s, delim: %s) type of %v is %T", searchArg, delim, arg, arg)
+	log.Trace("getArgValue: type of arg", "searchArg", searchArg, "delim", delim, "argValue", arg, "argType", fmt.Sprintf("%T", arg))
 	switch arg := arg.(type) {
 	case []interface{}:
-		logrus.Tracef("getArgValue (searchArg: %s, delim: %s) encountered interface slice %v", searchArg, delim, arg)
+		log.Trace("getArgValue: encountered interface slice", "searchArg", searchArg, "delim", delim, "arg", arg)
 		return getArgValue(convertInterfaceSliceToStringSlice(arg), searchArg, delim)
 	case []string:
-		logrus.Tracef("getArgValue (searchArg: %s, delim: %s) found string array: %v", searchArg, delim, arg)
+		log.Trace("getArgValue: found string array", "searchArg", searchArg, "delim", delim, "arg", arg)
 		for _, v := range arg {
 			argKey, argVal := splitArgKeyVal(v, delim)
 			if argKey == searchArg {
@@ -683,13 +683,13 @@ func getArgValue(arg interface{}, searchArg string, delim string) string {
 			}
 		}
 	case string:
-		logrus.Tracef("getArgValue (searchArg: %s, delim: %s) found string: %v", searchArg, delim, arg)
+		log.Trace("getArgValue: found string", "searchArg", searchArg, "delim", delim, "arg", arg)
 		argKey, argVal := splitArgKeyVal(arg, delim)
 		if argKey == searchArg {
 			return argVal
 		}
 	}
-	logrus.Tracef("getArgValue (searchArg: %s, delim: %s) did not find searchArg in: %v", searchArg, delim, arg)
+	log.Trace("getArgValue: did not find searchArg", "searchArg", searchArg, "delim", delim, "arg", arg)
 	return ""
 }
 
@@ -774,16 +774,16 @@ func renderArgAndMount(existingArg interface{}, existingMount interface{}, contr
 		}
 	}
 	if certDirArg != "" {
-		logrus.Debugf("renderArgAndMount adding %s to component arguments", certDirArg)
+		log.Debug("renderArgAndMount: adding to component arguments", "arg", certDirArg)
 		retArg = appendToInterface(existingArg, certDirArg)
 	}
 	if securePortArg != "" {
-		logrus.Debugf("renderArgAndMount adding %s to component arguments", securePortArg)
+		log.Debug("renderArgAndMount: adding to component arguments", "arg", securePortArg)
 		retArg = appendToInterface(retArg, securePortArg)
 	}
 	if capr.GetRuntime(controlPlane.Spec.KubernetesVersion) == capr.RuntimeRKE2 {
 		// todo: make sure the certDirMount is not already set by the user to some custom value before we set it for the static pod extraMount
-		logrus.Debugf("renderArgAndMount adding %s to component mounts", certDirMount)
+		log.Debug("renderArgAndMount: adding to component mounts", "mount", certDirMount)
 		retMount = appendToInterface(existingMount, certDirMount)
 	}
 	return retArg, retMount
@@ -868,7 +868,7 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 			return err
 		}
 
-		logrus.Debugf("[planner] rkecluster %s/%s reconcile tier %s - rendering desired plan for machine %s/%s with join URL: (%s)", controlPlane.Namespace, controlPlane.Name, tierName, entry.Machine.Namespace, entry.Machine.Name, joinURL)
+		log.Debug("[planner] rkecluster: reconcile tier - rendering desired plan for machine with join URL", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", entry.Machine.Namespace, "machine", entry.Machine.Name, "join_url", joinURL)
 		plan, joinedURL, err := p.desiredPlan(controlPlane, tokensSecret, entry, joinURL)
 		if err != nil {
 			return err
@@ -893,10 +893,10 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 	}
 
 	for _, r := range reconcilables {
-		logrus.Tracef("[planner] rkecluster %s/%s reconcile tier %s - processing machine entry: %s/%s", controlPlane.Namespace, controlPlane.Name, tierName, r.entry.Machine.Namespace, r.entry.Machine.Name)
+		log.Trace("[planner] rkecluster: reconcile tier - processing machine entry", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", r.entry.Machine.Namespace, "machine", r.entry.Machine.Name)
 		// we exclude here and not in collect to ensure that include matched at least one node
 		if exclude(r.entry) {
-			logrus.Tracef("[planner] rkecluster %s/%s reconcile tier %s - excluding machine entry: %s/%s", controlPlane.Namespace, controlPlane.Name, tierName, r.entry.Machine.Namespace, r.entry.Machine.Name)
+			log.Trace("[planner] rkecluster: reconcile tier - excluding machine entry", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", r.entry.Machine.Namespace, "machine", r.entry.Machine.Name)
 			continue
 		}
 
@@ -920,21 +920,21 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 		messages[r.entry.Machine.Name] = summary.Message
 
 		if r.entry.Plan == nil {
-			logrus.Debugf("[planner] rkecluster %s/%s reconcile tier %s - setting initial plan for machine %s/%s", controlPlane.Namespace, controlPlane.Name, tierName, r.entry.Machine.Namespace, r.entry.Machine.Name)
-			logrus.Tracef("[planner] rkecluster %s/%s reconcile tier %s - initial plan for machine %s/%s new: %+v", controlPlane.Namespace, controlPlane.Name, tierName, r.entry.Machine.Namespace, r.entry.Machine.Name, r.desiredPlan)
+			log.Debug("[planner] rkecluster: reconcile tier - setting initial plan for machine", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", r.entry.Machine.Namespace, "machine", r.entry.Machine.Name)
+			log.Trace("[planner] rkecluster: reconcile tier - initial plan for machine", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", r.entry.Machine.Namespace, "machine", r.entry.Machine.Name, "plan", r.desiredPlan)
 			outOfSync = append(outOfSync, r.entry.Machine.Name)
 			if err := p.store.UpdatePlan(r.entry, r.desiredPlan, r.joinedURL, maxFailures, failureThreshold); err != nil {
 				return err
 			}
 		} else if r.minorChange {
-			logrus.Debugf("[planner] rkecluster %s/%s reconcile tier %s - minor plan change detected for machine %s/%s, updating plan immediately", controlPlane.Namespace, controlPlane.Name, tierName, r.entry.Machine.Namespace, r.entry.Machine.Name)
-			logrus.Tracef("[planner] rkecluster %s/%s reconcile tier %s - minor plan change for machine %s/%s old: %+v, new: %+v", controlPlane.Namespace, controlPlane.Name, tierName, r.entry.Machine.Namespace, r.entry.Machine.Name, r.entry.Plan.Plan, r.desiredPlan)
+			log.Debug("[planner] rkecluster: reconcile tier - minor plan change detected for machine, updating plan immediately", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", r.entry.Machine.Namespace, "machine", r.entry.Machine.Name)
+			log.Trace("[planner] rkecluster: reconcile tier - minor plan change for machine", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", r.entry.Machine.Namespace, "machine", r.entry.Machine.Name, "old_plan", r.entry.Plan.Plan, "new_plan", r.desiredPlan)
 			outOfSync = append(outOfSync, r.entry.Machine.Name)
 			if err := p.store.UpdatePlan(r.entry, r.desiredPlan, r.joinedURL, maxFailures, failureThreshold); err != nil {
 				return err
 			}
 		} else if r.change {
-			logrus.Debugf("[planner] rkecluster %s/%s reconcile tier %s - plan for machine %s/%s did not match, appending to outOfSync", controlPlane.Namespace, controlPlane.Name, tierName, r.entry.Machine.Namespace, r.entry.Machine.Name)
+			log.Debug("[planner] rkecluster: reconcile tier - plan for machine did not match, appending to outOfSync", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", r.entry.Machine.Namespace, "machine", r.entry.Machine.Name)
 			outOfSync = append(outOfSync, r.entry.Machine.Name)
 			// Conditions
 			// 1. If the node is already draining then the plan is out of sync.  There is no harm in updating it if
@@ -943,7 +943,7 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 			// 3. concurrency == 0 which means infinite concurrency.
 			// 4. unavailable < concurrency meaning we have capacity to make something unavailable
 			// 5. If the plan was successful in application but the probes never went healthy
-			logrus.Debugf("[planner] rkecluster %s/%s reconcile tier %s - concurrency: %d, unavailable: %d", controlPlane.Namespace, controlPlane.Name, tierName, concurrency, unavailable)
+			log.Debug("[planner] rkecluster: reconcile tier - concurrency and unavailable count", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "concurrency", concurrency, "unavailable", unavailable)
 			if isInDrain(r.entry) || r.entry.Plan.Failed || concurrency == 0 || unavailable < concurrency || planAppliedButProbesNeverHealthy(r.entry) {
 				if !isUnavailable(r) {
 					unavailable++
@@ -952,8 +952,8 @@ func (p *Planner) reconcile(controlPlane *rkev1.RKEControlPlane, tokensSecret pl
 					return err
 				} else if ok && err == nil {
 					// Drain is done (or didn't need to be done) and there are no errors, so the plan should be updated to enact the reason the node was drained.
-					logrus.Debugf("[planner] rkecluster %s/%s reconcile tier %s - major plan change for machine %s/%s", controlPlane.Namespace, controlPlane.Name, tierName, r.entry.Machine.Namespace, r.entry.Machine.Name)
-					logrus.Tracef("[planner] rkecluster %s/%s reconcile tier %s - major plan change for machine %s/%s old: %+v, new: %+v", controlPlane.Namespace, controlPlane.Name, tierName, r.entry.Machine.Namespace, r.entry.Machine.Name, r.entry.Plan.Plan, r.desiredPlan)
+					log.Debug("[planner] rkecluster: reconcile tier - major plan change for machine", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", r.entry.Machine.Namespace, "machine", r.entry.Machine.Name)
+					log.Trace("[planner] rkecluster: reconcile tier - major plan change for machine", "namespace", controlPlane.Namespace, "name", controlPlane.Name, "tier", tierName, "machine_namespace", r.entry.Machine.Namespace, "machine", r.entry.Machine.Name, "old_plan", r.entry.Plan.Plan, "new_plan", r.desiredPlan)
 					if err = p.store.UpdatePlan(r.entry, r.desiredPlan, r.joinedURL, maxFailures, failureThreshold); err != nil {
 						return err
 					} else if r.entry.Metadata.Annotations[capr.DrainDoneAnnotation] != "" {

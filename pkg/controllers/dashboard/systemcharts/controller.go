@@ -28,7 +28,7 @@ import (
 	deploymentControllers "github.com/rancher/wrangler/v3/pkg/generated/controllers/apps/v1"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/relatedresource"
-	"github.com/sirupsen/logrus"
+	log "github.com/rancher/rancher/pkg/log"
 	k8sappsv1 "k8s.io/api/apps/v1"
 	kcorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -314,7 +314,7 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 				suc, err := h.deploymentCache.Get(namespace.System, sucDeploymentName)
 				if err != nil && !errors.IsNotFound(err) {
 					toEnable = false
-					logrus.Warnf("[systemcharts] failed to get the deployment %s/%s: %s", namespace.System, sucDeploymentName, err.Error())
+					log.Warn("[systemcharts] failed to get the deployment", "namespace", namespace.System, "name", sucDeploymentName, "error", err)
 				}
 				if suc != nil {
 					// The missing annotation suggests that either the legacy Fleet bundle in the node-driver RKE2/K3s cluster,
@@ -335,7 +335,7 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 					// Rancher has direct access to the mgmt v3 cluster and the ImportedClusterVersionManagement setting
 					cluster, err := h.clusterCache.Get("local")
 					if err != nil {
-						logrus.Warnf("[systemcharts] failed to get the local cluster: %v", err)
+						log.Warn("[systemcharts] failed to get the local cluster", "error", err)
 					}
 					if cluster != nil && (cluster.Status.Driver == v3.ClusterDriverRke2 || cluster.Status.Driver == v3.ClusterDriverK3s) {
 						versionManagementEnabled = importedclusterversionmanagement.Enabled(cluster)
@@ -344,15 +344,14 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 				if isInHarvesterLocal() {
 					cluster, err := h.clusterCache.Get("local")
 					if err != nil {
-						logrus.Warnf("[systemcharts] failed to get the local cluster: %v", err)
+						log.Warn("[systemcharts] failed to get the local cluster", "error", err)
 					}
 					if cluster != nil && cluster.Status.Provider == "harvester" && cluster.Status.Driver == v3.ClusterDriverImported {
 						versionManagementEnabled = importedclusterversionmanagement.Enabled(cluster)
 					}
 				}
 				toInstall := versionManagementEnabled && toEnable
-				logrus.Debugf("[systemcharts] install system-upgrade-controller: %t (versionManagementEnabled: %t && toEnable: %t)",
-					toInstall, versionManagementEnabled, toEnable)
+				log.Debug("[systemcharts] install system-upgrade-controller", "install", toInstall, "versionManagementEnabled", versionManagementEnabled, "toEnable", toEnable)
 				return toInstall
 			},
 			Uninstall: func() bool {
@@ -361,7 +360,7 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 				// The removal of the plans is handled in the k3sbasedupgrade package.
 				plans, err := h.planCache.List(namespace.System, managedPlanSelector)
 				if err != nil {
-					logrus.Warnf("[systemcharts] failed to list plans: %v", err)
+					log.Warn("[systemcharts] failed to list plans", "error", err)
 				}
 				if len(plans) == 0 {
 					noManagedPlan = true
@@ -378,7 +377,7 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 					// Rancher has direct access to the mgmt v3 cluster and the ImportedClusterVersionManagement setting
 					cluster, err := h.clusterCache.Get("local")
 					if err != nil {
-						logrus.Warnf("[systemcharts] failed to get the local cluster: %v", err)
+						log.Warn("[systemcharts] failed to get the local cluster", "error", err)
 					}
 					if cluster != nil && (cluster.Status.Driver == v3.ClusterDriverRke2 || cluster.Status.Driver == v3.ClusterDriverK3s) {
 						versionManagementEnabled = importedclusterversionmanagement.Enabled(cluster)
@@ -387,15 +386,14 @@ func (h *handler) getChartsToInstall() []*chart.Definition {
 				if isInHarvesterLocal() {
 					cluster, err := h.clusterCache.Get("local")
 					if err != nil {
-						logrus.Warnf("[systemcharts] failed to get the local cluster: %v", err)
+						log.Warn("[systemcharts] failed to get the local cluster", "error", err)
 					}
 					if cluster != nil && cluster.Status.Provider == "harvester" && cluster.Status.Driver == v3.ClusterDriverImported {
 						versionManagementEnabled = importedclusterversionmanagement.Enabled(cluster)
 					}
 				}
 				toUninstall := !versionManagementEnabled && noManagedPlan
-				logrus.Debugf("[systemcharts] uninstall system-upgrade-controller: %t (!versionManagementEnabled: %t && noManagedPlan: %t)",
-					toUninstall, !versionManagementEnabled, noManagedPlan)
+				log.Debug("[systemcharts] uninstall system-upgrade-controller", "uninstall", toUninstall, "versionManagementDisabled", !versionManagementEnabled, "noManagedPlan", noManagedPlan)
 				return toUninstall
 			}(),
 		},
@@ -415,7 +413,7 @@ func (h *handler) onDeployment(_ string, d *k8sappsv1.Deployment) (*k8sappsv1.De
 	}
 
 	index := slices.Index(d.Finalizers, legacyAppFinalizer)
-	logrus.Infof("[systemcharts] found deployment %s/%s with index of target finalzier = %d", d.Namespace, d.Name, index)
+	log.Info("[systemcharts] found deployment with index of target finalizer", "namespace", d.Namespace, "name", d.Name, "index", index)
 	if (d.DeletionTimestamp != nil && index == -1) || (d.DeletionTimestamp == nil && index >= 0) {
 		return d, nil
 	}
@@ -442,7 +440,7 @@ func (h *handler) onDeployment(_ string, d *k8sappsv1.Deployment) (*k8sappsv1.De
 		}); err != nil {
 			return nil, fmt.Errorf("failed to update deployment %s/%s: %w", d.Namespace, d.Name, err)
 		}
-		logrus.Infof("[systemcharts] enqueue %s", repoName)
+		log.Info("[systemcharts] enqueue", "repo", repoName)
 		h.clusterRepo.EnqueueAfter(repoName, 2*time.Second)
 
 	case d.DeletionTimestamp == nil && index == -1:
@@ -479,7 +477,7 @@ func (h *handler) onPlan(_ string, plan *upgradev1.Plan) (*upgradev1.Plan, error
 		return plan, nil
 	}
 	index := slices.Index(plan.Finalizers, managedPlanFinalizer)
-	logrus.Debugf("[systemcharts] found plan %s/%s with index of target finalzier = %d", plan.Namespace, plan.Name, index)
+	log.Debug("[systemcharts] found plan with index of target finalizer", "namespace", plan.Namespace, "name", plan.Name, "index", index)
 	if (plan.DeletionTimestamp != nil && index == -1) || (plan.DeletionTimestamp == nil && index >= 0) {
 		return plan, nil
 	}
@@ -502,7 +500,7 @@ func (h *handler) onPlan(_ string, plan *upgradev1.Plan) (*upgradev1.Plan, error
 		if err != nil {
 			return nil, err
 		}
-		logrus.Infof("[systemcharts] enqueue %s", repoName)
+		log.Info("[systemcharts] enqueue", "repo", repoName)
 		h.clusterRepo.EnqueueAfter(repoName, 2*time.Second)
 	}
 	if plan.DeletionTimestamp == nil && index == -1 {
@@ -547,7 +545,7 @@ func (h *handler) setPriorityClass(values map[string]interface{}, chartName stri
 	if err == nil {
 		values[chart.PriorityClassKey] = priorityClassName
 	} else if !chart.IsNotFoundError(err) {
-		logrus.Warnf("[systemcharts] Failed to get rancher %s for %s: %s", chart.PriorityClassKey, chartName, err.Error())
+		log.Warn("[systemcharts] Failed to get rancher priority class", "key", chart.PriorityClassKey, "chart", chartName, "error", err)
 	}
 }
 
@@ -555,7 +553,7 @@ func (h *handler) setPriorityClass(values map[string]interface{}, chartName stri
 func (h *handler) getChartValues(chartName string) map[string]interface{} {
 	configMapValues, err := h.chartsConfig.GetChartValues(chartName)
 	if err != nil && !chart.IsNotFoundError(err) {
-		logrus.Warnf("[systemcharts] Failed to get chart values for %s: %s", chartName, err.Error())
+		log.Warn("[systemcharts] Failed to get chart values", "chart", chartName, "error", err)
 	}
 	return configMapValues
 }
@@ -594,7 +592,7 @@ func isInHarvesterLocal() bool {
 	// the multi-cluster-management and multi-cluster-management-agent features are disabled,
 	// and the Harvester feature is enabled.
 	if !features.MCMAgent.Enabled() && !features.MCM.Enabled() && features.Harvester.Enabled() {
-		logrus.Debugf("Rancher is embedded and running in the Harvester local cluster.")
+		log.Debug("Rancher is embedded and running in the Harvester local cluster")
 		return true
 	}
 	return false

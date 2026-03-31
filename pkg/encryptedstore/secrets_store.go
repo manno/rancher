@@ -5,7 +5,7 @@ import (
 	"time"
 
 	v1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -70,10 +70,10 @@ func (g *GenericEncryptedStore) Set(name string, data map[string]string, owner *
 }
 
 func (g *GenericEncryptedStore) set(name string, data map[string]string, owner *metav1.OwnerReference) error {
-	logrus.Debugf("[GenericEncryptedStore]: set secret called for %v", g.getKey(name))
+	log.Debug("Genericencryptedstore: set secret called", "operation", "set", "key", g.getKey(name))
 	sec, err := g.secretLister.Get(g.namespace, g.getKey(name))
 	if errors.IsNotFound(err) {
-		logrus.Debugf("[GenericEncryptedStore]: Creating secret for %v", g.getKey(name))
+		log.Debug("Genericencryptedstore: creating secret", "operation", "set", "key", g.getKey(name))
 		sec = &corev1.Secret{}
 		sec.Name = g.getKey(name)
 		sec.StringData = data
@@ -84,7 +84,7 @@ func (g *GenericEncryptedStore) set(name string, data map[string]string, owner *
 			if !errors.IsAlreadyExists(err) {
 				return err
 			}
-			logrus.Debugf("[GenericEncryptedStore]: secret %v already exists, updating secret", sec.Name)
+			log.Debug("Genericencryptedstore: secret already exists, updating", "operation", "set", "secret", sec.Name)
 			// if secret already exists, update it with the current cluster status
 			return g.updateSecretWithBackoff(name, data)
 		}
@@ -95,7 +95,7 @@ func (g *GenericEncryptedStore) set(name string, data map[string]string, owner *
 
 	secToUpdate := prepareSecretForUpdate(sec, data)
 	if !reflect.DeepEqual(secToUpdate.Data, sec.Data) {
-		logrus.Debugf("[GenericEncryptedStore]: updating secret %v", g.getKey(name))
+		log.Debug("Genericencryptedstore: updating secret", "operation", "set", "key", g.getKey(name))
 
 		if owner != nil {
 			ownerFound := false
@@ -132,7 +132,7 @@ func (g *GenericEncryptedStore) updateSecretWithBackoff(name string, data map[st
 		// fetch secret from the db when retrying due to IsConflict/IsAlreadyExists error
 		secret, err := g.secrets.GetNamespaced(g.namespace, g.getKey(name), metav1.GetOptions{})
 		if err != nil {
-			logrus.Errorf("[GenericEncryptedStore]: error getting secret %v from db: %v", g.getKey(name), err)
+			log.Error("Genericencryptedstore: error getting secret from db", "operation", "update_secret_with_backoff", "key", g.getKey(name), "error", err)
 			return false, err
 		}
 		secToUpdate := prepareSecretForUpdate(secret, data)
@@ -140,13 +140,13 @@ func (g *GenericEncryptedStore) updateSecretWithBackoff(name string, data map[st
 			_, err = g.secrets.Update(secToUpdate)
 			if err != nil {
 				if errors.IsConflict(err) {
-					logrus.Errorf("[GenericEncryptedStore]: conflict error updating secret %v: %v, retrying update", g.getKey(name), err)
+					log.Error("Genericencryptedstore: conflict error updating secret, retrying", "operation", "update_secret_with_backoff", "key", g.getKey(name), "error", err)
 					return false, nil
 				}
-				logrus.Errorf("[GenericEncryptedStore]: error when updating secret %v: %v", g.getKey(name), err)
+				log.Error("Genericencryptedstore: error updating secret", "operation", "update_secret_with_backoff", "key", g.getKey(name), "error", err)
 				return false, err
 			}
-			logrus.Debugf("[GenericEncryptedStore]: successfully updated secret %v ", g.getKey(name))
+			log.Debug("Genericencryptedstore: successfully updated secret", "operation", "update_secret_with_backoff", "key", g.getKey(name))
 		}
 		return true, nil
 	})

@@ -11,14 +11,14 @@ import (
 	"github.com/oracle/oci-go-sdk/core"
 	"github.com/oracle/oci-go-sdk/identity"
 	"github.com/rancher/norman/httperror"
-	"github.com/sirupsen/logrus"
+	"github.com/rancher/rancher/pkg/log"
 )
 
 func processVcns(provider common.ConfigurationProvider, compartment string) ([]byte, int, error) {
-	logrus.Debugf("[oci-handler] listing VCNs in compartment: %s", compartment)
+	log.Debug("Oci-handler: listing vcns in compartment", "operation", "process_vcns", "compartment", compartment)
 	virtualNetworkClient, err := core.NewVirtualNetworkClientWithConfigurationProvider(provider)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error creating Virtual Network client: %v", err)
+		log.Debug("Oci-handler: error creating virtual network client", "operation", "process_vcns", "error", err)
 		return nil, httperror.ServerError.Status, err
 	}
 	vcnRequest := core.ListVcnsRequest{
@@ -32,7 +32,7 @@ func processVcns(provider common.ConfigurationProvider, compartment string) ([]b
 		} else {
 			httpErr.Status = httperror.ServerError.Status
 		}
-		logrus.Debugf("[oci-handler] error listing VCNs with Virtual Network client: %v", err)
+		log.Debug("Oci-handler: error listing vcns with virtual network client", "operation", "process_vcns", "error", err)
 		return nil, httpErr.Status, err
 	}
 
@@ -50,10 +50,10 @@ func processVcns(provider common.ConfigurationProvider, compartment string) ([]b
 }
 
 func processOkeVersions(provider common.ConfigurationProvider) ([]byte, int, error) {
-	logrus.Debug("[oci-handler] listing OKE versions")
+	log.Debug("Oci-handler: listing oke versions", "operation", "process_oke_versions")
 	containerClient, err := containerengine.NewContainerEngineClientWithConfigurationProvider(provider)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error creating ContainerEngine client: %v", err)
+		log.Debug("Oci-handler: error creating containerengine client", "operation", "process_oke_versions", "error", err)
 		return nil, httperror.ServerError.Status, err
 	}
 	getClusterOptionsReq := containerengine.GetClusterOptionsRequest{
@@ -67,7 +67,7 @@ func processOkeVersions(provider common.ConfigurationProvider) ([]byte, int, err
 		} else {
 			httpErr.Status = httperror.ServerError.Status
 		}
-		logrus.Debugf("[oci-handler] error getting cluster options with ContainerEngine client: %v", err)
+		log.Debug("Oci-handler: error getting cluster options with containerengine client", "operation", "process_oke_versions", "error", err)
 		return nil, httpErr.Status, err
 	}
 
@@ -80,10 +80,10 @@ func processOkeVersions(provider common.ConfigurationProvider) ([]byte, int, err
 }
 
 func processAvailabilityDomains(provider common.ConfigurationProvider, compartment string) ([]byte, int, error) {
-	logrus.Debugf("[oci-handler] listing ADs in compartment: %s", compartment)
+	log.Debug("Oci-handler: listing availability domains in compartment", "operation", "process_availability_domains", "compartment", compartment)
 	identityClient, err := identity.NewIdentityClientWithConfigurationProvider(provider)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error creating Identity client: %v", err)
+		log.Debug("Oci-handler: error creating identity client", "operation", "process_availability_domains", "error", err)
 		return nil, httperror.ServerError.Status, err
 	}
 	request := identity.ListAvailabilityDomainsRequest{
@@ -91,7 +91,7 @@ func processAvailabilityDomains(provider common.ConfigurationProvider, compartme
 	}
 	availabilityDomains, err := identityClient.ListAvailabilityDomains(context.Background(), request)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error listing ADs with Identity client: %v", err)
+		log.Debug("Oci-handler: error listing availability domains with identity client", "operation", "process_availability_domains", "error", err)
 		return nil, getErrorCode(availabilityDomains.RawResponse), err
 	}
 
@@ -109,10 +109,10 @@ func processAvailabilityDomains(provider common.ConfigurationProvider, compartme
 }
 
 func processRegions(provider common.ConfigurationProvider, tenancy string) ([]byte, int, error) {
-	logrus.Debugf("[oci-handler] listing VCNs in tenancy: %s", tenancy)
+	log.Debug("Oci-handler: listing regions in tenancy", "operation", "process_regions", "tenancy", tenancy)
 	identityClient, err := identity.NewIdentityClientWithConfigurationProvider(provider)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error creating Identity client: %v", err)
+		log.Debug("Oci-handler: error creating identity client", "operation", "process_regions", "error", err)
 		return nil, httperror.ServerError.Status, err
 	}
 	request := identity.ListRegionSubscriptionsRequest{
@@ -120,7 +120,7 @@ func processRegions(provider common.ConfigurationProvider, tenancy string) ([]by
 	}
 	allRegions, err := identityClient.ListRegionSubscriptions(context.Background(), request)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error listing regions with Identity client: %v", err)
+		log.Debug("Oci-handler: error listing regions with identity client", "operation", "process_regions", "error", err)
 		return nil, getErrorCode(allRegions.RawResponse), err
 	}
 
@@ -138,10 +138,10 @@ func processRegions(provider common.ConfigurationProvider, tenancy string) ([]by
 }
 
 func processNodeShapes(provider common.ConfigurationProvider, compartment string) ([]byte, int, error) {
-	logrus.Debugf("[oci-handler] listing shapes in compartment: %s", compartment)
+	log.Debug("Oci-handler: listing shapes in compartment", "operation", "process_node_shapes", "compartment", compartment)
 	computeClient, err := core.NewComputeClientWithConfigurationProvider(provider)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error creating compute client: %v", err)
+		log.Debug("Oci-handler: error creating compute client", "operation", "process_node_shapes", "error", err)
 		return nil, httperror.ServerError.Status, err
 	}
 	shapeRequest := core.ListShapesRequest{
@@ -149,7 +149,7 @@ func processNodeShapes(provider common.ConfigurationProvider, compartment string
 	}
 	shapeResponse, err := computeClient.ListShapes(context.Background(), shapeRequest)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error listing shapes with Compute client: %v", err)
+		log.Debug("Oci-handler: error listing shapes with compute client", "operation", "process_node_shapes", "error", err)
 		return nil, getErrorCode(shapeResponse.RawResponse), err
 	}
 
@@ -169,10 +169,10 @@ func processNodeShapes(provider common.ConfigurationProvider, compartment string
 }
 
 func processImages(provider common.ConfigurationProvider, compartment string) ([]byte, int, error) {
-	logrus.Debugf("[oci-handler] listing images in compartment: %s", compartment)
+	log.Debug("Oci-handler: listing images in compartment", "operation", "process_images", "compartment", compartment)
 	computeClient, err := core.NewComputeClientWithConfigurationProvider(provider)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error creating Compute client: %v", err)
+		log.Debug("Oci-handler: error creating compute client", "operation", "process_images", "error", err)
 		return nil, httperror.ServerError.Status, err
 	}
 	imageRequest := core.ListImagesRequest{
@@ -180,7 +180,7 @@ func processImages(provider common.ConfigurationProvider, compartment string) ([
 	}
 	shapeResponse, err := computeClient.ListImages(context.Background(), imageRequest)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error listing images with Compute client: %v", err)
+		log.Debug("Oci-handler: error listing images with compute client", "operation", "process_images", "error", err)
 		return nil, getErrorCode(shapeResponse.RawResponse), err
 	}
 
@@ -203,10 +203,10 @@ func processImages(provider common.ConfigurationProvider, compartment string) ([
 }
 
 func processNodeOkeImages(provider common.ConfigurationProvider) ([]byte, int, error) {
-	logrus.Debugf("[oci-handler] listing node OKE images")
+	log.Debug("Oci-handler: listing node oke images", "operation", "process_node_oke_images")
 	containerClient, err := containerengine.NewContainerEngineClientWithConfigurationProvider(provider)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error creating ContainerEngine client: %v", err)
+		log.Debug("Oci-handler: error creating containerengine client", "operation", "process_node_oke_images", "error", err)
 		return nil, httperror.ServerError.Status, err
 	}
 	nodePoolOptionsReq := containerengine.GetNodePoolOptionsRequest{
@@ -214,7 +214,7 @@ func processNodeOkeImages(provider common.ConfigurationProvider) ([]byte, int, e
 	}
 	nodePoolOptionsResp, err := containerClient.GetNodePoolOptions(context.Background(), nodePoolOptionsReq)
 	if err != nil {
-		logrus.Debugf("[oci-handler] error getting node pool options with Compute client: %v", err)
+		log.Debug("Oci-handler: error getting node pool options with containerengine client", "operation", "process_node_oke_images", "error", err)
 		return nil, getErrorCode(nodePoolOptionsResp.RawResponse), err
 	}
 

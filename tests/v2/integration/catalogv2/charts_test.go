@@ -8,13 +8,13 @@ import (
 	"time"
 
 	rv1 "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/rancher/pkg/namespace"
 	"github.com/rancher/shepherd/clients/rancher"
 	"github.com/rancher/shepherd/clients/rancher/catalog"
 	"github.com/rancher/shepherd/extensions/kubeconfig"
 	"github.com/rancher/shepherd/pkg/api/steve/catalog/types"
 	"github.com/rancher/shepherd/pkg/session"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"helm.sh/helm/v3/pkg/action"
@@ -758,7 +758,7 @@ func (w *ChartsTest) waitForChart(status rv1.Status, name string, previousVersio
 
 func (w *ChartsTest) uninstallApp(namespace, chartName string) error {
 	var cfg action.Configuration
-	if err := cfg.Init(w.restClientGetter, namespace, "", logrus.Infof); err != nil {
+	if err := cfg.Init(w.restClientGetter, namespace, "", func(format string, args ...interface{}) { log.Info(format, args...) }); err != nil {
 		return err
 	}
 	l := action.NewList(&cfg)

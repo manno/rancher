@@ -7,8 +7,8 @@ import (
 
 	"github.com/rancher/apiserver/pkg/apierror"
 	"github.com/rancher/norman/httperror"
+	"github.com/rancher/rancher/pkg/log"
 	"github.com/rancher/wrangler/v3/pkg/schemas/validation"
-	"github.com/sirupsen/logrus"
 )
 
 // WriteError write the error message and the http status code in the ResponseWriter
@@ -115,7 +115,7 @@ func ReturnAPIError(w http.ResponseWriter, err error) {
 	enc.SetEscapeHTML(false)
 
 	if eerr := enc.Encode(resp); eerr != nil {
-		logrus.Errorf("Writing error response: %s", eerr)
+		log.Error("Writing error response", "operation", "return_api_error", "error", eerr)
 	}
 }
 
