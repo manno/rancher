@@ -244,7 +244,7 @@ func (c *Manager) Chart(namespace, name, chartName, version string, skipFilter b
 		}
 
 		// Chart URL is remote (oci:// or http(s)://) - try local first
-		localChart, localErr := git.Chart(namespace, name, repo.status.URL, chart)
+		localChart, localErr := git.LocalChart(namespace, name, repo.status.URL, chart)
 		if localErr == nil {
 			return localChart, nil
 		}
