@@ -682,3 +682,68 @@ func deleteDir(dir string) error {
 	}
 	return nil
 }
+
+func TestWithRegistry(t *testing.T) {
+	chartVersion := func(urls ...string) *repo.ChartVersion {
+		return &repo.ChartVersion{
+			Metadata: &chart.Metadata{Name: "fleet", Version: "108.0.0+up0.14.0"},
+			URLs:     urls,
+		}
+	}
+
+	tests := []struct {
+		name     string
+		urls     []string
+		registry string
+		want     []string
+	}{
+		{
+			name:     "no system default registry",
+			urls:     []string{"oci://registry.rancher.com/rancher/charts/fleet:108.0.0"},
+			registry: "",
+			want:     []string{"oci://registry.rancher.com/rancher/charts/fleet:108.0.0"},
+		},
+		{
+			name:     "same registry",
+			urls:     []string{"oci://registry.rancher.com/rancher/charts/fleet:108.0.0"},
+			registry: "registry.rancher.com",
+			want:     []string{"oci://registry.rancher.com/rancher/charts/fleet:108.0.0"},
+		},
+		{
+			name:     "private registry",
+			urls:     []string{"oci://registry.rancher.com/rancher/charts/fleet:108.0.0"},
+			registry: "registry.example.com:5000",
+			want:     []string{"oci://registry.example.com:5000/rancher/charts/fleet:108.0.0"},
+		},
+		{
+			name:     "private registry with path prefix and trailing slash",
+			urls:     []string{"oci://registry.rancher.com/rancher/charts/fleet:108.0.0"},
+			registry: "registry.example.com/mirror/",
+			want:     []string{"oci://registry.example.com/mirror/rancher/charts/fleet:108.0.0"},
+		},
+		{
+			name:     "digest is kept",
+			urls:     []string{"oci://registry.rancher.com/rancher/charts/fleet:108.0.0@sha256:abc", "oci://other/fleet:108.0.0"},
+			registry: "registry.example.com",
+			want:     []string{"oci://registry.example.com/rancher/charts/fleet:108.0.0@sha256:abc", "oci://other/fleet:108.0.0"},
+		},
+		{
+			name:     "registry only URL",
+			urls:     []string{"oci://registry.rancher.com"},
+			registry: "registry.example.com",
+			want:     []string{"oci://registry.rancher.com"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := chartVersion(tt.urls...)
+			orig := append([]string(nil), in.URLs...)
+
+			got := withRegistry(in, tt.registry)
+
+			assert.Equal(t, tt.want, got.URLs)
+			assert.Equal(t, orig, in.URLs, "cached index entry must not be modified")
+		})
+	}
+}

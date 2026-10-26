@@ -249,6 +249,9 @@ func (c *Manager) Chart(namespace, name, chartName, version string, skipFilter b
 			return localChart, nil
 		}
 		// Chart not found locally; fall through to remote fetch below
+		if registry.IsOCI(chartURL) && name == systemChartsRepo {
+			chart = withRegistry(chart, settings.SystemDefaultRegistry.Get())
+		}
 	}
 
 	secret, err := catalogv2.GetSecret(c.secrets, repo.spec, repo.metadata.Namespace)
@@ -265,6 +268,32 @@ func (c *Manager) Chart(namespace, name, chartName, version string, skipFilter b
 	default:
 		return helmhttp.Chart(secret, repo.status.URL, repo.spec.CABundle, repo.spec.InsecureSkipTLSverify, repo.spec.DisableSameOriginCheck, chart)
 	}
+}
+
+// systemChartsRepo is the git-based ClusterRepo for rancher/charts that Rancher creates itself, see
+// pkg/data/dashboard/repo.go. Only its OCI chart URLs are rewritten to the system default registry,
+// the same way only Rancher's charts template their images with it.
+const systemChartsRepo = "rancher-charts"
+
+// withRegistry returns a copy of the chart version whose first URL points at the given registry
+// instead of the one recorded in index.yaml. The repository path and tag or digest are kept, so
+// oci://registry.rancher.com/rancher/charts/fleet:1.0.0 becomes oci://<registry>/rancher/charts/fleet:1.0.0.
+// The chart version is returned unchanged if registryURL is empty.
+func withRegistry(chart *repo.ChartVersion, registryURL string) *repo.ChartVersion {
+	registryURL = strings.TrimSuffix(registryURL, "/")
+	if registryURL == "" {
+		return chart
+	}
+
+	ref := strings.TrimPrefix(chart.URLs[0], "oci://")
+	host, path, ok := strings.Cut(ref, "/")
+	if !ok || host == registryURL {
+		return chart
+	}
+
+	c := *chart
+	c.URLs = append([]string{"oci://" + registryURL + "/" + path}, chart.URLs[1:]...)
+	return &c
 }
 
 func isRemoteChart(chartURL, gitURL string) bool {
