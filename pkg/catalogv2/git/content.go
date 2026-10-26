@@ -1,9 +1,6 @@
 package git
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -35,8 +32,10 @@ func Icon(namespace, name, gitURL string, chartVersion *repo.ChartVersion) (io.R
 }
 
 func Chart(namespace, name, gitURL string, chartVersion *repo.ChartVersion) (io.ReadCloser, error) {
-	dir := RepoDir(namespace, name, gitURL)
+	return loadChart(RepoDir(namespace, name, gitURL), gitURL, chartVersion)
+}
 
+func loadChart(dir, gitURL string, chartVersion *repo.ChartVersion) (io.ReadCloser, error) {
 	if len(chartVersion.URLs) == 0 {
 		return nil, fmt.Errorf("failed to find chartName %s version %s: %w", chartVersion.Name, chartVersion.Version, validation.NotFound)
 	}
@@ -54,49 +53,6 @@ func Chart(namespace, name, gitURL string, chartVersion *repo.ChartVersion) (io.
 	}
 
 	return archive.Open()
-}
-
-// LocalChart will return a chart version from a local repository when its index entry points at an
-// oci:// URL. That URL can't be mapped to a file, so the chart is looked up at
-// the conventional assets/<name>/<name>-<version>.tgz path instead. If the index entry has a digest,
-// the local tarball must match it.
-func LocalChart(namespace, name, gitURL string, chartVersion *repo.ChartVersion) (io.ReadCloser, error) {
-	return localChart(RepoDir(namespace, name, gitURL), gitURL, chartVersion)
-}
-
-func localChart(dir, gitURL string, chartVersion *repo.ChartVersion) (io.ReadCloser, error) {
-	assetPath := path.Join("assets", chartVersion.Name, fmt.Sprintf("%s-%s.tgz", chartVersion.Name, chartVersion.Version))
-	file, err := relative(dir, gitURL, assetPath)
-	if err != nil {
-		return nil, err
-	}
-
-	f, err := os.Open(file)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("failed to find chartName %s version %s: %w", chartVersion.Name, chartVersion.Version, validation.NotFound)
-		}
-		return nil, err
-	}
-
-	if chartVersion.Digest == "" {
-		return f, nil
-	}
-
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		f.Close()
-		return nil, err
-	}
-	if digest := hex.EncodeToString(h.Sum(nil)); digest != chartVersion.Digest {
-		f.Close()
-		return nil, fmt.Errorf("local chart %s has digest %s, index expects %s", file, digest, chartVersion.Digest)
-	}
-	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		f.Close()
-		return nil, err
-	}
-	return f, nil
 }
 
 func relative(base, publicURL, path string) (string, error) {

@@ -768,3 +768,35 @@ func TestIsOCIChart(t *testing.T) {
 		})
 	}
 }
+
+func TestIsRancherRepo(t *testing.T) {
+	tests := []struct {
+		name string
+		repo string
+		want bool
+	}{
+		{name: "rancher charts", repo: "rancher-charts", want: true},
+		{name: "partner charts", repo: "rancher-partner-charts", want: true},
+		{name: "rke2 charts", repo: "rancher-rke2-charts", want: true},
+		{name: "customer repo", repo: "my-charts", want: false},
+		{name: "customer repo with rancher prefix", repo: "rancher-charts-fork", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isRancherRepo(tt.repo))
+		})
+	}
+}
+
+func TestWithLocalAsset(t *testing.T) {
+	in := &repo.ChartVersion{
+		Metadata: &chart.Metadata{Name: "fleet", Version: "108.0.0+up0.14.0"},
+		URLs:     []string{"oci://registry.rancher.com/rancher/charts/fleet:108.0.0-up0.14.0"},
+	}
+
+	got := withLocalAsset(in)
+
+	assert.Equal(t, []string{"file://assets/fleet/fleet-108.0.0+up0.14.0.tgz"}, got.URLs)
+	assert.Equal(t, []string{"oci://registry.rancher.com/rancher/charts/fleet:108.0.0-up0.14.0"}, in.URLs, "cached index entry must not be modified")
+}

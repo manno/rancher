@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -235,22 +236,28 @@ func (c *Manager) Chart(namespace, name, chartName, version string, skipFilter b
 		return nil, err
 	}
 
-	// Git-based ClusterRepos: try local checkout first (from rancher-assets image),
-	// then fall back to remote registry if not found locally.
+	// Git-based ClusterRepos load charts from the checkout. Charts with an oci:// URL are pulled from
+	// the registry, except that Rancher's own ClusterRepos look for them in the checkout first, which
+	// is where the rancher-assets image puts them.
 	if repo.status.Commit != "" {
 		if !isOCIChart(chartURL) {
 			return git.Chart(namespace, name, repo.status.URL, chart)
 		}
 
-		// Chart URL is oci:// - try local first
-		localChart, localErr := git.LocalChart(namespace, name, repo.status.URL, chart)
-		if localErr == nil {
-			return localChart, nil
+		if isRancherRepo(name) {
+			localChart, err := git.Chart(namespace, name, repo.status.URL, withLocalAsset(chart))
+			if err == nil {
+				return localChart, nil
+			} else if !errors.Is(err, validation.NotFound) {
+				logrus.Warnf("failed to load chart %s version %s from the local checkout of ClusterRepo %s, pulling it from %s: %v", chart.Name, chart.Version, name, chartURL, err)
+			}
+			if name == systemChartsRepo {
+				chart = withRegistry(chart, settings.SystemDefaultRegistry.Get())
+			}
 		}
-		// Chart not found locally; fall through to remote fetch below
-		if name == systemChartsRepo {
-			chart = withRegistry(chart, settings.SystemDefaultRegistry.Get())
-		}
+
+		// The ClusterRepo's secret holds git credentials, never send them to the registry.
+		return oci.Chart(nil, chart, *repo.spec)
 	}
 
 	secret, err := catalogv2.GetSecret(c.secrets, repo.spec, repo.metadata.Namespace)
@@ -269,10 +276,32 @@ func (c *Manager) Chart(namespace, name, chartName, version string, skipFilter b
 	}
 }
 
+// rancherRepos are the git-based ClusterRepos Rancher creates itself, see pkg/data/dashboard/repo.go.
+// Only these look up OCI charts in their checkout before pulling them from the registry.
+var rancherRepos = map[string]bool{
+	"rancher-charts":         true,
+	"rancher-partner-charts": true,
+	"rancher-rke2-charts":    true,
+}
+
+// isRancherRepo reports whether the ClusterRepo is one Rancher creates itself.
+func isRancherRepo(name string) bool {
+	return rancherRepos[name]
+}
+
 // systemChartsRepo is the git-based ClusterRepo for rancher/charts that Rancher creates itself, see
 // pkg/data/dashboard/repo.go. Only its OCI chart URLs are rewritten to the system default registry,
 // the same way only Rancher's charts template their images with it.
 const systemChartsRepo = "rancher-charts"
+
+// withLocalAsset returns a copy of the chart version whose URL points at the chart tarball in the git
+// checkout, file://assets/<name>/<name>-<version>.tgz. That's where release branches keep chart
+// tarballs, and where the rancher-assets image is expected to put the ones it pulls from OCI.
+func withLocalAsset(chart *repo.ChartVersion) *repo.ChartVersion {
+	c := *chart
+	c.URLs = []string{fmt.Sprintf("file://assets/%s/%s-%s.tgz", chart.Name, chart.Name, chart.Version)}
+	return &c
+}
 
 // withRegistry returns a copy of the chart version whose first URL points at the given registry
 // instead of the one recorded in index.yaml. The repository path and tag or digest are kept, so
@@ -296,7 +325,7 @@ func withRegistry(chart *repo.ChartVersion, registryURL string) *repo.ChartVersi
 }
 
 // isOCIChart reports whether a chart URL from a git-based ClusterRepo's index.yaml points at an OCI
-// registry. Only those charts are fetched remotely when they aren't in the local checkout. Every
+// registry. Only those charts are pulled from a registry, the others never leave the checkout. Every
 // other URL is resolved inside the checkout by git.Chart, which strips a leading file:// or git repo
 // URL, so assets/x.tgz, file://assets/x.tgz and https://git.rancher.io/charts/assets/x.tgz all load
 // the same local file. Any other http(s):// URL is not fetched and fails as not found.
