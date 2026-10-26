@@ -235,10 +235,20 @@ func (c *Manager) Chart(namespace, name, chartName, version string, skipFilter b
 		return nil, err
 	}
 
-	if repo.status.Commit != "" && !isRemoteChart(chartURL, repo.status.URL) {
-		// Git-based ClusterRepos can include the chart tarballs as part of the repository.
-		// Retrieve the chart from the local file.
-		return git.Chart(namespace, name, repo.status.URL, chart)
+	// Git-based ClusterRepos: try local checkout first (from rancher-assets image),
+	// then fall back to remote registry if not found locally.
+	if repo.status.Commit != "" {
+		if !isRemoteChart(chartURL, repo.status.URL) {
+			// Chart URL is relative or file:// - must be local
+			return git.Chart(namespace, name, repo.status.URL, chart)
+		}
+
+		// Chart URL is remote (oci:// or http(s)://) - try local first
+		localChart, localErr := git.Chart(namespace, name, repo.status.URL, chart)
+		if localErr == nil {
+			return localChart, nil
+		}
+		// Chart not found locally; fall through to remote fetch below
 	}
 
 	secret, err := catalogv2.GetSecret(c.secrets, repo.spec, repo.metadata.Namespace)
