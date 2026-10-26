@@ -56,8 +56,8 @@ func Chart(namespace, name, gitURL string, chartVersion *repo.ChartVersion) (io.
 	return archive.Open()
 }
 
-// LocalChart will return a chart version from a local repository when its index entry points at a
-// remote URL (e.g. oci://). The remote URL can't be mapped to a file, so the chart is looked up at
+// LocalChart will return a chart version from a local repository when its index entry points at an
+// oci:// URL. That URL can't be mapped to a file, so the chart is looked up at
 // the conventional assets/<name>/<name>-<version>.tgz path instead. If the index entry has a digest,
 // the local tarball must match it.
 func LocalChart(namespace, name, gitURL string, chartVersion *repo.ChartVersion) (io.ReadCloser, error) {

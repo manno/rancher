@@ -238,18 +238,17 @@ func (c *Manager) Chart(namespace, name, chartName, version string, skipFilter b
 	// Git-based ClusterRepos: try local checkout first (from rancher-assets image),
 	// then fall back to remote registry if not found locally.
 	if repo.status.Commit != "" {
-		if !isRemoteChart(chartURL, repo.status.URL) {
-			// Chart URL is relative or file:// - must be local
+		if !isOCIChart(chartURL) {
 			return git.Chart(namespace, name, repo.status.URL, chart)
 		}
 
-		// Chart URL is remote (oci:// or http(s)://) - try local first
+		// Chart URL is oci:// - try local first
 		localChart, localErr := git.LocalChart(namespace, name, repo.status.URL, chart)
 		if localErr == nil {
 			return localChart, nil
 		}
 		// Chart not found locally; fall through to remote fetch below
-		if registry.IsOCI(chartURL) && name == systemChartsRepo {
+		if name == systemChartsRepo {
 			chart = withRegistry(chart, settings.SystemDefaultRegistry.Get())
 		}
 	}
@@ -296,11 +295,13 @@ func withRegistry(chart *repo.ChartVersion, registryURL string) *repo.ChartVersi
 	return &c
 }
 
-func isRemoteChart(chartURL, gitURL string) bool {
-	if strings.HasSuffix(chartURL, "file://") || strings.HasSuffix(chartURL, gitURL) {
-		return false
-	}
-	return strings.Contains(chartURL, "://")
+// isOCIChart reports whether a chart URL from a git-based ClusterRepo's index.yaml points at an OCI
+// registry. Only those charts are fetched remotely when they aren't in the local checkout. Every
+// other URL is resolved inside the checkout by git.Chart, which strips a leading file:// or git repo
+// URL, so assets/x.tgz, file://assets/x.tgz and https://git.rancher.io/charts/assets/x.tgz all load
+// the same local file. Any other http(s):// URL is not fetched and fails as not found.
+func isOCIChart(chartURL string) bool {
+	return registry.IsOCI(chartURL)
 }
 
 // Info retrieves detailed information about a specific Helm chart from a Helm repository.

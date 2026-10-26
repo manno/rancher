@@ -64,3 +64,33 @@ func Test_localChart(t *testing.T) {
 		})
 	}
 }
+
+func Test_relative(t *testing.T) {
+	const gitURL = "https://git.rancher.io/charts"
+	dir := t.TempDir()
+	want := filepath.Join(dir, "assets", "fleet", "fleet-108.0.0.tgz")
+
+	tests := []struct {
+		name     string
+		chartURL string
+		wantErr  bool
+	}{
+		{name: "relative path", chartURL: "assets/fleet/fleet-108.0.0.tgz"},
+		{name: "file URL", chartURL: "file://assets/fleet/fleet-108.0.0.tgz"},
+		{name: "git repo URL", chartURL: gitURL + "/assets/fleet/fleet-108.0.0.tgz"},
+		{name: "path traversal", chartURL: "../../etc/passwd", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := relative(dir, gitURL, tt.chartURL)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			want, _ := filepath.Abs(want)
+			assert.Equal(t, want, got)
+		})
+	}
+}

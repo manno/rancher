@@ -747,3 +747,24 @@ func TestWithRegistry(t *testing.T) {
 		})
 	}
 }
+
+func TestIsOCIChart(t *testing.T) {
+	tests := []struct {
+		name     string
+		chartURL string
+		want     bool
+	}{
+		{name: "relative path", chartURL: "assets/fleet/fleet-108.0.0.tgz", want: false},
+		{name: "file URL", chartURL: "file://assets/fleet/fleet-108.0.0.tgz", want: false},
+		{name: "git repo URL", chartURL: "https://git.rancher.io/charts/assets/fleet/fleet-108.0.0.tgz", want: false},
+		{name: "other http URL", chartURL: "https://charts.example.com/fleet-108.0.0.tgz", want: false},
+		{name: "OCI URL", chartURL: "oci://registry.rancher.com/rancher/charts/fleet:108.0.0", want: true},
+		{name: "OCI URL with digest", chartURL: "oci://registry.rancher.com/rancher/charts/fleet:108.0.0@sha256:abc", want: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isOCIChart(tt.chartURL))
+		})
+	}
+}
